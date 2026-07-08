@@ -1,0 +1,32 @@
+# OS/editor noise
+.DS_Store
+*.swp
+*.swo
+
+# Python/cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Build/package outputs
+build/
+dist/
+*.egg-info/
+
+# audit-graph generated outputs
+/audit/
+/audit.json
+/audit.html
+/audit-feedback.jsonl
+/audit-graph.svg
+
+# Sopify runtime and local user state
+.sopify/state/
+.sopify/user/
+
+# Local tool settings
+.qoder/

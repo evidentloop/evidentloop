@@ -1,0 +1,263 @@
+{
+  "schema_version": "0.2-alpha",
+  "graph_id": "audit:dogfood-local-repo:20260707",
+  "source": {
+    "type": "local_repo",
+    "repo": "audit-graph",
+    "ref": "working-tree",
+    "description": "用 audit-graph 本仓库文档收口作为 dogfood 审计对象"
+  },
+  "runs": [
+    {
+      "id": "run-001",
+      "label": "初始文档审计",
+      "status": "concerns",
+      "summary": "发现产物命名、v0 命令、SVG 样例和摘要审计建模仍存在不一致。",
+      "summary_audit": {
+        "status": "partial",
+        "claims": [
+          {
+            "id": "claim-001",
+            "text": "文档已经完成 HTML-first、SVG-optional、Markdown-export 收口",
+            "status": "challenged"
+          }
+        ]
+      }
+    },
+    {
+      "id": "run-002",
+      "label": "收口后复审",
+      "status": "pass_candidate",
+      "summary": "已清理旧产物名和 scan 命令，补充 audit.html 信息架构，并明确 summary 是 change/run 字段而不是节点类型。",
+      "summary_audit": {
+        "status": "verified",
+        "claims": [
+          {
+            "id": "claim-002",
+            "text": "本轮文档口径已统一为 audit.json + audit.html 默认产物，audit-graph.svg 可选",
+            "status": "supported"
+          }
+        ]
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "change-001",
+      "type": "change",
+      "title": "audit-graph 文档收口",
+      "summary": "统一默认产物、补齐 HTML 信息架构、降级 SVG 为可选概览图，并加入摘要审计模型。",
+      "summary_audit": {
+        "status": "verified",
+        "claims": [
+          {
+            "id": "claim-004",
+            "text": "默认产物是 audit.json + audit.html",
+            "status": "supported"
+          },
+          {
+            "id": "claim-005",
+            "text": "summary 不作为节点类型，而是 run/change 字段",
+            "status": "supported"
+          }
+        ]
+      }
+    },
+    {
+      "id": "file-v0-scope",
+      "type": "file",
+      "path": "docs/v0-scope.md",
+      "role": "scope_contract"
+    },
+    {
+      "id": "file-data-model",
+      "type": "file",
+      "path": "docs/data-model.md",
+      "role": "schema_contract"
+    },
+    {
+      "id": "file-blueprint-design",
+      "type": "file",
+      "path": ".sopify/blueprint/design.md",
+      "role": "workflow_design"
+    },
+    {
+      "id": "file-svg-sample",
+      "type": "file",
+      "path": "docs/examples/audit-graph-sample.svg",
+      "role": "design_sample"
+    },
+    {
+      "id": "finding-001",
+      "type": "finding",
+      "severity": "high",
+      "status": "fixed",
+      "title": "v0-scope 曾残留旧产物名和 scan 命令",
+      "detail": "旧口径中的 graph.svg、report.html、fixes.md 和 scan 命令会误导后续实现。",
+      "file_path": "docs/v0-scope.md"
+    },
+    {
+      "id": "finding-002",
+      "type": "finding",
+      "severity": "medium",
+      "status": "fixed",
+      "title": "SVG 样例不应定义 summary 节点类型",
+      "detail": "summary 是 run/change 的字段，可被审计，但不应成为节点类型。",
+      "file_path": "docs/examples/audit-graph-sample.svg"
+    },
+    {
+      "id": "finding-003",
+      "type": "finding",
+      "severity": "medium",
+      "status": "fixed",
+      "title": "audit.html 作为主产物缺少信息架构",
+      "detail": "HTML-first 需要明确审计结论、变更摘要、问题清单、修复方案、多轮对比和证据详情。",
+      "file_path": ".sopify/blueprint/design.md"
+    },
+    {
+      "id": "evidence-001",
+      "type": "evidence",
+      "source": "manual_review",
+      "status": "pass",
+      "summary": "README、v0 scope、data model 和 blueprint 已统一默认产物口径。"
+    },
+    {
+      "id": "evidence-002",
+      "type": "evidence",
+      "source": "manual_review",
+      "status": "pass",
+      "summary": "v0 命令只保留 build 和 render，scan 进入后续阶段。"
+    },
+    {
+      "id": "fix-001",
+      "type": "fix",
+      "status": "done",
+      "priority": "p0",
+      "title": "清理旧产物名并移除 scan 命令"
+    },
+    {
+      "id": "fix-002",
+      "type": "fix",
+      "status": "done",
+      "priority": "p0",
+      "title": "补齐 audit.html 信息架构"
+    },
+    {
+      "id": "fix-003",
+      "type": "fix",
+      "status": "done",
+      "priority": "p1",
+      "title": "定义摘要审计模型和 claim 边"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-001",
+      "type": "contains_change",
+      "from": "run-002",
+      "to": "change-001"
+    },
+    {
+      "id": "edge-002",
+      "type": "supersedes_run",
+      "from": "run-002",
+      "to": "run-001"
+    },
+    {
+      "id": "edge-003",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-v0-scope"
+    },
+    {
+      "id": "edge-004",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-data-model"
+    },
+    {
+      "id": "edge-005",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-blueprint-design"
+    },
+    {
+      "id": "edge-006",
+      "type": "finding_in_file",
+      "from": "finding-001",
+      "to": "file-v0-scope"
+    },
+    {
+      "id": "edge-007",
+      "type": "finding_in_file",
+      "from": "finding-002",
+      "to": "file-svg-sample"
+    },
+    {
+      "id": "edge-008",
+      "type": "finding_in_file",
+      "from": "finding-003",
+      "to": "file-blueprint-design"
+    },
+    {
+      "id": "edge-009",
+      "type": "requires_fix",
+      "from": "finding-001",
+      "to": "fix-001"
+    },
+    {
+      "id": "edge-010",
+      "type": "requires_fix",
+      "from": "finding-003",
+      "to": "fix-002"
+    },
+    {
+      "id": "edge-011",
+      "type": "requires_fix",
+      "from": "finding-002",
+      "to": "fix-003"
+    },
+    {
+      "id": "edge-012",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-svg-sample"
+    },
+    {
+      "id": "edge-013",
+      "type": "supported_by_evidence",
+      "from": "finding-001",
+      "to": "evidence-001"
+    },
+    {
+      "id": "edge-014",
+      "type": "supported_by_evidence",
+      "from": "finding-001",
+      "to": "evidence-002"
+    },
+    {
+      "id": "edge-015",
+      "type": "supports_claim",
+      "from": "evidence-001",
+      "to": "change-001",
+      "claim_id": "claim-004"
+    },
+    {
+      "id": "edge-016",
+      "type": "supports_claim",
+      "from": "evidence-002",
+      "to": "change-001",
+      "claim_id": "claim-005"
+    }
+  ],
+  "summary": {
+    "risk_score": 12,
+    "risk_delta": "-58",
+    "finding_count": 3,
+    "open_finding_count": 0,
+    "fix_count": 3,
+    "fix_done_count": 3,
+    "summary_audit_status": "verified",
+    "verdict": "pass_candidate"
+  }
+}

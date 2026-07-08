@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" role="img" aria-labelledby="title desc">
+  <title id="title">audit-graph architecture</title>
+  <desc id="desc">Inputs are normalized by adapters into audit.json, then rendered into human and machine artifacts with feedback exported as JSONL for later audit runs.</desc>
+  <style>
+    text {
+      font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      fill: #111827;
+    }
+    .title { font-size: 28px; font-weight: 700; }
+    .subtitle { font-size: 14px; fill: #6b7280; }
+    .section { font-size: 14px; font-weight: 700; fill: #374151; }
+    .node-title { font-size: 15px; font-weight: 700; }
+    .node-subtitle { font-size: 12px; fill: #6b7280; }
+    .label { font-size: 12px; font-weight: 600; fill: #374151; }
+    .legend { font-size: 12px; fill: #6b7280; }
+    .container { fill: #f9fafb; stroke: #e5e7eb; stroke-width: 1.5; stroke-dasharray: 7 5; rx: 14; }
+    .node { fill: #ffffff; stroke: #d1d5db; stroke-width: 1.5; rx: 10; }
+    .input { fill: #eff6ff; stroke: #bfdbfe; }
+    .adapter { fill: #f0fdfa; stroke: #99f6e4; }
+    .graph { fill: #fff7ed; stroke: #fed7aa; }
+    .renderer { fill: #f0fdf4; stroke: #bbf7d0; }
+    .feedback { fill: #faf5ff; stroke: #ddd6fe; }
+    .flow { fill: none; stroke: #2563eb; stroke-width: 2; marker-end: url(#arrow-blue); }
+    .optional { fill: none; stroke: #6b7280; stroke-width: 1.7; stroke-dasharray: 6 4; marker-end: url(#arrow-gray); }
+    .feedback-line { fill: none; stroke: #7c3aed; stroke-width: 2; marker-end: url(#arrow-purple); }
+    .thin { fill: none; stroke: #d1d5db; stroke-width: 1.2; }
+  </style>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-gray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#7c3aed"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="720" fill="#ffffff"/>
+
+  <text x="60" y="58" class="title">audit-graph architecture</text>
+  <text x="60" y="84" class="subtitle">Renderer-first audit artifacts for AI-generated technical changes</text>
+
+  <rect x="48" y="125" width="206" height="355" class="container"/>
+  <text x="70" y="154" class="section">Inputs</text>
+
+  <rect x="72" y="185" width="158" height="70" class="node input"/>
+  <text x="94" y="213" class="node-title">Git diff</text>
+  <text x="94" y="236" class="node-subtitle">HEAD, staged, worktree</text>
+
+  <rect x="72" y="285" width="158" height="70" class="node input"/>
+  <text x="94" y="313" class="node-title">CrossReview</text>
+  <text x="94" y="336" class="node-subtitle">ReviewResult JSON</text>
+
+  <rect x="72" y="385" width="158" height="70" class="node input"/>
+  <text x="94" y="413" class="node-title">Evidence</text>
+  <text x="94" y="436" class="node-subtitle">test, lint, scan</text>
+
+  <rect x="302" y="125" width="226" height="355" class="container"/>
+  <text x="324" y="154" class="section">Adapters</text>
+
+  <rect x="326" y="185" width="178" height="70" class="node adapter"/>
+  <text x="348" y="213" class="node-title">gitdiff adapter</text>
+  <text x="348" y="236" class="node-subtitle">files + hunk snippets</text>
+
+  <rect x="326" y="285" width="178" height="70" class="node adapter"/>
+  <text x="348" y="313" class="node-title">review adapter</text>
+  <text x="348" y="336" class="node-subtitle">findings + severity</text>
+
+  <rect x="326" y="385" width="178" height="70" class="node adapter"/>
+  <text x="348" y="413" class="node-title">evidence adapter</text>
+  <text x="348" y="436" class="node-subtitle">deterministic signals</text>
+
+  <rect x="582" y="171" width="228" height="222" class="container"/>
+  <text x="604" y="200" class="section">Typed Audit Graph</text>
+
+  <rect x="614" y="232" width="164" height="100" class="node graph"/>
+  <text x="649" y="266" class="node-title">audit.json</text>
+  <text x="646" y="290" class="node-subtitle">single truth source</text>
+  <text x="647" y="312" class="node-subtitle">nodes + edges + runs</text>
+
+  <rect x="856" y="125" width="292" height="355" class="container"/>
+  <text x="878" y="154" class="section">Renderers</text>
+
+  <rect x="886" y="185" width="224" height="72" class="node renderer"/>
+  <text x="912" y="213" class="node-title">audit.html</text>
+  <text x="912" y="236" class="node-subtitle">human audit view + hunk cards</text>
+
+  <rect x="886" y="288" width="224" height="72" class="node renderer"/>
+  <text x="912" y="316" class="node-title">audit-graph.svg</text>
+  <text x="912" y="339" class="node-subtitle">optional overview graph</text>
+
+  <rect x="886" y="391" width="224" height="72" class="node renderer"/>
+  <text x="912" y="419" class="node-title">Markdown export</text>
+  <text x="912" y="442" class="node-subtitle">PR, issue, chat summaries</text>
+
+  <rect x="342" y="545" width="516" height="98" class="container"/>
+  <text x="365" y="574" class="section">Feedback capture</text>
+
+  <rect x="392" y="594" width="180" height="38" class="node feedback"/>
+  <text x="417" y="619" class="node-title">localStorage</text>
+
+  <rect x="628" y="594" width="184" height="38" class="node feedback"/>
+  <text x="654" y="619" class="node-title">audit-feedback.jsonl</text>
+
+  <path d="M230 220 L326 220" class="flow"/>
+  <path d="M230 320 L326 320" class="flow"/>
+  <path d="M230 420 L326 420" class="flow"/>
+
+  <path d="M504 220 C548 220 556 264 614 264" class="flow"/>
+  <path d="M504 320 L614 292" class="flow"/>
+  <path d="M504 420 C548 420 556 314 614 314" class="flow"/>
+
+  <path d="M778 282 L886 221" class="flow"/>
+  <path d="M778 282 L886 324" class="optional"/>
+  <path d="M778 282 C832 282 832 427 886 427" class="optional"/>
+
+  <path d="M1110 221 L1138 221 L1138 524 L482 524 L482 594" class="feedback-line"/>
+  <path d="M572 613 L628 613" class="feedback-line"/>
+  <path d="M720 594 C720 522 696 480 696 332" class="feedback-line"/>
+
+  <text x="268" y="207" class="label">extract</text>
+  <text x="538" y="247" class="label">normalize</text>
+  <text x="815" y="234" class="label">render</text>
+  <text x="1038" y="508" class="label">user decisions</text>
+  <text x="714" y="514" class="label">v0.1 consume later</text>
+
+  <g transform="translate(60, 654)">
+    <line x1="0" y1="9" x2="34" y2="9" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+    <text x="44" y="13" class="legend">primary artifact flow</text>
+    <line x1="220" y1="9" x2="254" y2="9" stroke="#6b7280" stroke-width="1.7" stroke-dasharray="6 4" marker-end="url(#arrow-gray)"/>
+    <text x="264" y="13" class="legend">optional export</text>
+    <line x1="410" y1="9" x2="444" y2="9" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrow-purple)"/>
+    <text x="454" y="13" class="legend">feedback loop</text>
+  </g>
+</svg>

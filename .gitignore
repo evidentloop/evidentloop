@@ -27,6 +27,3 @@ dist/
 # Sopify runtime and local user state
 .sopify/state/
 .sopify/user/
-
-# Local tool settings
-.qoder/

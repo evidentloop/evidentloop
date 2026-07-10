@@ -1,0 +1,26 @@
+{
+  "evidence": {
+    "commands": [
+      "git diff --check",
+      "jq empty (all JSON samples)",
+      "xmllint --noout docs/assets/change-audit-architecture.svg",
+      "git rev-list --count origin/main..HEAD"
+    ],
+    "result": "passed",
+    "retry_count": 0,
+    "review_result": {
+      "code_quality": "passed",
+      "spec_compliance": "passed"
+    },
+    "scope": "rename, knowledge sync, archive",
+    "verification_source": "project_contract"
+  },
+  "provenance": {
+    "plan_id": "20260707_audit_graph_init",
+    "receipt_id": "final",
+    "source": "user_authorized_finalize",
+    "workspace": "/Users/weixin.li/code/github/change-audit"
+  },
+  "timestamp": "2026-07-10T05:28:18+00:00",
+  "verdict": "finalized"
+}

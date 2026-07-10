@@ -2,7 +2,7 @@
 
 ## 状态
 
-已初始化。长期蓝图已创建，尚未开始实现代码。
+已完成项目初始化与 `change-audit` 正式改名。长期蓝图已创建，尚未开始实现代码。
 
 ## 维护方式
 
@@ -14,16 +14,14 @@
 
 ## 当前焦点
 
-v0 范围、图谱数据模型、CLI 边界和渲染器职责。
+冻结 `audit.json` v0 schema，并通过 renderer-first spike 验证首张 finding card。
 
 ## 深入阅读
 
-- `background.md`
-- `design.md`
-- `tasks.md`
-- `../plan/20260707_audit_graph_init/background.md`
-- `../plan/20260707_audit_graph_init/design.md`
-- `../plan/20260707_audit_graph_init/tasks.md`
-- `../plan/20260710_change_audit_rename/background.md`
-- `../plan/20260710_change_audit_rename/design.md`
-- `../plan/20260710_change_audit_rename/tasks.md`
+- [项目技术约定](../project.md)
+- [蓝图背景](./background.md)
+- [蓝图设计](./design.md)
+- [长期任务](./tasks.md)
+- [初始化方案归档](../history/2026-07/20260707_audit_graph_init/background.md)
+- [正式改名方案归档](../history/2026-07/20260710_change_audit_rename/background.md)
+- [变更历史](../history/index.md)

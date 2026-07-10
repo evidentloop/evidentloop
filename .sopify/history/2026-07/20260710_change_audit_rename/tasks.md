@@ -37,9 +37,9 @@
 ## 5. 外部身份迁移 checkpoint
 
 - [x] 5.1 在用户显式确认后，将 GitHub 仓库改名为 `change-audit`，更新并验证 `origin` URL 与旧链接重定向。
-- [ ] 5.2 在所有仓库内工作完成后，将本地目录最后迁移为 `change-audit/`，重新打开 workspace 并复核 Git 状态。
+- [x] 5.2 在所有仓库内工作完成后，将本地目录最后迁移为 `change-audit/`，重新打开 workspace 并复核 Git 状态。
 
 ## 6. 收口
 
-- [ ] 6.1 同步 `.sopify/project.md`、blueprint 与长期任务，移除已经完成且不再需要保留的长期改名项。
-- [ ] 6.2 准备 finalize 时归档本方案，并确保历史索引同时保留旧名与新名的可追溯关系。
+- [x] 6.1 同步 `.sopify/project.md`、blueprint 与长期任务，移除已经完成且不再需要保留的长期改名项。
+- [x] 6.2 准备 finalize 时归档本方案，并确保历史索引同时保留旧名与新名的可追溯关系。

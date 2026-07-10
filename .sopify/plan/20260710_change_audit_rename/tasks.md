@@ -36,7 +36,7 @@
 
 ## 5. 外部身份迁移 checkpoint
 
-- [ ] 5.1 在用户显式确认后，将 GitHub 仓库改名为 `change-audit`，更新并验证 `origin` URL 与旧链接重定向。
+- [x] 5.1 在用户显式确认后，将 GitHub 仓库改名为 `change-audit`，更新并验证 `origin` URL 与旧链接重定向。
 - [ ] 5.2 在所有仓库内工作完成后，将本地目录最后迁移为 `change-audit/`，重新打开 workspace 并复核 Git 状态。
 
 ## 6. 收口

@@ -35,13 +35,19 @@
       "id": "file-auth-service",
       "type": "file",
       "path": "src/auth_service.py",
-      "role": "implementation"
+      "role": "implementation",
+      "additions": 6,
+      "deletions": 2,
+      "change_type": "modified"
     },
     {
       "id": "file-auth-test",
       "type": "file",
       "path": "tests/test_auth.py",
-      "role": "test"
+      "role": "test",
+      "additions": 11,
+      "deletions": 0,
+      "change_type": "modified"
     },
     {
       "id": "finding-001",

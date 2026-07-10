@@ -41,7 +41,19 @@ tech-report 生成叙事型技术报告时，可以读取 `audit.json` 或生成
 
 渲染器只消费归一化后的图谱数据，不能回头解析 Git、CrossReview 或原始证据文件。
 
+LLM、CrossReview 或其他上游只负责产生或辅助产生 `audit.json` 兼容数据，不直接生成最终 HTML。HTML 的结构、CSS、JS、反馈交互、复制给 LLM 的摘要和回链校验都由 renderer 拥有，避免每次审计报告样式漂移或丢失 data-* 回链。
+
 本地编辑器跳转链接不写入 `audit.json`。HTML renderer 可以根据 repo root 和用户编辑器偏好生成 `vscode://` 等链接；链接不可用时，页面仍必须依靠 hunk snippet 独立可读。
+
+HTML renderer 的 CSS 和 JS 作为 renderer static assets 维护在 `auditgraph/renderers/` 下，渲染时内联嵌入最终 `audit.html`，产物仍为单文件自包含。
+
+HTML 渲染管线包含校验门：
+
+```text
+audit.json -> render HTML -> audit trace validation -> write audit.html
+```
+
+校验门检查 `data-node-id`、`data-claim-id`、`data-fingerprint` 等回链是否与 `audit.json` 一致。校验不通过时报错或降级输出。
 
 ## finding 代码上下文
 
@@ -95,6 +107,8 @@ v0 做反馈采集端，不做反馈消费端。
 ```json
 {"target_type":"finding","target_id":"finding-001","action":"accept","reason":"确认缓存路径仍有风险","fingerprint":"sha256:...","created_at":"2026-07-08T10:30:00+08:00"}
 ```
+
+HTML 可以同时提供“复制给 LLM”的 Markdown 摘要，把本轮 verdict、finding、fingerprint 和用户决策整理成可粘贴上下文。它用于下一轮 AI coding 对话理解人类决策，不替代 JSONL，也不写回 `audit.json`。
 
 后续版本可以通过 `build --feedback audit-feedback.jsonl` 将反馈转换为 `user_decision` 节点或其他审计关系。
 

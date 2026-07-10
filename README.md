@@ -1,75 +1,79 @@
 # audit-graph
 
-Visual evidence graphs for AI-generated technical changes.
+Audit trail for AI-generated code changes.
 
 [简体中文](README.zh-CN.md)
 
-![audit-graph architecture](docs/assets/audit-graph-architecture.svg)
+AI coding tools generate code fast. AI review tools catch issues fast. But the audit trail — what changed, what was reviewed, what was accepted, what is still open — lives in scattered chat logs and terminal output. When a human finally reads the report, the context is gone.
 
-`audit-graph` turns review signals into auditable artifacts: a machine-readable graph and a self-contained HTML audit page with code context. It can run as a standalone local tool or consume outputs from tools such as CrossReview. SVG output is optional and only serves as a high-level overview, not the primary review interface.
+`audit-graph` collects review evidence into two auditable artifacts: a machine-readable graph (`audit.json`) and a self-contained HTML audit page (`audit.html`) with code context, evidence links, and user decision controls.
+
+```text
+AI coding diff + review signals → audit.json → audit.html → human decision JSONL
+```
+
+![audit-graph architecture](docs/assets/audit-graph-architecture.png)
 
 ## Status
 
-Planning scaffold. Implementation code has not been added yet.
+Design and data model are defined. Implementation has not started.
 
-## Positioning
+## Who Is This For
 
-`audit-graph` is a standalone-first, workflow-ready audit visualization tool.
+- **AI coding teams** who need to verify AI-generated code before merging, not just trust the review summary.
+- **Workflow builders** embedding audit checkpoints into AI coding pipelines like Sopify.
+- **Solo developers** who want a structured audit view after AI generates and reviews their code.
 
-- Standalone use: generate an audit view from local Git diffs, staged changes, or unstaged changes.
-- Workflow use: embed it into AI coding flows such as Sopify, where it acts as a visual checkpoint between develop, review, audit, confirm, and finalize stages.
+## What It Does Not Do
 
-## Product Boundary
+`audit-graph` does not generate findings, run tests, or decide whether code is correct. It visualizes review signals from other tools and makes them traceable.
 
-`audit-graph` does not decide whether code is correct. Its job is to make review evidence visible, traceable, and measurable.
+## Target Output
+
+v0 target HTML shape — design reference, not yet implemented.
+
+![v0 target HTML shape](docs/assets/audit-html-preview.png)
+
+## Inputs and Outputs
+
+| Direction | File | Description |
+|-----------|------|-------------|
+| IN | Git diff / staged / unstaged | Change source |
+| IN | CrossReview `ReviewResult` JSON | Review findings |
+| IN | Test / lint / typecheck / scan results | Deterministic evidence |
+| OUT | `audit.json` | Machine-readable audit graph (source of truth) |
+| OUT | `audit.html` | Self-contained human audit view |
+| OUT | `audit-feedback.jsonl` | User decision records (v0 capture only) |
+| OUT | `audit-graph.svg` | Optional risk overview graph |
+| OUT | Markdown | Non-default export for PR or chat |
 
 ## What It Audits
 
-`audit-graph` covers three review questions:
+Three review questions:
 
-- Change understanding: what changed, which files or modules were affected, whether the implementation path matches the original intent, and what is still worth improving.
-- Issue review: whether there are bugs, risks, missing edge cases, failed evidence, and which findings require fixes.
-- User decisions: whether the user accepts a finding, marks it as a false positive, overrides severity, or adds context.
+- **Change understanding**: what changed, which files were affected, whether the implementation matches the original intent.
+- **Issue review**: bugs, risks, missing edge cases, failed evidence, which findings require fixes.
+- **User decisions**: accept, false positive, severity override, or add context.
 
-An AI coding task may go through multiple rounds of generation, review, fix, and re-review. The long-term goal of `audit-graph` is to record that convergence process, not just generate a one-off report.
-
-## Planned Artifacts
-
-- `audit.json`: the machine-readable source of truth for the graph, consumed by the CLI, Sopify, tech-report, and renderers.
-- `audit.html`: the default human audit view, including change summary, finding hunk snippets, fix plan, run comparison, evidence details, and feedback capture.
-- `audit-feedback.jsonl`: user audit decisions exported from `audit.html`. v0 captures this file but does not consume it yet.
-- `audit-graph.svg`: optional overview graph for the HTML header, PR illustrations, or report embedding. It only shows risk distribution and key links.
-- Markdown: non-default export for PR comments, issues, or chat summaries.
-
-## Planned Inputs
-
-- Git diff, staged changes, or unstaged changes.
-- CrossReview `ReviewResult` JSON.
-- Deterministic evidence summaries from tests, lint, typecheck, or security scans.
+An AI coding task may go through multiple rounds of generation, review, fix, and re-review. `audit-graph` records that convergence process.
 
 ## V0 Shape
 
-V0 generates `audit.html` with hunk context by default. Each finding is rendered as a card with title, source location, key code snippet, evidence, fix suggestions, and user decision controls.
+Two CLI commands:
 
-`audit.json` stores finding fields such as `file_path`, `start_line`, `end_line`, `line_side`, `highlight_lines`, `hunk`, and `fingerprint`. Local editor links are generated by the renderer and are not stored in `audit.json`.
+```text
+audit-graph build    # produce audit.json from diff + review inputs
+audit-graph render   # produce audit.html from audit.json
+```
 
-The static HTML can use JavaScript and localStorage to persist user feedback and export `audit-feedback.jsonl`. Later versions can consume that feedback in the next audit run.
+Each finding is rendered as a card with title, source location, hunk snippet with highlight lines, evidence chain, fix suggestions, and user decision controls. The static HTML uses localStorage to persist feedback and export `audit-feedback.jsonl`.
 
 ## Related Projects
 
-- `cross-review`: independent second-pass review.
-- `audit-graph`: evidence graph and visual audit layer.
-- `tech-report`: narrative technical report generation.
-- `sopify`: workflow orchestration and checkpoints.
+- [cross-review](https://github.com/evidentloop/cross-review): independent second-pass review.
+- [tech-report](https://github.com/sateful-ai/tech-report): narrative technical report generation.
+- [sopify](https://github.com/evidentloop/sopify): workflow orchestration and checkpoints.
 
-## SVG Strategy
+## License
 
-`audit-graph` produces only one optional graph type: Audit Graph.
-
-It may reuse SVG diagram techniques for templates, escaping, and XML validation, but it does not aim to become a general-purpose diagram generator. The first SVG version should reliably express:
-
-```text
-change -> files -> findings -> evidence / fixes
-```
-
-SVG does not carry the full audit experience. Full reading, filtering, fix tracking, user feedback, and multi-run comparison belong in `audit.html`.
+MIT

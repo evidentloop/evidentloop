@@ -1,0 +1,107 @@
+{
+  "evidence": {
+    "delivered": [
+      "change_audit and change_audit.review import shell",
+      "ReviewPack and ReviewResult contracts plus validation",
+      "pack, git diff, canonical prompt, normalizer, adjudicator, ingest, budget, config, optional reviewer, formatter and verify helpers",
+      "internal compatibility CLI module without a registered crossreview console script",
+      "prompt-lab runner and template",
+      "offline eval harness",
+      "337 migrated tests with change_audit.review imports",
+      "synthetic-only main test data"
+    ],
+    "equivalence": {
+      "baseline_tests": "337 passed",
+      "crossreview_worktree": "clean",
+      "eval_metrics_baseline_sha256": "001f8a180cf43928766c4da81e9b02f32ac6051cc43cec89748bde6a78641336",
+      "eval_metrics_migrated_sha256": "001f8a180cf43928766c4da81e9b02f32ac6051cc43cec89748bde6a78641336",
+      "fixed_review_result_baseline_sha256": "cfd21093ea762e2afe22d5e5b8dbebe30571bbe34457ba83bd19190d75aab96a",
+      "fixed_review_result_migrated_sha256": "cfd21093ea762e2afe22d5e5b8dbebe30571bbe34457ba83bd19190d75aab96a",
+      "migrated_tests": "337 passed",
+      "rerunnable_eval_fixture_count": 13
+    },
+    "intentional_differences": [
+      "import namespace moved from crossreview to change_audit.review",
+      "tests moved one directory deeper",
+      "distribution identity belongs to change-audit",
+      "legacy CLI code is internal test compatibility only and has no console entry"
+    ],
+    "knowledge_sync": {
+      "background": "reviewed, no change",
+      "design": "reviewed, no change",
+      "preferences": "reviewed, no change",
+      "project": "updated",
+      "tasks": "updated"
+    },
+    "source_baseline": "CrossReview 99fbe47655b5b4bd8c2c72f4ea6ea92532233705 (v0.1.0a4)",
+    "verification": [
+      {
+        "command": "PYTHONDONTWRITEBYTECODE=1 /tmp/change-audit-crossreview-baseline-venv/bin/python -m pytest -p no:cacheprovider",
+        "final_evidence": "337 collected, 337 passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "all migrated review tests",
+        "task": "0B.1-0B.11 migration suite",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "/tmp/change-audit-crossreview-baseline-venv/bin/ruff check --no-cache change_audit/review tests/review prompt-lab/run.py",
+        "final_evidence": "All checks passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "migrated code and tests",
+        "task": "0B code quality",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "python -m change_audit.review.eval --fixtures <13-complete-fixture-root>",
+        "final_evidence": "metrics hash exactly matches baseline",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "all complete remote eval-data fixtures",
+        "task": "0B eval equivalence",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "sopify_protocol_check continuation; git diff --check; CrossReview git status",
+        "final_evidence": "protocol PASS; diff check clean; CrossReview unchanged",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "plan protocol, workspace diff, source baseline",
+        "task": "0B protocol and source integrity",
+        "verification_source": "project_contract"
+      }
+    ],
+    "wave": "0B",
+    "wave_review": {
+      "code_quality": "passed: exact source normalization comparison, full tests, lint, eval metrics and protocol checks passed",
+      "overdesign": "none detected",
+      "spec_compliance": "passed: behavior-equivalent review migration only; no adapter, renderer, or new user command"
+    }
+  },
+  "provenance": {
+    "crossreview_commit": "99fbe47655b5b4bd8c2c72f4ea6ea92532233705",
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_012",
+    "source": "wave_0b_closure"
+  },
+  "timestamp": "2026-07-10T13:06:27+00:00",
+  "verdict": "wave_0b_passed"
+}

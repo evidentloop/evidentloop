@@ -1,0 +1,25 @@
+{
+  "evidence": {
+    "branch": "codex/feat-audit-json-v0",
+    "commit": "5e6b142b166517341509c9a048f1f34ad0c5b432",
+    "commit_message": "feat: deliver traceable code-diff audit v0",
+    "feature_files": 104,
+    "release_actions": {
+      "old_crossreview_repository": "not_authorized",
+      "plan_archive": "not_authorized",
+      "pypi": "not_authorized",
+      "tag": "not_authorized"
+    },
+    "remote_commit": "5e6b142b166517341509c9a048f1f34ad0c5b432",
+    "remote_ref": "refs/heads/codex/feat-audit-json-v0",
+    "tests": "429 passed"
+  },
+  "provenance": {
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "exec_001",
+    "source": "git_commit_and_push"
+  },
+  "timestamp": "2026-07-11T00:40:26+00:00",
+  "verdict": "development_branch_pushed"
+}

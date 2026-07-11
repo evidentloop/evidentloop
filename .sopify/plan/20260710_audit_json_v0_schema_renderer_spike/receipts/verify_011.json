@@ -1,0 +1,140 @@
+{
+  "evidence": {
+    "contracts": {
+      "product_prompt": "product/v0.1",
+      "prompt_lab_template": "v0.2",
+      "review_pack_schema": "0.1-alpha",
+      "review_result_schema": "0.1-alpha",
+      "serialization_baseline_sha256": "cfd21093ea762e2afe22d5e5b8dbebe30571bbe34457ba83bd19190d75aab96a"
+    },
+    "crossreview_baseline": {
+      "commit": "99fbe47655b5b4bd8c2c72f4ea6ea92532233705",
+      "distribution": "crossreview==0.1.0a4",
+      "python_requires": ">=3.10",
+      "repository": "/Users/weixin.li/code/github/cross-review",
+      "tag": "v0.1.0a4",
+      "worktree": "clean"
+    },
+    "eval_data": {
+      "boundary": "The current remote eval-data ref does not contain every published fixture output. Migration may compare the 13 rerunnable fixtures and preserve the documented aggregate as historical evidence, but must not claim a fresh 33-fixture rerun.",
+      "complete_rerunnable_fixtures": 13,
+      "incomplete_code_diff_fixture_inputs": 7,
+      "plan_preview_fixtures": 1,
+      "published_documented_gate": {
+        "blocking_pass": true,
+        "external": 30,
+        "fixture_count": 33,
+        "gates": "9/9",
+        "manual_recall": 0.929,
+        "precision": 0.885,
+        "self_hosting": 3,
+        "source": "README.md and CHANGELOG.md"
+      },
+      "ref": "origin/eval-data@b6db729b5bb5c2000d3a7ca92305b7bb6621c586",
+      "rerunnable_blocking_pass": false,
+      "rerunnable_external_metrics": {
+        "actionability": 1,
+        "context_fidelity": 1,
+        "failure_rate": 0,
+        "fixture_count": 12,
+        "invalid_findings_per_run": 0.0833,
+        "manual_recall": 1,
+        "max_invalid_single_run": 1,
+        "precision": 0.9375,
+        "unclear_rate": 0
+      },
+      "rerunnable_failed_gate": "fixture_count"
+    },
+    "migration_boundary": {
+      "excluded": [
+        "crossreview CLI",
+        "real eval data in main",
+        "remote protection changes"
+      ],
+      "isolated": [
+        "real eval fixtures",
+        "real prompt-lab cases"
+      ],
+      "migrate": [
+        "review core",
+        "unit tests",
+        "canonical product prompt",
+        "prompt-lab runner/template",
+        "offline eval harness",
+        "synthetic fixtures"
+      ]
+    },
+    "verification": [
+      {
+        "command": "PYTHONDONTWRITEBYTECODE=1 /tmp/change-audit-crossreview-baseline-venv/bin/python -m pytest -p no:cacheprovider",
+        "final_evidence": "337 collected, 337 passed, 0 failed in 1.72s",
+        "result": "retried",
+        "retry_count": 1,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "root_cause": "environment_or_dependency",
+        "scope": "full CrossReview unit suite",
+        "task": "0A.1 pytest baseline",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "/tmp/change-audit-crossreview-baseline-venv/bin/ruff check --no-cache .",
+        "final_evidence": "All checks passed",
+        "result": "retried",
+        "retry_count": 1,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "root_cause": "environment_or_dependency",
+        "scope": "full CrossReview source tree",
+        "task": "0A lint baseline",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "crossreview_eval.py --fixtures <13-complete-fixture-root>",
+        "final_evidence": "13 fixtures parsed; eight of nine release metrics pass; fixture_count is the only failed gate",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "origin/eval-data complete fixtures only",
+        "task": "0A.3 eval data audit",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "git status --short --branch",
+        "final_evidence": "main...origin/main with no worktree changes",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "CrossReview baseline repository",
+        "task": "0A.5 source integrity",
+        "verification_source": "project_native"
+      }
+    ],
+    "wave": "0A",
+    "wave_review": {
+      "code_quality": "passed",
+      "overdesign": "none detected",
+      "spec_compliance": "passed"
+    }
+  },
+  "provenance": {
+    "crossreview_commit": "99fbe47655b5b4bd8c2c72f4ea6ea92532233705",
+    "eval_data_commit": "b6db729b5bb5c2000d3a7ca92305b7bb6621c586",
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_011",
+    "source": "wave_0a_closure"
+  },
+  "timestamp": "2026-07-10T12:59:04+00:00",
+  "verdict": "wave_0a_passed"
+}

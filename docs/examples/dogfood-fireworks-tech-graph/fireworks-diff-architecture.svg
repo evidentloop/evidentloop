@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" width="1200" height="760" role="img" aria-labelledby="ftg-title ftg-desc">
+  <title id="ftg-title">Fireworks Tech Graph 本次 diff 的校验架构与审计结论</title>
+  <desc id="ftg-desc">本次变更把 SVG 校验集中到 Python 内核，覆盖 XML、marker 与碰撞检查，并增加回归测试；审计发现几何语义覆盖和回归状态传递仍有缺口。</desc>
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', 'Microsoft JhengHei', 'SimHei', sans-serif; }
+    .title { fill: #111827; font-size: 24px; font-weight: 700; }
+    .subtitle { fill: #6b7280; font-size: 13px; }
+    .group-title { fill: #374151; font-size: 14px; font-weight: 700; }
+    .node-title { fill: #111827; font-size: 14px; font-weight: 700; }
+    .node-sub { fill: #6b7280; font-size: 12px; }
+    .small { fill: #4b5563; font-size: 11px; }
+    .audit-title { fill: #991b1b; font-size: 15px; font-weight: 700; }
+    .audit-text { fill: #7f1d1d; font-size: 12px; }
+  </style>
+  <defs>
+    <marker id="ftg-arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="760" fill="#ffffff" data-graph-role="background"/>
+  <text class="title" x="40" y="42">SVG 校验链路重构：从 shell 规则到 Python 几何内核</text>
+  <text class="subtitle" x="40" y="68">固定 diff：21 个文件 · +914/-281 · 新增 validate_svg.py 与 119 行单元测试 · 5 个二进制样张更新</text>
+
+  <rect x="40" y="105" width="210" height="420" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 4" data-graph-role="background"/>
+  <text class="group-title" x="60" y="135">输入与 shell 入口</text>
+
+  <rect x="65" y="165" width="160" height="72" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="145" y="194" text-anchor="middle">SVG / fixture</text>
+  <text class="node-sub" x="145" y="216" text-anchor="middle">样式、模板、样张</text>
+
+  <rect x="65" y="275" width="160" height="72" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="145" y="304" text-anchor="middle">generate-diagram.sh</text>
+  <text class="node-sub" x="145" y="326" text-anchor="middle">统一生成入口</text>
+
+  <rect x="65" y="385" width="160" height="72" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="145" y="414" text-anchor="middle">validate-svg.sh</text>
+  <text class="node-sub" x="145" y="436" text-anchor="middle">薄 wrapper · 转交 Python</text>
+
+  <path d="M145 237 L145 275" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#ftg-arrow-blue)"/>
+  <path d="M145 347 L145 385" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#ftg-arrow-blue)"/>
+
+  <rect x="300" y="105" width="570" height="420" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 4" data-graph-role="background"/>
+  <text class="group-title" x="320" y="135">新增 Python 校验内核 · scripts/validate_svg.py（484 行）</text>
+
+  <rect x="465" y="158" width="240" height="58" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="585" y="184" text-anchor="middle">run_check(svg, check)</text>
+  <text class="node-sub" x="585" y="204" text-anchor="middle">解析一次，分派 3 类检查</text>
+
+  <path d="M225 421 L270 421 L270 187 L465 187" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#ftg-arrow-blue)"/>
+
+  <path d="M585 216 L585 235 L405 235 L405 255" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ftg-arrow-blue)"/>
+  <path d="M585 216 L585 255" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ftg-arrow-blue)"/>
+  <path d="M585 235 L765 235 L765 255" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ftg-arrow-blue)"/>
+
+  <rect x="330" y="255" width="150" height="66" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="405" y="282" text-anchor="middle">XML 语法</text>
+  <text class="node-sub" x="405" y="304" text-anchor="middle">ElementTree parse</text>
+
+  <rect x="510" y="255" width="150" height="66" rx="8" fill="#f0fdfa" stroke="#99f6e4" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="585" y="282" text-anchor="middle">Marker 完整性</text>
+  <text class="node-sub" x="585" y="304" text-anchor="middle">定义 / 引用集合</text>
+
+  <rect x="690" y="255" width="150" height="66" rx="8" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="765" y="282" text-anchor="middle">碰撞检测</text>
+  <text class="node-sub" x="765" y="304" text-anchor="middle">节点与箭头几何</text>
+
+  <path d="M765 321 L765 345" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ftg-arrow-blue)"/>
+  <rect x="655" y="345" width="220" height="70" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="765" y="372" text-anchor="middle">几何归一化</text>
+  <text class="node-sub" x="765" y="393" text-anchor="middle">walk / transform / role / bounds</text>
+  <text class="small" x="765" y="408" text-anchor="middle">path 采样 · segment 相交</text>
+
+  <path d="M405 321 L405 400 L515 400 L515 444" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ftg-arrow-blue)"/>
+  <path d="M585 321 L585 444" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ftg-arrow-blue)"/>
+  <path d="M765 415 L765 425 L655 425 L655 444" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ftg-arrow-blue)"/>
+
+  <rect x="465" y="444" width="240" height="58" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="585" y="470" text-anchor="middle">统一检查结果</text>
+  <text class="node-sub" x="585" y="490" text-anchor="middle">exit code + 可读 details</text>
+
+  <rect x="920" y="105" width="240" height="420" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 4" data-graph-role="background"/>
+  <text class="group-title" x="940" y="135">产物与回归</text>
+
+  <rect x="945" y="165" width="190" height="72" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="1040" y="194" text-anchor="middle">PNG 导出门禁</text>
+  <text class="node-sub" x="1040" y="216" text-anchor="middle">校验通过后才导出</text>
+
+  <rect x="945" y="275" width="190" height="72" rx="8" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="1040" y="304" text-anchor="middle">test-all-styles.sh</text>
+  <text class="node-sub" x="1040" y="326" text-anchor="middle">静态 fixture 回归</text>
+
+  <rect x="945" y="385" width="190" height="72" rx="8" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.5" data-graph-role="node"/>
+  <text class="node-title" x="1040" y="414" text-anchor="middle">test_validate_svg.py</text>
+  <text class="node-sub" x="1040" y="436" text-anchor="middle">新增 119 行单元测试</text>
+
+  <path d="M705 473 L895 473 L895 201 L945 201" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#ftg-arrow-blue)"/>
+  <path d="M1040 237 L1040 275" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#ftg-arrow-blue)"/>
+
+  <rect x="40" y="570" width="1120" height="150" rx="12" fill="#fef2f2" stroke="#fecaca" stroke-width="1.5" data-graph-role="background"/>
+  <text class="audit-title" x="60" y="602">审计结论：校验职责已集中，但“几何语义覆盖 + 回归状态传递”仍未形成可靠门禁</text>
+
+  <rect x="60" y="625" width="250" height="70" rx="8" fill="#ffffff" stroke="#fecaca" stroke-width="1.2" data-graph-role="node"/>
+  <text class="node-title" x="78" y="650">Legend 启发式</text>
+  <text class="audit-text" x="78" y="672">可能把普通障碍物整体排除</text>
+  <text class="small" x="78" y="688">finding-001 · medium</text>
+
+  <rect x="330" y="625" width="250" height="70" rx="8" fill="#ffffff" stroke="#fecaca" stroke-width="1.2" data-graph-role="node"/>
+  <text class="node-title" x="348" y="650">节点 / Marker 覆盖</text>
+  <text class="audit-text" x="348" y="672">path 节点与 CSS marker 会漏检</text>
+  <text class="small" x="348" y="688">finding-002 / 003 · medium</text>
+
+  <rect x="600" y="625" width="250" height="70" rx="8" fill="#ffffff" stroke="#fecaca" stroke-width="1.2" data-graph-role="node"/>
+  <text class="node-title" x="618" y="650">几何模型</text>
+  <text class="audit-text" x="618" y="672">arc / subpath / skew 结果失真</text>
+  <text class="small" x="618" y="688">finding-004 / 006 / 007</text>
+
+  <rect x="870" y="625" width="270" height="70" rx="8" fill="#ffffff" stroke="#fecaca" stroke-width="1.2" data-graph-role="node"/>
+  <text class="node-title" x="888" y="650">回归状态</text>
+  <text class="audit-text" x="888" y="672">PNG 导出失败仍计入 PASSED</text>
+  <text class="small" x="888" y="688">finding-005 · medium</text>
+</svg>

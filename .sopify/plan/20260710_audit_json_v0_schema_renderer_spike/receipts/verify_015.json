@@ -1,0 +1,100 @@
+{
+  "evidence": {
+    "delivered": [
+      "JSON Schema 2020-12 and semantic validation",
+      "unified diff hunk parser with old/new line model",
+      "self-contained Jinja2 HTML renderer with trusted packaged CSS/JS",
+      "trace and XSS validation",
+      "atomic render command",
+      "responsive left-aligned mobile section headings and unambiguous summary audit status labels",
+      "isolated wheel resources"
+    ],
+    "gate_decision": {
+      "browser_limitation": "The supported Browser surface confirmed the selected local file URL but rejected DOM access by policy.",
+      "decision": "accept_static_substitute",
+      "source": "explicit user confirmation",
+      "substitute": [
+        "deterministic HTML/CSS responsive assertions",
+        "complete automated regression suite",
+        "clean wheel isolation smoke",
+        "user-opened report and manual visual feedback"
+      ]
+    },
+    "knowledge_sync": {
+      "background": "reviewed, no change",
+      "blueprint_index": "updated to Wave 2 focus",
+      "design": "reviewed, no change",
+      "preferences": "reviewed, no change",
+      "project": "updated",
+      "tasks": "removed completed Wave 1 long-term items"
+    },
+    "verification": [
+      {
+        "command": "PYTHONDONTWRITEBYTECODE=1 python -m pytest -p no:cacheprovider",
+        "final_evidence": "369 collected, 369 passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "migrated review core, schema, validation, hunk parser, renderer, CLI and resources",
+        "task": "Wave 1 full regression",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "ruff check --no-cache; git diff --check; sopify_protocol_check continuation",
+        "final_evidence": "ruff and diff check passed; protocol PASS",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "all implementation and Sopify continuation state",
+        "task": "Wave 1 lint and protocol",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "python -m build --wheel; clean venv pip install; resource and render smoke",
+        "final_evidence": "change_audit-0.1.0a0-py3-none-any.whl installed and rendered the reference report",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "installed distribution including schema, prompt, template, CSS and JavaScript",
+        "task": "Wave 1 final wheel isolation",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "deterministic HTML/CSS assertions plus user-approved manual visual substitute",
+        "final_evidence": "User explicitly accepted the static substitute; tests assert overflow containment, breakpoints, reduced motion and left alignment",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed by explicit substitute authorization"
+        },
+        "scope": "375px/1280px overflow contract, reduced motion, mobile alignment and summary status semantics",
+        "task": "Wave 1 responsive gate substitute",
+        "verification_source": "project_contract"
+      }
+    ],
+    "wave": "1",
+    "wave_review": {
+      "code_quality": "passed: full regression, lint, wheel isolation, XSS, trace and deterministic rendering passed",
+      "overdesign": "none detected; renderer remains a pure audit.json consumer and no Wave 2 host logic leaked in",
+      "spec_compliance": "passed: all Wave 1 tasks and the explicitly substituted exit gate have evidence"
+    }
+  },
+  "provenance": {
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_015",
+    "source": "wave_1_closure"
+  },
+  "timestamp": "2026-07-10T13:41:54+00:00",
+  "verdict": "wave_1_passed"
+}

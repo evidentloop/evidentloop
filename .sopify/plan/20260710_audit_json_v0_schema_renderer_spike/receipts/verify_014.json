@@ -1,0 +1,76 @@
+{
+  "evidence": {
+    "browser_result": {
+      "evidence": "The selected tab URL and title were readable, but DOM inspection was rejected by the Browser file URL security policy and alternate browser mechanisms were explicitly prohibited.",
+      "observed_url": "file:///Users/weixin.li/code/github/change-audit/docs/examples/hunk-context-demo/audit.html",
+      "result": "replan_required",
+      "root_cause": "human_action_required"
+    },
+    "user_action": "The report was opened in the in-app Browser at the expected file URL.",
+    "verification": [
+      {
+        "command": "python -m pytest -p no:cacheprovider",
+        "final_evidence": "369 collected, 369 passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "full migrated review and renderer suite",
+        "task": "Wave 1 renderer visual semantics",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "ruff check --no-cache change_audit tests prompt-lab/run.py; git diff --check",
+        "final_evidence": "All checks passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "all Python changes and patch whitespace",
+        "task": "Wave 1 code quality",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "in-app Browser DOM inspection at the user-opened local file",
+        "final_evidence": "Selected file URL confirmed; DOM access rejected by Browser policy",
+        "reason_code": "browser_local_url_policy",
+        "result": "replan_required",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "not affected",
+          "spec_compliance": "awaiting user-approved substitute"
+        },
+        "root_cause": "human_action_required",
+        "scope": "375px and 1280px page overflow and visual layout",
+        "task": "Wave 1 live responsive DOM gate",
+        "verification_source": "project_contract"
+      }
+    ],
+    "visual_review_fix": {
+      "changes": [
+        "Mobile section headings and badges now align left.",
+        "The ambiguous raw partial badge now renders as 变更目标：部分达成.",
+        "Badge color now follows summary_audit_status rather than the overall verdict."
+      ],
+      "issue": "At <=780px, section-title switched to column layout while retaining align-items:center, unintentionally centering the audit summary title and status badge."
+    },
+    "wave": "1",
+    "wave_review": {
+      "code_quality": "Passed full tests, lint, deterministic generation, and static layout review.",
+      "overdesign": "none detected",
+      "spec_compliance": "Implementation and static responsive contract passed; gate substitution still needs explicit confirmation."
+    }
+  },
+  "provenance": {
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_014",
+    "source": "wave_1_browser_checkpoint_followup"
+  },
+  "timestamp": "2026-07-10T13:36:41+00:00",
+  "verdict": "wave_1_awaiting_static_gate_confirmation"
+}

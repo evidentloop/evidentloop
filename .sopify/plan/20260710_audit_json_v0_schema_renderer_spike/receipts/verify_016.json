@@ -1,0 +1,142 @@
+{
+  "evidence": {
+    "delivered": [
+      "Git diff collection for staged, unstaged, commit and explicit range specs",
+      "added, modified, deleted, renamed and binary file metadata plus trusted complete hunk index",
+      "exclusive hidden sibling staging workspace with 0700/0600 best-effort permissions",
+      "runtime-random untrusted diff prompt boundary and run identity contract",
+      "ReviewResult category mapping, trusted anchor resolution, bug downgrade and fingerprints",
+      "finding, evidence and actionable fix nodes with relationship edges",
+      "completion gate separating explicit zero findings, partial output and failed review",
+      "provisional risk scoring frozen after dogfood at high=40, medium=20, low=8, note=2",
+      "finalize validation and same-filesystem artifact-pair publication",
+      "prepare/finalize public API and module CLI",
+      "code-diff audit schema frozen from 0.2-alpha to 0.2"
+    ],
+    "dogfood": {
+      "exact_bug": {
+        "artifact_pair": true,
+        "review_status": "complete",
+        "risk_score": 40,
+        "unscored": 0,
+        "verdict": "concerns"
+      },
+      "explicit_clean": {
+        "artifact_pair": true,
+        "findings": 0,
+        "review_status": "complete",
+        "risk_score": 0,
+        "verdict": "pass_candidate"
+      },
+      "partial_exact": {
+        "artifact_pair": true,
+        "review_status": "partial",
+        "risk_score": null,
+        "unscored": 0,
+        "verdict": "inconclusive"
+      },
+      "retry": {
+        "explanation": "The first ad-hoc dogfood command escaped Markdown backticks and intentionally triggered the untrusted-path downgrade; the corrected fixture passed on the single allowed retry.",
+        "retry_count": 1,
+        "root_cause": "logic_regression"
+      },
+      "unanchored_bug": {
+        "artifact_pair": true,
+        "review_status": "complete",
+        "risk_score": null,
+        "unscored": 1,
+        "verdict": "needs_human_triage"
+      }
+    },
+    "failure_boundaries": [
+      "empty diff and invalid ref",
+      "existing target and dangling target symlink",
+      "prompt injection and unsafe candidate path",
+      "forged hunk header and out-of-range line",
+      "missing raw analysis and run_id mismatch",
+      "JSON validation, render and HTML trace failure",
+      "target appearance before publication and directory rename failure",
+      "malicious raw analysis XSS"
+    ],
+    "knowledge_sync": {
+      "ai_host_integration": "updated from target contract to implemented Python contract",
+      "background": "reviewed, no change",
+      "blueprint_index": "updated to Wave 3 focus",
+      "data_model": "schema 0.2 and frozen weights documented",
+      "design": "reviewed, stable contract already matched implementation",
+      "preferences": "reviewed, no change",
+      "project": "updated",
+      "tasks": "removed completed Wave 2 long-term items"
+    },
+    "verification": [
+      {
+        "command": "PYTHONDONTWRITEBYTECODE=1 python -m pytest -p no:cacheprovider",
+        "final_evidence": "402 collected, 402 passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "review migration plus prepare, Git adapter, Audit Graph adapter, finalize, renderer and CLI",
+        "task": "Wave 2 full regression",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "ruff check --no-cache; git diff --check; node --check audit.js; sopify_protocol_check continuation",
+        "final_evidence": "ruff, diff and JavaScript checks passed; protocol PASS",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "all implementation, JavaScript syntax, patch whitespace and Sopify state",
+        "task": "Wave 2 code and protocol quality",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "build wheel; install in clean Python 3.12 venv; prepare staged diff; write explicit clean host output; finalize",
+        "final_evidence": "wheel smoke PASS with schema 0.2 and pass_candidate artifact pair",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "installed distribution APIs, package resources, schema 0.2 and artifact pair",
+        "task": "Wave 2 installed-wheel end-to-end",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "prepare_local_diff -> raw-analysis.md -> finalize_review for exact bug, clean, partial and unanchored cases",
+        "final_evidence": "all four cases published complete JSON/HTML pairs with expected status, verdict and score",
+        "reason_code": "fixture_markdown_escape",
+        "result": "retried",
+        "retry_count": 1,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed after corrected fixture"
+        },
+        "root_cause": "logic_regression",
+        "scope": "all Wave 2 exit-gate state and scoring branches",
+        "task": "Wave 2 four-case pipeline dogfood",
+        "verification_source": "project_contract"
+      }
+    ],
+    "wave": "2",
+    "wave_review": {
+      "code_quality": "passed: deterministic mechanics are isolated from the migrated review core; hard failures preserve diagnosable staging and cannot masquerade as success",
+      "overdesign": "none detected: implementation remains single-writer, code-diff-only and host-orchestrated without locks, provider SDKs or premature artifact-general schema fields",
+      "spec_compliance": "passed: tasks 3.1-4.14 and every Wave 2 exit gate have direct tests or pipeline evidence"
+    }
+  },
+  "provenance": {
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_016",
+    "source": "wave_2_closure"
+  },
+  "timestamp": "2026-07-10T14:05:41+00:00",
+  "verdict": "wave_2_passed"
+}

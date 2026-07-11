@@ -1,0 +1,184 @@
+{
+  "evidence": {
+    "branch": "codex/feat-audit-json-v0",
+    "browser_gate": {
+      "desktop_1280": "page scrollWidth == clientWidth; diagram fits without internal scroll; 7/7 hunk panes have no overflow",
+      "file_url_clarification": "file:// automation restriction is a control-channel policy, not an HTML failure",
+      "mobile_375": "page scrollWidth == clientWidth; diagram uses intentional local horizontal viewport; 7/7 hunk panes have no overflow",
+      "svg_visual_review": "passed in Chromium; no node, arrow, label or legend collision",
+      "transport": "Codex in-app browser over http://127.0.0.1:8765"
+    },
+    "completed_tasks": [
+      "7.1",
+      "7.2",
+      "7.3"
+    ],
+    "dogfood": {
+      "annotated_html_sha256": "d527cc76f384b2cf9a38cd0cd95f111f05a116486e1226c94cb0c2e083357f1d",
+      "audit_json_sha256": "ee52e12329a25fcee6ce6bee6c82725f8d64c8e1ae38af07fed457ff6bcad0b8",
+      "diff": "d5ef26deac6b1ed37ee9b89b52dddb1bcaac6c24..9a64e5a926d430a421a71b5cf433b0553876db28",
+      "file_count": 21,
+      "finding_count": 7,
+      "renderer_original_html_sha256": "3a4b279374e930e69d01ea0056bc82bbc4883465185d78058a25eb505f91da65",
+      "run_id": "run-d7f8986d1ab24a04a6078f1afca17d1e",
+      "sample_svg_boundary": "sample-only inline reading annotation; not Audit Graph, schema, renderer or product pipeline",
+      "sample_svg_sha256": "122e5438db087e7d34dde76e406410c0b51133e4f556e0cf5498fa98f5284e2b",
+      "source_repository": "fireworks-tech-graph",
+      "trusted_finding_hunk_count": 7,
+      "trusted_hunk_count": 52,
+      "unscored_finding_count": 0
+    },
+    "implementation": {
+      "full_test_count": 429,
+      "package_version": "0.1.0a0",
+      "public_commands": [
+        "prepare",
+        "finalize",
+        "render"
+      ],
+      "report_language": "zh-CN",
+      "schema_version": "0.2"
+    },
+    "phase": "final_validation_and_knowledge_sync",
+    "readme": {
+      "ai_marketing_term_matches": 0,
+      "clone_flow_kept_by_user_decision": true,
+      "cover_sha256": "52d2c1fa7d2b15fa8cc424cb353cd1127de3f601aa479809b7f7eece6039d9f7",
+      "english_and_chinese_rewritten": true,
+      "local_codex_symlink_instructions": false,
+      "local_link_issues_in_scope": 0,
+      "local_links_checked_excluding_user_preserved_prompt_lab_reference": 54
+    },
+    "review_result": {
+      "code_quality": "passed; no implementation regression after Wave 4 corrective closure",
+      "overdesign": "none detected; diagram stays sample-only, report language stays fixed zh-CN, and no installer/locale/full-diff/auto-fix subsystem was added",
+      "spec_compliance": "passed for Waves 0A-4 and tasks 7.1-7.3; commit/push separately authorized after verification"
+    },
+    "verification": [
+      {
+        "command": "PYTHONDONTWRITEBYTECODE=1 python -m pytest -p no:cacheprovider -q",
+        "evidence": "429 passed in 12.25s",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "all package, review, workflow, renderer, Skill and feedback tests",
+        "task": "final full regression",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "ruff check --no-cache; git diff --check; node --check audit.js; node audit-feedback.test.cjs",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "Python, patch whitespace and browser JavaScript",
+        "task": "final static checks",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "build wheel; install with dependencies in fresh Python 3.12 venv; import API and render final audit",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "distribution metadata, dependencies, packaged resources and module CLI",
+        "task": "final wheel isolation",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "validate_audit; validate_html_trace; decode embedded SVG; installed-wheel deterministic render",
+        "evidence": "0 schema issues; 0 trace issues; embedded SVG exact; installed core render hash unchanged",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "same-range Fireworks audit.json, core HTML, annotated HTML and sample SVG",
+        "task": "formal and annotated artifact validation",
+        "verification_source": "project_contract"
+      },
+      {
+        "command": "fireworks validate-svg.sh; Chromium visual review; localhost 1280/375 DOM measurements",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "sample-only architecture diagram and current audit.html",
+        "task": "Fireworks SVG validation and live DOM",
+        "verification_source": "project_contract"
+      },
+      {
+        "command": "scan Markdown relative links and stale product wording",
+        "evidence": "0 missing in scope; 0 stale/AI-marketing term matches",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "39 current product/plan/docs files; 54 relative links",
+        "task": "README and documentation links",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "all-Markdown link audit",
+        "reason_code": "user_preserved_crossreview_eval_data_reference",
+        "result": "skipped",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "not applicable",
+          "spec_compliance": "preserved by explicit user decision"
+        },
+        "scope": "prompt-lab/README.md -> ../fixtures/README.md",
+        "task": "historical Prompt Lab fixture reference",
+        "verification_source": "project_contract"
+      },
+      {
+        "command": "",
+        "reason_code": "user_deferred_manual_validation",
+        "result": "skipped",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "not applicable",
+          "spec_compliance": "explicitly out of current gate"
+        },
+        "scope": "second-host model execution",
+        "task": "Qoder model host smoke",
+        "verification_source": "not_configured"
+      }
+    ],
+    "wheel": {
+      "installed_module": "/private/tmp/change-audit-final-wheel-venv.1TNCC7/lib/python3.12/site-packages/change_audit/__init__.py",
+      "installed_render_bytes": 122303,
+      "installed_render_sha256": "3a4b279374e930e69d01ea0056bc82bbc4883465185d78058a25eb505f91da65",
+      "path": "/private/tmp/change-audit-final-wheel-dist.yutr5a/change_audit-0.1.0a0-py3-none-any.whl",
+      "sha256": "d2b2bf8a674da60d3a769f72ebccdfc5d6f666dadc46548838746fb70f67662b"
+    }
+  },
+  "provenance": {
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_021",
+    "source": "final_uncommitted_worktree_closure",
+    "user_decisions": {
+      "commit_and_push": "authorized_after_tests",
+      "fireworks_svg": "sample_html_only",
+      "prompt_lab_fixture_reference": "preserve",
+      "qoder_model_smoke": "manual_later",
+      "readme_clone_flow": "keep",
+      "readme_local_codex_symlink": "omit"
+    }
+  },
+  "timestamp": "2026-07-11T00:36:09+00:00",
+  "verdict": "final_closure_passed_with_explicit_deferred_items"
+}

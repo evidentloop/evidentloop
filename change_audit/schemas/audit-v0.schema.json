@@ -1,0 +1,297 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evidentloop.dev/change-audit/schemas/audit-v0.schema.json",
+  "title": "change-audit code-diff audit profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "graph_id",
+    "source",
+    "runs",
+    "nodes",
+    "edges",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.2"},
+    "graph_id": {"type": "string", "minLength": 1},
+    "source": {"$ref": "#/$defs/source"},
+    "runs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/run"}
+    },
+    "nodes": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/node"}
+    },
+    "edges": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/edge"}
+    },
+    "summary": {"$ref": "#/$defs/summary"},
+    "extensions": {"$ref": "#/$defs/extensions"}
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\s]+$"
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*(?:[.-][a-z0-9_-]+)*$"
+      },
+      "additionalProperties": true
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ref"],
+      "properties": {
+        "type": {"const": "git_diff"},
+        "ref": {"type": "string", "minLength": 1},
+        "description": {"type": "string"},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "status"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "text": {"type": "string", "minLength": 1},
+        "status": {
+          "enum": ["supported", "challenged", "partial", "unknown"]
+        },
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "summaryAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "claims"],
+      "properties": {
+        "status": {
+          "enum": ["supported", "challenged", "partial", "not_audited"]
+        },
+        "claims": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/claim"}
+        },
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "status", "summary"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "label": {"type": "string", "minLength": 1},
+        "status": {
+          "enum": [
+            "pass_candidate",
+            "concerns",
+            "needs_human_triage",
+            "inconclusive"
+          ]
+        },
+        "summary": {"type": "string"},
+        "summary_audit": {"$ref": "#/$defs/summaryAudit"},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "changeNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "title", "summary"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "type": {"const": "change"},
+        "title": {"type": "string", "minLength": 1},
+        "summary": {"type": "string"},
+        "summary_audit": {"$ref": "#/$defs/summaryAudit"},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "fileNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "path"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "type": {"const": "file"},
+        "path": {"type": "string", "minLength": 1},
+        "role": {"type": "string"},
+        "change_type": {
+          "enum": ["added", "modified", "deleted", "renamed", "binary"]
+        },
+        "additions": {"type": "integer", "minimum": 0},
+        "deletions": {"type": "integer", "minimum": 0},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "findingNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "category",
+        "severity",
+        "status",
+        "title",
+        "detail",
+        "fingerprint"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "type": {"const": "finding"},
+        "category": {"enum": ["bug", "risk", "quality", "scope"]},
+        "severity": {"enum": ["high", "medium", "low", "note"]},
+        "status": {"enum": ["open", "fixed", "dismissed"]},
+        "title": {"type": "string", "minLength": 1},
+        "detail": {"type": "string"},
+        "file_path": {"type": "string", "minLength": 1},
+        "hunk_id": {"$ref": "#/$defs/identifier"},
+        "start_line": {"type": "integer", "minimum": 1},
+        "end_line": {"type": "integer", "minimum": 1},
+        "line_side": {"enum": ["old", "new"]},
+        "highlight_lines": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 1},
+          "uniqueItems": true
+        },
+        "hunk": {"type": "string", "minLength": 1},
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "evidenceNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "source", "status", "summary"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "type": {"const": "evidence"},
+        "source": {"type": "string", "minLength": 1},
+        "status": {"enum": ["pass", "fail", "error", "skipped"]},
+        "summary": {"type": "string"},
+        "command": {"type": "string"},
+        "detail": {"type": "string"},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "fixNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "status", "priority", "title", "detail"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "type": {"const": "fix"},
+        "status": {"enum": ["open", "done", "deferred", "wont_fix"]},
+        "priority": {"enum": ["p0", "p1", "p2", "p3"]},
+        "title": {"type": "string", "minLength": 1},
+        "detail": {"type": "string"},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "artifactNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "kind", "path"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "type": {"const": "artifact"},
+        "kind": {"enum": ["audit_json", "audit_html", "audit_feedback_jsonl"]},
+        "path": {"type": "string", "minLength": 1},
+        "media_type": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "node": {
+      "oneOf": [
+        {"$ref": "#/$defs/changeNode"},
+        {"$ref": "#/$defs/fileNode"},
+        {"$ref": "#/$defs/findingNode"},
+        {"$ref": "#/$defs/evidenceNode"},
+        {"$ref": "#/$defs/fixNode"},
+        {"$ref": "#/$defs/artifactNode"}
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "from", "to"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "type": {
+          "enum": [
+            "contains_change",
+            "supersedes_run",
+            "changes_file",
+            "finding_in_file",
+            "supported_by_evidence",
+            "requires_fix",
+            "rendered_as",
+            "supports_claim",
+            "challenges_claim"
+          ]
+        },
+        "from": {"$ref": "#/$defs/identifier"},
+        "to": {"$ref": "#/$defs/identifier"},
+        "claim_id": {"$ref": "#/$defs/identifier"},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "review_status",
+        "verdict",
+        "risk_score",
+        "finding_count",
+        "unscored_finding_count",
+        "open_finding_count",
+        "fix_count"
+      ],
+      "properties": {
+        "review_status": {
+          "enum": ["not_reviewed", "complete", "partial", "failed"]
+        },
+        "verdict": {
+          "enum": [
+            "pass_candidate",
+            "concerns",
+            "needs_human_triage",
+            "inconclusive"
+          ]
+        },
+        "risk_score": {
+          "oneOf": [
+            {"type": "integer", "minimum": 0, "maximum": 100},
+            {"type": "null"}
+          ]
+        },
+        "finding_count": {"type": "integer", "minimum": 0},
+        "unscored_finding_count": {"type": "integer", "minimum": 0},
+        "open_finding_count": {"type": "integer", "minimum": 0},
+        "fix_count": {"type": "integer", "minimum": 0},
+        "fix_done_count": {"type": "integer", "minimum": 0},
+        "summary_audit_status": {
+          "enum": ["supported", "challenged", "partial", "not_audited"]
+        },
+        "risk_delta": {"type": "number"},
+        "extensions": {"$ref": "#/$defs/extensions"}
+      }
+    }
+  }
+}

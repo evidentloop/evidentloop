@@ -1,0 +1,46 @@
+{
+  "evidence": {
+    "corrected_contract": [
+      "friendly repository-derived report name",
+      "complete Overall Assessment becomes escaped run summary",
+      "deterministic file and line statistics remain on change",
+      "audit.json retains the full trusted hunk",
+      "HTML renders bounded trusted excerpts with explicit omission"
+    ],
+    "not_in_scope": [
+      "commit graph",
+      "summary claim parser",
+      "CLI title parameter",
+      "full diff browser"
+    ],
+    "result": "replan_required",
+    "root_cause": "scope_or_design_mismatch",
+    "superseded_interpretation": "verify_018 remains historical evidence but no longer proves the formal sample reading contract",
+    "user_feedback": [
+      "report title exposed the full diff range",
+      "semantic change summary was missing",
+      "each finding repeated a 485-line full hunk"
+    ],
+    "verification": {
+      "command": "git diff --check; contract consistency rg; independent read-only plan and baseline reviews",
+      "reason_code": "scope_or_design_mismatch",
+      "result": "replan_required",
+      "retry_count": 0,
+      "review_result": {
+        "code_quality": "passed; documentation is internally consistent and git diff --check is clean",
+        "spec_compliance": "passed after independent Sopify and baseline comparison reviews"
+      },
+      "scope": "task 6.9 plan, blueprint, project and product contract",
+      "verification_source": "project_contract"
+    },
+    "wave": "4"
+  },
+  "provenance": {
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_019",
+    "source": "user_acceptance_reopen"
+  },
+  "timestamp": "2026-07-10T15:13:23+00:00",
+  "verdict": "wave_4_reopened_for_scope_or_design_mismatch"
+}

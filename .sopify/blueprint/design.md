@@ -81,7 +81,7 @@ python -m change_audit render INPUT_JSON --out OUTPUT_HTML
 - 所有 artifact 内容、来源声明和文件名均视为不可信数据；code-diff profile 还包括源码、diff 和注释。Prompt 使用不可与载荷混淆的动态边界，并明确禁止执行载荷中的指令。
 - Skill 不静默安装，不修改用户代码，不因报告生成而扩大授权范围。
 - LLM 输出必须先 ingest，再经过 profile 对应的 JSON Schema、引用完整性和可信锚点校验。
-- finding 的完整 hunk 由 Python 从可信 `hunk-index.json` 反查；不得信任 LLM 返回的 hunk header 或 snippet。
+- finding 的完整 hunk 由 Python 从可信 `hunk-index.json` 反查；不得信任 LLM 返回的 hunk header 或 snippet。exact anchor 只能落在真实新增行或删除行，context 行不能冒充原修改位置。
 - 宿主输出只有具备完整结束标记且可解析时才可记为 `complete`；截断、拒绝和失败必须保留真实状态。
 
 ## 审查状态与结论
@@ -95,7 +95,7 @@ python -m change_audit render INPUT_JSON --out OUTPUT_HTML
 
 `summary.verdict` 只描述审查结论：
 
-- `pass_candidate`：仅在 `complete` 且无未解决 findings 时使用；可以保留 fixed 历史记录。
+- `pass_candidate`：仅在 `complete`、无未解决 findings 且 core advisory verdict 认为上下文充分时使用；可以保留 fixed 历史记录。完整输出但上下文不足时使用 `complete + inconclusive + risk_score=null`。
 - `concerns`：仅在 `complete` 且存在未解决、可评分 findings 时使用。
 - `needs_human_triage`：`complete` 且只有未锚定降级风险时使用。
 - `inconclusive`：`not_reviewed`、`partial` 或 `failed`。
@@ -119,13 +119,13 @@ python -m change_audit render INPUT_JSON --out OUTPUT_HTML
 
 Renderer 不读取 Git、ReviewPack、原始 LLM 输出或宿主状态。它依据完整 Audit Graph 输出单文件 HTML，并校验 `data-node-id`、`data-claim-id`、`data-fingerprint` 等回链。可选字段缺失时降级展示；结构或引用断裂时拒绝写出误导性报告。
 
-Renderer 使用共同外壳展示 status、verdict、summary、findings、evidence、fix 和 human decision，定位模块按 profile 切换：code diff 必须把可信完整 hunk 渲染成接近 diff2html 的双行号表格，区分 context/add/delete、突出 finding 命中行并保留 `data-*` 回链；不得用通用 `<pre>` 承载 finding 代码证据。未来 plan/design 可使用 section、claim 和 excerpt。没有成熟 renderer profile 时不生成伪完整 HTML。
+Renderer 使用共同外壳展示 status、verdict、summary、findings、evidence、fix 和 human decision，定位模块按 profile 切换：code diff 在 `audit.json` 保留可信完整 hunk，HTML finding 只把命中附近的有界可信片段渲染成接近 diff2html 的双行号表格，区分 context/add/delete、突出 finding 命中行、明确标记省略并保留 `data-*` 回链；不得用通用 `<pre>` 承载 finding 代码证据。未来 plan/design 可使用 section、claim 和 excerpt。没有成熟 renderer profile 时不生成伪完整 HTML。
 
 当前 `artifact` 节点表示由图谱派生的正式产物，不复用为被审查输入。第二种真实 profile 出现时，再通过独立 ADR 和 schema 版本引入 review target 与对应 anchor。
 
 完整 review 的提交点是：全部校验通过后复查最终目标 leaf 不存在，再把同父目录 staging 通过一次同文件系统目录 rename 提交为最终目录。成功后最终目录同时含 `audit.json` 与 `audit.html`；检查时已有目标或 rename 失败则停止并保留 staging 诊断，不主动删除或覆盖目标。独立 `render --out` 只原子替换单个 HTML，不受产物对提交约束。
 
-没有未解决 finding 时，`complete + pass_candidate` 表示完整审查未发现当前问题；没有历史 finding 时不渲染空列表，有 fixed finding 时可展示已解决记录。其他无 finding 状态展示“审查未完成/失败”，不能显示通过。
+没有未解决 finding 且上下文充分时，`complete + pass_candidate` 表示完整审查未发现当前问题；上下文不足时保留 `complete + inconclusive`。没有历史 finding 时不渲染空列表，有 fixed finding 时可展示已解决记录；任何非 `pass_candidate` 状态都不能显示为通过。
 
 ## 用户反馈
 
@@ -133,6 +133,6 @@ Renderer 使用共同外壳展示 status、verdict、summary、findings、eviden
 
 ## 宿主与发布
 
-Skill 是发现和编排入口，不要求每个用户项目放置说明文件。Codex 先完成端到端 dogfood，Qoder 再验证第二宿主差异；其他能运行 shell 并提供 LLM 的宿主可按同一契约适配。
+Skill 是发现和编排入口，不要求每个用户项目放置说明文件。Codex 已完成端到端 dogfood；QoderCLI 已确认 Skill discovery，模型级 smoke 按用户决定延后。其他能运行 shell 并提供 LLM 的宿主可按同一契约适配。
 
 外部试用只引用真实固定 Git tag，不使用 `@latest`，不静默安装。CrossReview 原仓库在等价迁移、dogfood 和再次授权前保持可用，不删除、不提前归档。

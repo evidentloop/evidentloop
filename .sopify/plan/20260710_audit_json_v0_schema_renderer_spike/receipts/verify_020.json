@@ -1,0 +1,129 @@
+{
+  "evidence": {
+    "baseline_comparison": {
+      "copied_baseline_conclusions": false,
+      "failed_correction_audit_html_sha256": "74d8b04cafbcdfda7884abcdd9753f97b218f34626b1e2ffd86c1193b877dea9",
+      "failed_correction_audit_json_sha256": "d30f6c1c73d4bc2a7f70504ae52f45d3de75c478593f2cb92e81529d07309f65",
+      "independently_rediscovered": [
+        "legend heuristic false negative",
+        "static PNG export failure counted as pass"
+      ],
+      "new_final_findings": [
+        "data-graph-role node path",
+        "CSS marker references",
+        "arc chord approximation",
+        "multi-subpath phantom segment",
+        "skew transform omission"
+      ],
+      "preimplementation_audit_html_sha256": "bf3c371d7eeb4fe0e99a1393ac075f49ffbe351b658c78cd2d1d61f3dfc669ec",
+      "preimplementation_audit_json_sha256": "f253d2b2cf53342fe4112e44ce58bf95e6d8329a9d820eaed64737c571d0cd13"
+    },
+    "browser_gate": {
+      "desktop_1280": "page scrollWidth == clientWidth; 7/7 hunk panes have no horizontal or vertical scroll; empty claim height 44.8px and top-aligned",
+      "file_url_clarification": "file:// automation is blocked by the browser control-channel security policy; this is not an HTML, permission, or renderer failure",
+      "fixed_english_ui_labels": 0,
+      "mobile_375": "page scrollWidth == clientWidth; 7/7 hunk panes have no horizontal or vertical scroll; metrics remain two columns; empty claim height 74.1px",
+      "reading_order": "feedback export moved after findings; first mobile finding card moved from about 1631px to 1351px",
+      "transport": "same Codex in-app browser over http://127.0.0.1"
+    },
+    "corrective_tasks": [
+      "6.9",
+      "6.10",
+      "6.11",
+      "6.12",
+      "6.13",
+      "6.14",
+      "6.15"
+    ],
+    "dogfood": {
+      "additions": 914,
+      "audit_html_bytes": 122303,
+      "audit_html_sha256": "3a4b279374e930e69d01ea0056bc82bbc4883465185d78058a25eb505f91da65",
+      "audit_json_bytes": 139868,
+      "audit_json_sha256": "ee52e12329a25fcee6ce6bee6c82725f8d64c8e1ae38af07fed457ff6bcad0b8",
+      "binary_file_count": 5,
+      "binary_payload": "GIT binary patch omitted; Git binary placeholders and file metadata retained",
+      "deletions": 281,
+      "diff": "d5ef26deac6b1ed37ee9b89b52dddb1bcaac6c24..9a64e5a926d430a421a71b5cf433b0553876db28",
+      "file_count": 21,
+      "finding_count": 7,
+      "fix_count": 0,
+      "prompt_bytes": 83919,
+      "prompt_sha256": "cf61820cc2e5e26c2489f12a6ba6587cc4c0ae4a79fc66a622f8998f84b4279c",
+      "prompt_source": "product",
+      "prompt_version": "v0.2",
+      "review_status": "complete",
+      "risk_score": 100,
+      "run_id": "run-d7f8986d1ab24a04a6078f1afca17d1e",
+      "source_repository": "fireworks-tech-graph",
+      "trusted_finding_hunk_count": 7,
+      "trusted_hunk_count": 52,
+      "unscored_finding_count": 0,
+      "verdict": "concerns"
+    },
+    "independent_reviews": {
+      "artifact_and_baseline": "PASS after correcting the comparison text to disclose both independently rediscovered findings",
+      "finding_semantics": "PASS; 7/7 directly proven by the fixed diff, no observation downgrade and no duplicates",
+      "implementation_contract": "PASS after changed-line-only anchors and an independent broad finding declaration scanner",
+      "overdesign": "none detected; no full diff viewer, translation subsystem, generic range model, claim parser or duplicated host business logic"
+    },
+    "isolated_review_format_retry": {
+      "action": "the same isolated reviewer re-emitted the same substantive findings with protocol-only formatting corrections",
+      "initial_result": "semantic review returned seven findings but omitted protocol Section numbers and backticked Where values",
+      "manual_semantic_edit": false,
+      "pre_finalize_gate": "7 declared IDs, 7 parsed findings, complete, 7 trusted changed-line anchors, 0 unscored, 0 fixes",
+      "retention_limit": "successful finalize removed .run by default; the process detail is retained in this receipt and the host task transcript, while the formal artifact retains prompt provenance and the derived graph"
+    },
+    "supersedes": [
+      "verify_018",
+      "verify_019"
+    ],
+    "verification": [
+      {
+        "command": "PYTHONDONTWRITEBYTECODE=1 python -m pytest -p no:cacheprovider -q",
+        "result": "429 passed",
+        "retry_count": 0,
+        "task": "full regression"
+      },
+      {
+        "command": "ruff check --no-cache change_audit tests prompt-lab/run.py; git diff --check; node --check audit.js",
+        "result": "passed",
+        "retry_count": 0,
+        "task": "static checks"
+      },
+      {
+        "command": "build wheel; install with dependencies in fresh Python 3.12 venv; render final audit from site-packages",
+        "installed_module": "/tmp/change-audit-final-wheel-venv.mSYcWd/lib/python3.12/site-packages/change_audit/__init__.py",
+        "result": "passed",
+        "task": "wheel isolation",
+        "wheel_sha256": "53ae494a196069e77b510e32837cd614ddbf2ba6457f2f8e60803c87b3b40079"
+      },
+      {
+        "command": "assert_valid_audit; validate_html_trace; installed-wheel deterministic render",
+        "result": "schema, semantic, identity and HTML trace passed; installed render is 122303 bytes",
+        "task": "formal artifact validation"
+      },
+      {
+        "command": "sopify_protocol_check.py check --scenario continuation --fixture <workspace>",
+        "result": "PASS",
+        "task": "Sopify continuation protocol"
+      },
+      {
+        "reason": "model-level smoke deferred by explicit user decision; CLI startup and Skill discovery were verified earlier",
+        "result": "skipped",
+        "task": "Qoder host"
+      }
+    ],
+    "wave": "4"
+  },
+  "provenance": {
+    "browser_test_policy": "localhost live DOM; file URL automation rejection is not an HTML failure",
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_020",
+    "source": "wave_4_corrective_closure",
+    "user_decision": "Qoder model smoke will be performed manually later"
+  },
+  "timestamp": "2026-07-10T16:41:49+00:00",
+  "verdict": "wave_4_completed_after_corrective_rerun_qoder_model_deferred"
+}

@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳，迁移后复核 consequences
+已采纳，Wave 0B 迁移复核通过
 
 ## 日期
 
@@ -41,3 +41,12 @@ CrossReview 已实现 ReviewPack、prompt、host-integrated ingest、ReviewResul
 - import、测试、CI、prompt 资源和可选 extra 都需要迁移。
 - 合并 dogfood 成功后才能重新评估旧仓库归档。
 - 本 ADR 的实际迁移差异在 Wave 0B 后补充。
+
+## Wave 0B 迁移复核
+
+- 固定源为 CrossReview `99fbe47655b5b4bd8c2c72f4ea6ea92532233705`（`v0.1.0a4`）；旧仓库工作树未修改。
+- review 核心、canonical prompt、prompt-lab runner、offline eval harness 和 337 项原测试已迁入 `change_audit.review.*`。
+- 迁移前后均为 337 项测试通过；固定 ReviewResult canonical SHA-256 均为 `cfd21093ea762e2afe22d5e5b8dbebe30571bbe34457ba83bd19190d75aab96a`。
+- 13 个可重跑 eval fixture 的去路径指标摘要 SHA-256 在迁移前后均为 `001f8a180cf43928766c4da81e9b02f32ac6051cc43cec89748bde6a78641336`。
+- 有意差异只有 import namespace、测试目录深度和 distribution 身份；内部 CLI compatibility 模块仅用于保持迁移测试，不注册 `crossreview` console-script，也不成为一期用户命令。
+- 真实 eval fixture 与真实 prompt-lab case 未进入 main；当前远端 `eval-data` 不含已发布 33-fixture 汇总所需的全部输出，因此这里只对 13 个可重跑 fixture 声明实测等价，不冒充重新跑过 33 个。

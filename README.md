@@ -1,140 +1,168 @@
-# change-audit
+<h1 align="center">change-audit</h1>
 
-Traceable review and audit artifacts for AI-generated work.
+<p align="center"><strong>Traceable code review for local Git diffs.</strong></p>
 
-[简体中文](README.zh-CN.md)
+<p align="center">
+  <a href="./README.md">English</a> ·
+  <a href="./README.zh-CN.md">简体中文</a>
+</p>
 
-`change-audit` combines an artifact-general isolated review core with profile-specific audit outputs. V0's first formal profile turns a local Git diff, semantic review from the host LLM, and human decisions into two core artifacts:
+<p align="center">
+  <img alt="Status: Alpha" src="https://img.shields.io/badge/status-alpha-F59E0B">
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776AB">
+  <img alt="Code-diff schema 0.2" src="https://img.shields.io/badge/code--diff%20schema-0.2-0F766E">
+</p>
 
-- `audit.json`: the validated machine-readable source of truth.
-- `audit.html`: a self-contained report with code context, evidence links, and decision controls.
+![change-audit cover](./docs/assets/change-audit-cover.png)
+
+`change-audit` turns a review of a local Git diff into two artifacts you can inspect and keep: a validated `audit.json` and a self-contained `audit.html`. A scored finding must resolve to a real changed line. Incomplete or malformed reviews stay visibly incomplete.
+
+> [!IMPORTANT]
+> The repository is a local Alpha (`0.1.0a0`). There is no PyPI release, release tag, or `change-audit` console script yet. The instructions below use a local checkout and `python -m change_audit`.
+
+## What you get
+
+| Artifact | Role |
+|---|---|
+| `audit.json` | Validated machine-readable source of truth, including the complete trusted hunks and graph relationships. |
+| `audit.html` | Self-contained Chinese report with bounded code evidence, changed-line highlights, and browser-local decisions. |
+| `audit-feedback.jsonl` | Optional export of human decisions; the Alpha does not consume it or edit code. |
+
+Three rules shape the product:
+
+- Findings are checked against the Git diff parsed by Python; the reviewer cannot invent trusted paths, hunks, IDs, fingerprints, or scores.
+- JSON and HTML are validated and published as one artifact pair. A hard failure cannot leave a half-report that looks successful.
+- `complete` means the reviewer returned the complete output contract. It does not claim complete behavioral coverage or “all bugs found.”
+
+## See a real report
+
+The checked-in [Fireworks Tech Graph dogfood](./docs/examples/dogfood-fireworks-tech-graph/) was regenerated after implementation from this exact range:
+
+```text
+d5ef26deac6b1ed37ee9b89b52dddb1bcaac6c24..9a64e5a926d430a421a71b5cf433b0553876db28
+```
+
+It covers 21 files and 52 hunks, with 7 findings anchored to real added lines and 0 unscored findings. The final state is `complete + concerns`; its diagnostics still report partial intent coverage and `0.65` pack completeness.
+
+- Open the [self-contained HTML report](./docs/examples/dogfood-fireworks-tech-graph/audit.html).
+- Inspect the [canonical audit.json](./docs/examples/dogfood-fireworks-tech-graph/audit.json).
+- Read the [generation record](./docs/examples/dogfood-fireworks-tech-graph/README.md) and [same-source baseline comparison](./docs/examples/dogfood-fireworks-tech-graph/baseline-comparison.md).
+
+The report is evidence of the implemented pipeline, not a claim that the reviewer found every defect in the range.
+
+## Local quick start
+
+Requirements: Git, Python 3.10 or newer, and an AI host that can run a local Agent Skill and create an isolated reviewer context.
+
+```bash
+git clone https://github.com/evidentloop/change-audit.git
+cd change-audit
+python3.11 --version       # use any installed Python >=3.10
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+python -m change_audit --help
+```
+
+Register the entire [`integrations/agent-skill/change-audit/`](./integrations/agent-skill/change-audit/) directory with your host's local Skill mechanism. Do not copy only `SKILL.md`: the bundle also contains host metadata. This Alpha does not yet ship a verified cross-host installer or a maintainer-published fixed tag for external installation.
+
+Then, inside the Git repository you want to inspect, ask your host:
+
+```text
+Use change-audit to audit my staged changes and generate the HTML report.
+```
+
+Or in Chinese:
+
+```text
+帮我用 change-audit 审计 staged changes，并生成 HTML 报告。
+```
+
+The Skill checks package/schema compatibility, prepares a trusted workspace, sends only the generated review prompt to an isolated host reviewer, finalizes the artifact pair, and returns the report paths. The current report UI and reviewer prose are Simplified Chinese; English natural-language triggering does not imply English report localization.
+
+## How it works
 
 ```text
 natural-language request
-  -> AI host Skill
-  -> prepare -> host LLM -> finalize
-  -> stage + validate audit.json and audit.html
-  -> publish the formal artifact pair
-  -> optional audit-feedback.jsonl
+  → Agent Skill resolves repository and diff scope
+  → Python prepare freezes Git evidence and prompt provenance
+  → isolated host reviewer returns semantic findings
+  → Python verifies changed-line anchors and builds the Audit Graph
+  → schema, semantics, trace links, and HTML pass validation
+  → audit.json + audit.html are published together
+  → optional browser-local feedback export
 ```
 
-![change-audit architecture](docs/assets/change-audit-architecture.png)
+![change-audit architecture](./docs/assets/change-audit-architecture.png)
 
-## Status
+The default Python path does not call a model SDK or manage API keys. Diff text, source, comments, filenames, and reviewer output are treated as untrusted data; review payloads are never executed.
 
-The target design, data model, and HTML reference are defined. Implementation has not started. The active plan closes documentation only and does not migrate CrossReview code yet.
+## Host integrator commands
 
-## V0 Delivery Shape
-
-V0 is one Python package plus one Agent Skill:
-
-- The Python package owns Git diff parsing, the internal CrossReview subsystem, the Audit Graph adapter, validation, and rendering.
-- The Skill owns natural-language discovery, installation consent, host-LLM invocation, failure handling, and report presentation.
-- The default Python path does not call a model SDK or manage API keys.
-- Audited projects do not need a copied integration file.
-
-The user says:
-
-```text
-Use change-audit to review my recent local changes.
-```
-
-The package exposes three module entries. The normal Skill path calls `prepare` and `finalize`; `finalize` renders automatically, while `render` is the independent re-render entry:
+Most users should use the Skill. Integrators can use the three module commands directly:
 
 ```bash
-python -m change_audit prepare --diff HEAD~1
-python -m change_audit finalize --out audit/20260710_example/
-python -m change_audit render audit/20260710_example/audit.json --out audit/20260710_example/audit.html
+# 1. Creates a hidden staging workspace and prints a JSON locator.
+python -m change_audit prepare --diff staged --out audit/20260710_example
+
+# 2. The host opens locator.prompt_path in a fresh isolated reviewer context
+#    and writes the reviewer's exact response to locator.raw_analysis_path.
+
+# 3. Validates and publishes the formal pair; the final directory must not exist.
+python -m change_audit finalize --out audit/20260710_example
+
+# Independent re-render from an existing validated JSON artifact.
+python -m change_audit render \
+  audit/20260710_example/audit.json \
+  --out audit/20260710_example/audit.html
 ```
 
-`review` is a Skill action, not a Python command.
+`review` is a Skill action, not a Python command. `prepare` and `finalize` are not a meaningful two-command shortcut: an isolated host review must write the exact raw result between them. Explicit `render --out` authorizes replacement of that HTML file only and never modifies `audit.json`.
 
-For independent re-rendering, an explicit `--out` authorizes atomic replacement of that HTML file only. Validation failure preserves the previous HTML and never modifies `audit.json`.
+The public Python entry points are available from `change_audit.api`:
 
-## Artifacts
-
-Default directory:
-
-```text
-audit/YYYYMMDD_<slug>/
-  audit.json
-  audit.html
-  .run/                    # only when review artifacts were explicitly retained
+```python
+from change_audit.api import finalize_review, prepare_local_diff, render_audit_file
 ```
 
-During execution, prepare uses a hidden sibling workspace such as `audit/.<slug>.change-audit-staging/`. After both JSON and HTML pass validation, finalize rechecks that the final target leaf is absent and commits the staging directory with one same-filesystem rename. If the target already exists when checked or the rename fails, finalize stops and keeps staging diagnostics; it does not intentionally delete or overwrite an existing target. V0 assumes a local single-writer, non-adversarial workflow and does not promise native race-proof no-replace semantics. On POSIX, 0700/0600 modes are best-effort privacy settings, not a cross-platform gate.
+See [AI host integration](./docs/ai-host-integration.md) for the locator contract, failure handling, prompt boundary, and installation consent rules.
 
-The user may export `audit-feedback.jsonl` from the HTML. A browser does not guarantee that the download lands back in the audit directory.
+## Current scope
 
-| Artifact | Shown by default | Purpose |
-|---|---|---|
-| `audit.json` | yes | canonical Audit Graph |
-| `audit.html` | yes | human review and decision UI |
-| `audit-feedback.jsonl` | only after export | human decisions on findings |
-| `.run/` | no | internal ReviewPack, prompt, raw analysis, and diagnostics; present in the final directory only when explicitly retained |
+| Capability | Alpha status |
+|---|---|
+| Local Git `staged`, `unstaged`, ref, and range diffs | Implemented |
+| Added, modified, deleted, renamed, and binary-file metadata | Implemented |
+| `code_diff` schema and self-contained HTML | Version `0.2` |
+| Exact add/delete-line anchors and bounded trusted hunk excerpts | Implemented |
+| Complete, partial, failed, and inconclusive states | Implemented |
+| Browser-local decisions and JSONL export | Implemented; not consumed |
+| Codex end-to-end dogfood | Completed on the Fireworks range above |
+| Qoder model-level smoke | Deferred for manual verification; not claimed as passed |
+| Report language | Simplified Chinese in v0 |
+| Folder diff, file-only review, or remote PR URL | Not supported |
+| Automatic fixes, command execution, or feedback ingestion | Not supported |
+| PyPI package, release tag, or console script | Not published |
 
-Users do not need to understand ReviewPack, ReviewResult, or CrossReview to use the product.
+The internal `change_audit.review` subsystem is artifact-general by direction, but a new artifact type is not a formal audit profile until it has an adapter, trusted anchors, an evaluation baseline, and a renderer profile. Schema `0.2` is specifically the code-diff profile.
 
-## Artifact Profiles
+## Development
 
-The internal `change_audit.review` subsystem can evolve toward reviewable artifacts such as plans, designs, analyses, review results, and agent outputs. A type becomes a formal audit profile only after it has an adapter, trusted anchors, an evaluation baseline, and a renderer profile.
+```bash
+python -m pip install -e '.[dev]'
+python -m pytest -q
+python -m ruff check .
+python -m build
+```
 
-Before those gates are met, experimental non-diff types may produce an internal ReviewResult or host summary, but do not claim `audit.json` / `audit.html` support. The `0.2` schema is the code-diff audit profile, not a universal artifact schema.
+Useful references:
 
-## Review Capability
-
-The host LLM is the primary semantic finding producer in V0. It can identify logic bugs, security risks, missing edge cases, test gaps, and quality concerns.
-
-Python keeps the result auditable:
-
-- File paths, lines, and hunks must resolve to the real diff parsed during prepare.
-- The LLM does not generate node IDs, edges, fingerprints, or risk scores.
-- An unanchored semantic bug is retained as an unscored risk instead of being silently dropped.
-- Not reviewed, complete, partial, and failed are separate execution states.
-
-## Target HTML
-
-Target v0 HTML shape — a design reference, not generated by an implementation yet.
-
-![v0 target HTML shape](docs/assets/audit-html-preview.png)
-
-The page answers:
-
-1. Was the review completed, and what is the verdict?
-2. What changed, and is the summary supported?
-3. Which bug, risk, quality, or scope findings exist?
-4. Which trusted hunk, evidence, and fix belongs to each finding?
-5. How can the user accept, reject, comment on, or re-severity a finding?
-
-A complete review with no unresolved finding omits empty finding sections; fixed history may still be shown. A failed or partial review never looks like a clean result.
-
-## Non-goals
-
-V0 does not include:
-
-- model SDK calls or API-key management in the default Python path;
-- automatic code edits or command execution from review text;
-- folder diff, file-only review, or remote PR URLs;
-- feedback consumption, a hosted dashboard, or policy enforcement;
-- a product SVG renderer or Markdown renderer;
-- a PyPI release or the final `change-audit` console script.
-
-These are V0 boundaries, not permanent exclusions from the project blueprint. The SVG and PNG files in this repository are design-document assets, not V0 report formats.
-
-## Documentation
-
-- [V0 scope](docs/v0-scope.md)
-- [Data model](docs/data-model.md)
-- [AI host integration](docs/ai-host-integration.md)
-- [Hunk-context reference](docs/examples/hunk-context-demo/)
-- [Active plan](.sopify/plan/20260710_audit_json_v0_schema_renderer_spike/plan.md)
-
-## Project Relationships
-
-- CrossReview: its review core is planned to move into `change_audit.review`; the old repository remains temporarily as the migration baseline.
-- [sopify](https://github.com/evidentloop/sopify): optional workflow and checkpoint orchestration.
-- [tech-report](https://github.com/sateful-ai/tech-report): narrative reports that may consume `audit.json`.
+- [V0 scope](./docs/v0-scope.md)
+- [Data model](./docs/data-model.md)
+- [AI host integration](./docs/ai-host-integration.md)
+- [Hunk rendering reference](./docs/examples/hunk-context-demo/)
+- [Real Fireworks dogfood](./docs/examples/dogfood-fireworks-tech-graph/)
 
 ## License
 
-MIT
+Licensed under the [MIT License](./LICENSE).

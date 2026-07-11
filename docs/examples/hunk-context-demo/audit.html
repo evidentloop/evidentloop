@@ -1,835 +1,1089 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-renderer-version="0.2">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>change-audit hunk context demo</title>
-  <style>
-    :root {
-      --bg: #f4f6f8;
-      --panel: #ffffff;
-      --text: #172033;
-      --muted: #667085;
-      --line: #d9e0ea;
-      --line-strong: #b8c4d4;
-      --green: #1f7a3f;
-      --green-soft: #e8f7ee;
-      --red: #c53030;
-      --red-soft: #fff0f0;
-      --amber: #b7791f;
-      --amber-soft: #fff7df;
-      --blue: #1d5f99;
-      --blue-soft: #eef6ff;
-      --ink: #111827;
-      --code-bg: #ffffff;
-      --code-text: #1f2937;
-      --code-num: #7a8699;
-      --code-add-bg: #e6ffed;
-      --code-del-bg: #ffebe9;
-      --code-add-text: #116329;
-      --code-del-text: #82071e;
-      --code-stripe: #f59e0b;
-      --focus: #0e7490;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background:
-        linear-gradient(180deg, #e9edf3 0, #f4f6f8 220px),
-        var(--bg);
-      color: var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.55;
-    }
-
-    main {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 28px 20px 52px;
-    }
-
-    h1, h2, h3, p { margin-top: 0; }
-    h1 { margin-bottom: 6px; font-size: 30px; letter-spacing: 0; }
-    h2 { margin-bottom: 14px; font-size: 19px; letter-spacing: 0; }
-    h3 { margin-bottom: 8px; font-size: 15px; letter-spacing: 0; }
-    p { margin-bottom: 10px; }
-
-    code {
-      padding: 1px 5px;
-      border-radius: 5px;
-      background: #eef2f7;
-      font-size: 13px;
-    }
-
-    .muted { color: var(--muted); }
-    .ref { color: var(--muted); font-size: 13px; }
-
-    .report-shell {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 16px;
-    }
-
-    .hero {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-left: 6px solid var(--red);
-      border-radius: 8px;
-      box-shadow: 0 10px 28px rgba(23, 32, 51, 0.08);
-      padding: 22px;
-    }
-
-    .hero-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .kicker {
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .verdict {
-      min-width: 220px;
-      padding: 12px;
-      border: 1px solid #f3b4b4;
-      border-radius: 8px;
-      background: var(--red-soft);
-      text-align: right;
-    }
-
-    .verdict strong {
-      display: block;
-      color: var(--red);
-      font-size: 18px;
-    }
-
-    .metric-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 18px;
-    }
-
-    .metric {
-      min-height: 92px;
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfcfe;
-    }
-
-    .metric span:first-child {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .metric strong {
-      display: block;
-      margin: 4px 0 6px;
-      font-size: 24px;
-      line-height: 1.1;
-    }
-
-    section {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(23, 32, 51, 0.04);
-      padding: 20px;
-    }
-
-    .section-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      border-bottom: 1px solid var(--line);
-      margin: -2px 0 16px;
-      padding-bottom: 12px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 22px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      color: #ffffff;
-      white-space: nowrap;
-    }
-
-    .ok { background: var(--green); }
-    .warn { background: var(--amber); }
-    .risk { background: var(--red); }
-    .info { background: var(--blue); }
-    .soft { color: var(--text); background: #eef2f7; }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap: 16px;
-    }
-
-    .change-list {
-      display: grid;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .file-change {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: center;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfcfe;
-    }
-
-    .file-path {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-      font-size: 13px;
-      color: var(--blue);
-    }
-
-    .diff-stat {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-
-    .add { color: var(--green); }
-    .del { color: var(--red); }
-
-    .claim {
-      border: 1px solid #f2b9b9;
-      border-left: 5px solid var(--red);
-      padding: 12px;
-      background: var(--red-soft);
-      border-radius: 8px;
-    }
-
-    .claim strong { color: var(--red); }
-
-    .feedback-panel {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #f8fafc;
-      margin-bottom: 14px;
-    }
-
-    .export-feedback,
-    .feedback button {
-      border: 1px solid var(--line-strong);
-      border-radius: 6px;
-      background: #ffffff;
-      color: var(--text);
-      padding: 7px 10px;
-      font-size: 13px;
-      font-weight: 650;
-      cursor: pointer;
-    }
-
-    .export-feedback:hover,
-    .feedback button:hover {
-      border-color: var(--focus);
-      color: var(--focus);
-    }
-
-    .finding-card {
-      border: 1px solid var(--line-strong);
-      border-radius: 8px;
-      margin: 16px 0;
-      overflow: hidden;
-      background: #ffffff;
-    }
-
-    .finding-card.high { border-left: 5px solid var(--red); }
-    .finding-card.medium { border-left: 5px solid var(--amber); }
-
-    .finding-header {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: start;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
-      background: #fbfcfe;
-    }
-
-    .finding-title {
-      display: block;
-      font-size: 16px;
-      font-weight: 800;
-    }
-
-    .loc {
-      display: block;
-      margin-top: 2px;
-      color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-      font-size: 13px;
-    }
-
-    .loc a { color: var(--blue); text-decoration: none; }
-    .loc a:hover { text-decoration: underline; }
-
-    .finding-body { padding: 14px 16px 16px; }
-
-    .finding-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 280px;
-      gap: 16px;
-      align-items: start;
-    }
-
-    .finding-note {
-      padding: 10px 12px;
-      border: 1px solid #f1c7c7;
-      border-radius: 8px;
-      background: var(--red-soft);
-      font-size: 14px;
-    }
-
-    .medium .finding-note {
-      border-color: #f4d58f;
-      background: var(--amber-soft);
-    }
-
-    .chain {
-      display: grid;
-      gap: 8px;
-      padding: 10px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #f8fafc;
-      font-size: 13px;
-    }
-
-    .chain-row {
-      display: grid;
-      grid-template-columns: 72px minmax(0, 1fr);
-      gap: 8px;
-    }
-
-    .chain-label {
-      color: var(--muted);
-      font-weight: 800;
-    }
-
-    .hunk {
-      margin-top: 12px;
-      border: 1px solid var(--line-strong);
-      border-radius: 8px;
-      overflow-x: auto;
-      background: var(--code-bg);
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-      font-size: 13px;
-      line-height: 1.55;
-    }
-
-    .hunk-caption {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--line);
-      background: #f6f8fa;
-      color: var(--muted);
-      font-size: 12px;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-weight: 700;
-    }
-
-    .hunk-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .hunk-table td {
-      padding: 0 12px 0 0;
-      border: none;
-      vertical-align: top;
-      white-space: pre;
-    }
-
-    .hunk-stripe {
-      width: 5px;
-      padding: 0 !important;
-      background: transparent;
-    }
-
-    .hunk-stripe-active { background: var(--code-stripe); }
-
-    .hunk-num {
-      width: 1px;
-      min-width: 44px;
-      padding-left: 10px !important;
-      padding-right: 8px !important;
-      color: var(--code-num);
-      text-align: right;
-      user-select: none;
-      background: #f6f8fa;
-      border-right: 1px solid var(--line) !important;
-    }
-
-    .hunk-code {
-      color: var(--code-text);
-      padding-left: 12px !important;
-    }
-
-    .hunk-add .hunk-num,
-    .hunk-add .hunk-code {
-      background: var(--code-add-bg);
-      color: var(--code-add-text);
-    }
-
-    .hunk-del .hunk-num,
-    .hunk-del .hunk-code {
-      background: var(--code-del-bg);
-      color: var(--code-del-text);
-    }
-
-    .hunk-ctx .hunk-code { color: #475467; }
-
-    .finding-fix {
-      margin-top: 12px;
-      padding: 11px 12px;
-      border: 1px solid #f2d27a;
-      border-radius: 8px;
-      background: var(--amber-soft);
-      font-size: 13px;
-    }
-
-    .finding-fix strong { color: #805600; }
-
-    .feedback {
-      padding: 13px 16px;
-      border-top: 1px solid var(--line);
-      background: #f8fafc;
-    }
-
-    .feedback-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .feedback textarea {
-      width: 100%;
-      min-height: 58px;
-      resize: vertical;
-      border: 1px solid var(--line-strong);
-      border-radius: 6px;
-      padding: 8px;
-      font: inherit;
-      font-size: 13px;
-    }
-
-    .feedback-status {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    th, td {
-      padding: 10px 8px;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      vertical-align: top;
-    }
-
-    th {
-      color: #344054;
-      font-weight: 800;
-      background: #f8fafc;
-    }
-
-    @media (max-width: 900px) {
-      .hero-top,
-      .feedback-panel {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .verdict { text-align: left; }
-      .metric-grid { grid-template-columns: 1fr 1fr; }
-      .summary-grid,
-      .finding-layout { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 560px) {
-      main { padding: 18px 12px 36px; }
-      .metric-grid { grid-template-columns: 1fr; }
-      .finding-header { grid-template-columns: 1fr; }
-      .file-change { grid-template-columns: 1fr; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { transition: none !important; animation: none !important; }
-    }
-  </style>
+  <meta name="color-scheme" content="light">
+  <title>token refresh 修复审计 · change-audit</title>
+  <style>:root {
+  color-scheme: light;
+  --bg: #f3f5f8;
+  --panel: #ffffff;
+  --text: #172033;
+  --muted: #667085;
+  --line: #d7dee8;
+  --line-strong: #b7c2d1;
+  --green: #17753b;
+  --green-soft: #e7f6ec;
+  --red: #bd2f35;
+  --red-soft: #fff0f1;
+  --amber: #a66c12;
+  --amber-soft: #fff6df;
+  --blue: #245f91;
+  --blue-soft: #edf6ff;
+  --code-bg: #fbfcfe;
+  --code-add-bg: #e6ffed;
+  --code-del-bg: #ffebe9;
+  --code-add-text: #116329;
+  --code-del-text: #82071e;
+  --focus: #0e7490;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, #e7ebf1 0, var(--bg) 230px);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.55;
+}
+
+a { color: var(--blue); }
+h1, h2, h3, p { margin-top: 0; }
+h1 { margin-bottom: 6px; font-size: clamp(1.65rem, 4vw, 2rem); line-height: 1.2; }
+h2 { margin-bottom: 0; font-size: 1.18rem; }
+h3 { margin-bottom: 8px; font-size: 1rem; }
+code { padding: 1px 5px; border-radius: 5px; background: #eef2f7; }
+
+.report-shell {
+  display: grid;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 28px 20px 52px;
+  gap: 16px;
+}
+
+.panel,
+.hero {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgba(23, 32, 51, .04);
+}
+
+.hero {
+  padding: 22px;
+  border-left: 6px solid var(--blue);
+  box-shadow: 0 10px 28px rgba(23, 32, 51, .08);
+}
+
+.hero.concerns { border-left-color: var(--red); }
+.hero.pass_candidate { border-left-color: var(--green); }
+.hero.needs_human_triage { border-left-color: var(--amber); }
+.hero.inconclusive { border-left-color: var(--blue); }
+
+.hero-top,
+.section-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hero-copy { min-width: 0; overflow-wrap: anywhere; }
+
+.kicker {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.muted,
+.ref { color: var(--muted); }
+.ref { font-size: .8rem; overflow-wrap: anywhere; }
+
+.verdict-box {
+  flex: 0 0 240px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--blue-soft);
+  text-align: right;
+}
+
+.verdict-box strong { display: block; font-size: 1.08rem; overflow-wrap: anywhere; }
+.hero.concerns .verdict-box { border-color: #f0b5b7; background: var(--red-soft); }
+.hero.pass_candidate .verdict-box { border-color: #acd8bb; background: var(--green-soft); }
+.hero.needs_human_triage .verdict-box { border-color: #ead09f; background: var(--amber-soft); }
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.metric {
+  min-width: 0;
+  min-height: 88px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+
+.metric > span:first-child { display: block; color: var(--muted); font-size: .75rem; font-weight: 750; }
+.metric strong { display: block; margin: 4px 0 6px; font-size: 1.45rem; line-height: 1.15; overflow-wrap: anywhere; }
+
+.panel { padding: 20px; }
+.section-title { align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.badge.ok { background: var(--green); }
+.badge.risk { background: var(--red); }
+.badge.warn { background: var(--amber); }
+.badge.info { background: var(--blue); }
+.badge.soft { color: var(--text); background: #eef2f7; }
+
+.status-callout,
+.claim,
+.finding-note,
+.fix-inline,
+.feedback-placeholder {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.status-callout { margin-top: 14px; }
+.status-callout.clean { border-color: #acd8bb; background: var(--green-soft); }
+.status-callout.warning { border-color: #ead09f; background: var(--amber-soft); }
+.status-callout.failure { border-color: #f0b5b7; background: var(--red-soft); }
+
+.overall-summary { margin-bottom: 16px; font-size: .96rem; }
+.summary-grid { display: grid; grid-template-columns: 1.2fr .8fr; align-items: start; gap: 16px; }
+.summary-grid p,
+.summary-grid strong { overflow-wrap: anywhere; }
+.change-files { margin-top: 12px; }
+.change-files > summary { cursor: pointer; color: var(--blue); font-size: .84rem; font-weight: 800; }
+.change-files[open] > summary { margin-bottom: 10px; }
+.change-list { display: grid; gap: 10px; margin-top: 12px; }
+.file-change { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfe; }
+.file-path { color: var(--blue); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .82rem; overflow-wrap: anywhere; }
+.diff-stat { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .8rem; white-space: nowrap; }
+.add { color: var(--green); }
+.del { color: var(--red); }
+.claim-list { display: grid; align-self: start; align-content: start; gap: 10px; }
+.claim-empty { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; }
+.claim-empty .muted { font-size: .78rem; }
+.claim[data-status="challenged"] { border-left: 5px solid var(--red); background: var(--red-soft); }
+.claim[data-status="supported"] { border-left: 5px solid var(--green); background: var(--green-soft); }
+.claim[data-status="partial"] { border-left: 5px solid var(--amber); background: var(--amber-soft); }
+
+.finding-stack { display: grid; gap: 14px; }
+.finding-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+.finding-card.high { border-left: 6px solid var(--red); }
+.finding-card.medium { border-left: 6px solid var(--amber); }
+.finding-card.low,
+.finding-card.note { border-left: 6px solid var(--blue); }
+
+.finding-header { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: start; gap: 9px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
+.finding-title { display: block; font-weight: 800; overflow-wrap: anywhere; }
+.location { display: block; margin-top: 3px; color: var(--blue); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .78rem; overflow-wrap: anywhere; }
+.finding-body { padding: 16px; }
+.finding-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 14px; }
+.finding-note { margin-bottom: 12px; }
+.unanchored { border-color: #ead09f; background: var(--amber-soft); }
+
+.hunk { min-width: 0; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--code-bg); }
+.hunk-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: #eef2f7; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .72rem; }
+.hunk-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+.hunk-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; }
+.hunk-table th { padding: 5px 8px; background: #f6f8fb; color: var(--muted); font-size: .68rem; text-align: right; }
+.hunk-table th:first-child { width: 5px; padding: 0; }
+.hunk-table th:nth-child(2),
+.hunk-table th:nth-child(3) { width: 54px; }
+.hunk-table th:last-child { text-align: left; }
+.hunk-table td { border: 0; padding: 0; vertical-align: top; }
+.hunk-stripe { width: 5px; background: transparent; }
+.hunk-line-active .hunk-stripe { background: #f59e0b; }
+.hunk-line-active .hunk-num { color: #7a4b00; background: #fff3cd; font-weight: 800; }
+.hunk-line-active .hunk-code { box-shadow: inset 4px 0 0 #f59e0b; font-weight: 700; }
+.hunk-num { width: 54px; padding: 2px 8px !important; border-right: 1px solid var(--line) !important; color: #7a8699; background: #f7f9fc; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .75rem; text-align: right; user-select: none; }
+.hunk-code { padding: 2px 10px !important; color: #1f2937; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+.hunk-add .hunk-code { color: var(--code-add-text); background: var(--code-add-bg); }
+.hunk-delete .hunk-code { color: var(--code-del-text); background: var(--code-del-bg); }
+.hunk-meta .hunk-code { color: var(--muted); background: #f7f9fc; font-style: italic; }
+.hunk-omitted-cell { padding: 5px 10px !important; color: var(--muted); background: #eef2f7; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .72rem; text-align: center; }
+.hunk-hit-key { color: #7a4b00; font-weight: 800; }
+.hunk-hit-key::before { content: "● "; color: #f59e0b; }
+
+.chain { display: grid; align-content: start; gap: 8px; }
+.chain-row { padding: 9px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafc; overflow-wrap: anywhere; }
+.chain-label { display: block; margin-bottom: 3px; color: var(--muted); font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.fix-inline { margin-top: 12px; border-color: #b8d5ef; background: var(--blue-soft); }
+.feedback-placeholder { display: block; margin-top: 12px; }
+.feedback-heading,
+.feedback-toolbar,
+.feedback-comment-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.feedback-toolbar { align-items: flex-start; }
+.feedback-toolbar p:last-child { margin-bottom: 0; }
+.feedback-export-actions { display: grid; justify-items: end; gap: 6px; flex: 0 0 auto; }
+.feedback-controls { display: grid; gap: 10px; margin-top: 10px; }
+.feedback-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.feedback-more,
+.evidence-details { margin-top: 10px; }
+.feedback-more > summary,
+.evidence-details > summary { cursor: pointer; color: var(--blue); font-size: .82rem; font-weight: 800; }
+.feedback-controls label { display: grid; gap: 5px; color: var(--muted); font-size: .78rem; font-weight: 750; }
+.feedback-controls select,
+.feedback-controls textarea { width: 100%; border: 1px solid var(--line-strong); border-radius: 7px; background: #fff; color: var(--text); font: inherit; }
+.feedback-controls select { min-height: 36px; padding: 6px 9px; }
+.feedback-controls textarea { min-height: 78px; padding: 9px; resize: vertical; }
+.button { min-height: 34px; padding: 6px 11px; border: 1px solid var(--line-strong); border-radius: 7px; background: #fff; color: var(--text); font: inherit; font-size: .82rem; font-weight: 750; cursor: pointer; }
+.button:hover { border-color: var(--blue); background: var(--blue-soft); }
+.button:focus-visible,
+.feedback-controls select:focus-visible,
+.feedback-controls textarea:focus-visible { outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent); outline-offset: 2px; }
+.button[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: #fff; }
+.button.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+.button.primary:hover { background: #194d77; }
+
+.data-table-wrap { max-width: 100%; overflow-x: auto; }
+.data-table { width: 100%; min-width: 620px; border-collapse: collapse; }
+.data-table th,
+.data-table td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.data-table th { color: var(--muted); font-size: .74rem; text-transform: uppercase; }
+
+@media (max-width: 780px) {
+  .report-shell { padding: 16px 12px 36px; }
+  .hero-top,
+  .section-title,
+  .feedback-toolbar,
+  .feedback-heading,
+  .feedback-comment-actions { flex-direction: column; align-items: flex-start; }
+  .section-title { align-items: flex-start; }
+  .feedback-export-actions { width: 100%; justify-items: start; }
+  .verdict-box { width: 100%; flex-basis: auto; text-align: left; }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .summary-grid,
+  .finding-layout { grid-template-columns: minmax(0, 1fr); }
+  .finding-header { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .finding-header .category-badge { display: none; }
+  .file-change { grid-template-columns: minmax(0, 1fr); }
+  .diff-stat { white-space: normal; }
+}
+
+@media (max-width: 330px) {
+  .metric-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 420px) {
+  .panel,
+  .hero { padding: 15px; }
+  .finding-body { padding: 12px; }
+  .claim-empty { align-items: flex-start; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
 </head>
 <body>
-  <main class="report-shell">
-    <header class="hero" data-node-id="run-001" data-node-type="run">
+  <main class="report-shell" data-graph-id="audit:hunk-context-demo:20260708" data-run-id="run-001">
+    <header class="hero concerns" data-node-id="run-001" data-node-type="run">
       <div class="hero-top">
-        <div>
-          <div class="kicker">Audit Report</div>
-          <h1>auth token refresh 修复审计</h1>
-          <div class="muted">run-001 · source: HEAD~1 · schema: 0.2-alpha · review_status: complete</div>
+        <div class="hero-copy">
+          <div class="kicker">change-audit · 代码变更</div>
+          <h1>token refresh 修复审计</h1>
+          <div class="muted">
+运行：run-001 ·             来源：HEAD~1 · schema：0.2 · 审查状态：输出完整
+          </div>
         </div>
-        <div class="verdict">
+        <div class="verdict-box">
           <span class="muted">当前结论</span>
-          <strong>不建议进入 confirm</strong>
-          <div class="ref">verdict: concerns · blocking: finding-001</div>
+          <strong>存在待处理问题</strong>
+          <div class="ref">机器结论：存在待处理问题</div>
         </div>
       </div>
 
       <div class="metric-grid">
-        <div class="metric"><span>风险评分</span><strong>58</strong><span class="badge risk">HIGH</span></div>
-        <div class="metric"><span>Open findings</span><strong>2</strong><span class="badge risk">待处理</span></div>
-        <div class="metric"><span>修复进度</span><strong>0/2</strong><span class="badge warn">未完成</span></div>
-        <div class="metric"><span>摘要审计</span><strong>partial</strong><span class="badge warn">部分成立</span></div>
+        <div class="metric">
+          <span>已计分风险分</span>
+          <strong>58</strong>
+          <span class="badge warn">中</span>
+        </div>
+        <div class="metric">
+          <span>待处理问题</span>
+          <strong>2</strong>
+          <span class="badge risk">待处理</span>
+        </div>
+        <div class="metric">
+          <span>未计分问题</span>
+          <strong>0</strong>
+          <span class="badge soft">无</span>
+        </div>
+        <div class="metric">
+          <span>修复进度</span>
+          <strong>0/2</strong>
+          <span class="badge warn">未完成</span>
+        </div>
+      </div>
+
+      <div class="status-callout warning">
+        <strong>审查输出已完整接收</strong>
+        <div>这只表示审查者输出满足结构契约，不代表上下文覆盖充分；请结合结论、问题与未计分项人工判断。</div>
       </div>
     </header>
 
-    <section data-node-id="change-001" data-node-type="change">
+    <section class="panel" data-node-id="change-001" data-node-type="change">
       <div class="section-title">
-        <h2>1. 审计摘要</h2>
-        <span class="badge risk">需要继续修复</span>
+        <h2>1. 变更摘要与审计结论</h2>
+        <span class="badge warn">变更目标：部分达成</span>
       </div>
-      <div class="summary-grid">
+<p class="overall-summary">修复了 token 过期时返回旧 token 的问题，但缓存层和测试覆盖仍有缺口。</p>      <div class="summary-grid">
         <div>
-          <p>本次变更将 token 过期时的行为从返回旧 token 改为抛出 <code>TokenExpiredError</code>，并新增过期处理路径测试。</p>
-          <p>审计结论：直接 refresh 路径已有改动，但缓存读取路径仍可能绕过修复。先处理 <code>fix-001</code>，再补 <code>fix-002</code> 的边界测试。</p>
+            <article data-node-id="change-001" data-node-type="change" data-edge-id="edge-001">
+              <h3>Fix auth token refresh</h3>
+              <p>将 token 过期时的行为从返回旧 token 改为抛出 TokenExpiredError，并补充了过期处理路径。</p>
+            </article>
           <div class="change-list">
-            <div class="file-change" data-node-id="file-auth-service" data-node-type="file">
+            <div class="file-change" data-node-id="file-auth-service" data-node-type="file" data-edge-id="edge-002">
               <span class="file-path">src/auth_service.py</span>
-              <span class="diff-stat"><span class="add">+6</span> <span class="del">-2</span> · refresh 行为变更</span>
+              <span class="diff-stat">
+                <span class="add">+6</span>
+                <span class="del">-2</span>
+                · 修改 · implementation              </span>
             </div>
-            <div class="file-change" data-node-id="file-auth-test" data-node-type="file">
+            <div class="file-change" data-node-id="file-auth-test" data-node-type="file" data-edge-id="edge-003">
               <span class="file-path">tests/test_auth.py</span>
-              <span class="diff-stat"><span class="add">+11</span> <span class="del">-0</span> · 测试补充</span>
+              <span class="diff-stat">
+                <span class="add">+11</span>
+                <span class="del">-0</span>
+                · 修改 · test              </span>
             </div>
           </div>
         </div>
-        <div class="claim" data-claim-id="claim-001" data-status="challenged">
-          <strong>摘要声明被挑战</strong>
-          <p>“token refresh 已完全修复，过期 token 不再返回”不成立：finding-001 指出缓存路径可能继续返回旧 token。</p>
-          <div class="ref">挑战证据: evidence-002 · 关联 finding: finding-001</div>
+        <div class="claim-list">
+          <div class="claim" data-node-id="run-001" data-claim-id="claim-001" data-status="challenged">
+            <strong>有偏差</strong>
+            <p>token refresh 已完全修复，过期 token 不再返回</p>
+            <div class="ref">claim: claim-001 · owner: run-001</div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section>
+    <section class="panel findings-section" data-category="bug">
       <div class="section-title">
-        <h2>2. Bugs / Risks</h2>
-        <span class="badge soft">2 open findings</span>
+        <h2>2. 缺陷</h2>
+        <span class="badge soft">1 条</span>
       </div>
-
-      <div class="feedback-panel">
-        <div>
-          <strong>用户审计决策</strong>
-          <div class="ref">点击按钮记录你对每个问题的判断，并导出 JSONL 交给后续工具链使用。</div>
-        </div>
-        <div class="feedback-row">
-          <button class="export-feedback" type="button" id="export-feedback">导出反馈 JSONL</button>
-        </div>
-      </div>
-
-      <article class="finding-card high" data-node-id="finding-001" data-node-type="finding" data-category="bug" data-severity="high" data-fingerprint="sha256:8dff2181ef31abd0da2e48485f1809dbaf5379d69f89335c89ae1a09465ae681">
-        <div class="finding-header">
-          <span class="badge risk">HIGH</span>
-          <span class="badge soft">bug</span>
-          <div>
-            <span class="finding-title">旧 token 仍可能被缓存层返回</span>
-            <span class="loc"><a href="vscode://file/src/auth_service.py:39">src/auth_service.py:39-41</a></span>
-          </div>
-          <span class="badge risk">open</span>
-        </div>
-        <div class="finding-body">
-          <div class="finding-layout">
+      <div class="finding-stack">
+        <article class="finding-card high" data-node-id="finding-001" data-node-type="finding" data-category="bug" data-severity="high" data-fingerprint="sha256:8dff2181ef31abd0da2e48485f1809dbaf5379d69f89335c89ae1a09465ae681" data-edge-id="edge-004">
+          <div class="finding-header">
+            <span class="badge risk">高</span>
+            <span class="badge soft category-badge">缺陷</span>
             <div>
-              <div class="finding-note">
-                <strong>为什么是问题：</strong><code>refresh_token</code> 已改为抛异常，但 <code>get_token</code> 会先查 Redis 缓存。缓存未过期时，旧 token 仍可能直接返回给调用方。
-              </div>
-              <div class="hunk" data-hunk-id="hunk:src/auth_service.py:38:1">
-                <div class="hunk-caption">
-                  <span>diff hunk · highlight_lines: 39-41</span>
-                  <span>line_side: new</span>
-                </div>
-                <table class="hunk-table">
-                  <tr class="hunk-ctx"><td class="hunk-stripe"></td><td class="hunk-num">38</td><td class="hunk-code">    def get_token(self, user_id: str) -> Token:</td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe hunk-stripe-active"></td><td class="hunk-num">39</td><td class="hunk-code">        cached = self.cache.get(f"token:{user_id}")</td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe hunk-stripe-active"></td><td class="hunk-num">40</td><td class="hunk-code">        if cached and not cached.expired:</td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe hunk-stripe-active"></td><td class="hunk-num">41</td><td class="hunk-code">            return cached</td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe"></td><td class="hunk-num">42</td><td class="hunk-code"></td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe"></td><td class="hunk-num">43</td><td class="hunk-code">        token = self.fetch_token(user_id)</td></tr>
-                  <tr class="hunk-del"><td class="hunk-stripe"></td><td class="hunk-num">44</td><td class="hunk-code">-        if token.expired:</td></tr>
-                  <tr class="hunk-del"><td class="hunk-stripe"></td><td class="hunk-num">45</td><td class="hunk-code">-            return token</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">44</td><td class="hunk-code">+        if token.expired:</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">45</td><td class="hunk-code">+            raise TokenExpiredError(</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">46</td><td class="hunk-code">+                f"Token for {user_id} expired at {token.expires_at}"</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">47</td><td class="hunk-code">+            )</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">48</td><td class="hunk-code">+        self.cache.set(f"token:{user_id}", token, ttl=token.ttl)</td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe"></td><td class="hunk-num">49</td><td class="hunk-code">        return token</td></tr>
-                </table>
-              </div>
+              <span class="finding-title">旧 token 仍可能被缓存层返回</span>
+              <span class="location">
+src/auth_service.py:39-41              </span>
             </div>
-            <aside class="chain">
-              <div class="chain-row"><span class="chain-label">Evidence</span><span data-node-id="evidence-002" data-node-type="evidence" data-edge-id="edge-008">隔离宿主审查标记缓存路径绕过修复</span></div>
-              <div class="chain-row"><span class="chain-label">Fix</span><span data-node-id="fix-001" data-node-type="fix" data-edge-id="edge-006">fix-001 · refresh 成功后更新缓存</span></div>
-              <div class="chain-row"><span class="chain-label">Decision</span><span>等待用户确认或标记非问题</span></div>
-            </aside>
+            <span class="badge warn">待处理</span>
           </div>
-          <div class="finding-fix" data-node-id="fix-001" data-node-type="fix">
-            <strong>修复建议 fix-001 (P0):</strong> 在 refresh 成功后立即更新缓存。在 <code>get_token</code> 的 refresh 路径中，<code>fetch_token</code> 返回新 token 后应先清除旧缓存再写入新 token。
-          </div>
-        </div>
-        <div class="feedback" data-feedback-for="finding-001">
-          <div class="feedback-row">
-            <button type="button" data-action="accept">确认问题</button>
-            <button type="button" data-action="false_positive">标记非问题</button>
-            <button type="button" data-action="severity_override" data-severity="medium">降为 MED</button>
-            <span class="feedback-status">尚未记录反馈</span>
-          </div>
-          <textarea placeholder="补充审计意见，例如为什么这是误报、为什么确认需要修复，或 severity 调整理由。"></textarea>
-          <div class="feedback-row">
-            <button type="button" data-action="comment">保存评论</button>
-          </div>
-        </div>
-      </article>
+          <div class="finding-body">
+            <div class="finding-layout">
+              <div>
+                <div class="finding-note">
+<strong>为什么是问题：</strong>                  refresh_token 已修复直接抛出异常，但 get_token 函数在调用 refresh 前会先查 Redis 缓存。如果缓存未过期，旧 token 仍会被返回给调用方。
+                </div>
 
-      <article class="finding-card medium" data-node-id="finding-002" data-node-type="finding" data-category="quality" data-severity="medium" data-fingerprint="sha256:8eb3f0b05ecd189b40e9ea87341cf6342f122ace30645f1e0802a5972687faff">
-        <div class="finding-header">
-          <span class="badge warn">MED</span>
-          <div>
-            <span class="finding-title">缺少 token 过期边界时间的测试</span>
-            <span class="loc"><a href="vscode://file/tests/test_auth.py:78">tests/test_auth.py:78-82</a></span>
+                <div class="hunk" data-hunk-id="hunk:src/auth_service.py:38:1">
+                  <div class="hunk-caption">
+                    <span>@@ -38,9 +38,12 @@</span>
+                    <span>展示 14/14 行 · <span class="hunk-hit-key">橙色标记</span>：新文件第 39, 40, 41 行</span>
+                  </div>
+                  <div class="hunk-scroll">
+                    <table class="hunk-table" aria-label="可信 unified diff 证据">
+                      <thead><tr><th></th><th>旧行</th><th>新行</th><th>代码</th></tr></thead>
+                      <tbody>
+                        <tr class="hunk-context">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">38</td>
+                          <td class="hunk-num">38</td>
+                          <td class="hunk-code">     def get_token(self, user_id: str) -&gt; Token:</td>
+                        </tr>
+                        <tr class="hunk-context hunk-line-active" data-highlighted="true">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">39</td>
+                          <td class="hunk-num">39</td>
+                          <td class="hunk-code">         cached = self.cache.get(f&#34;token:{user_id}&#34;)</td>
+                        </tr>
+                        <tr class="hunk-context hunk-line-active" data-highlighted="true">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">40</td>
+                          <td class="hunk-num">40</td>
+                          <td class="hunk-code">         if cached and not cached.expired:</td>
+                        </tr>
+                        <tr class="hunk-context hunk-line-active" data-highlighted="true">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">41</td>
+                          <td class="hunk-num">41</td>
+                          <td class="hunk-code">             return cached</td>
+                        </tr>
+                        <tr class="hunk-context">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">42</td>
+                          <td class="hunk-num">42</td>
+                          <td class="hunk-code"> </td>
+                        </tr>
+                        <tr class="hunk-context">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">43</td>
+                          <td class="hunk-num">43</td>
+                          <td class="hunk-code">         token = self.fetch_token(user_id)</td>
+                        </tr>
+                        <tr class="hunk-delete">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">44</td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-code">-        if token.expired:</td>
+                        </tr>
+                        <tr class="hunk-delete">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">45</td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-code">-            return token</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">44</td>
+                          <td class="hunk-code">+        if token.expired:</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">45</td>
+                          <td class="hunk-code">+            raise TokenExpiredError(</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">46</td>
+                          <td class="hunk-code">+                f&#34;Token for {user_id} expired at {token.expires_at}&#34;</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">47</td>
+                          <td class="hunk-code">+            )</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">48</td>
+                          <td class="hunk-code">+        self.cache.set(f&#34;token:{user_id}&#34;, token, ttl=token.ttl)</td>
+                        </tr>
+                        <tr class="hunk-context">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">46</td>
+                          <td class="hunk-num">49</td>
+                          <td class="hunk-code">         return token</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="chain">
+                <div class="chain-row">
+                  <span class="chain-label">审查依据</span>
+                  <span data-node-id="evidence-002" data-node-type="evidence" data-edge-id="edge-008">隔离宿主审查标记 get_token 缓存路径可能绕过 refresh_token 修复</span>
+                </div>
+                <div class="chain-row">
+                  <span class="chain-label">修复建议</span>
+                  <span data-node-id="fix-001" data-node-type="fix" data-edge-id="edge-006">fix-001 · 在 refresh 成功后立即更新缓存</span>
+                </div>
+              </aside>
+            </div>
+
+            <div class="fix-inline" data-node-id="fix-001" data-node-type="fix">
+              <strong>fix-001（P0）：</strong> 在 get_token 的 refresh 路径中，fetch_token 返回新 token 后应先清除旧缓存再写入新 token。
+            </div>
+
+            <div class="feedback-placeholder" data-feedback-for="finding-001" data-fingerprint="sha256:8dff2181ef31abd0da2e48485f1809dbaf5379d69f89335c89ae1a09465ae681">
+              <div class="feedback-heading">
+                <div><strong>人工决策</strong><div class="ref">接受问题、标记误报、补充评论或调整严重度。</div></div>
+                <span class="badge soft" data-feedback-state>待决策</span>
+              </div>
+              <div class="feedback-actions" role="group" aria-label="问题决策">
+                <button type="button" class="button" data-feedback-action="accept" aria-pressed="false">接受</button>
+                <button type="button" class="button" data-feedback-action="false_positive" aria-pressed="false">标记误报</button>
+              </div>
+              <details class="feedback-more">
+                <summary>评论与严重度调整</summary>
+                <div class="feedback-controls">
+                <label>
+                  严重度调整
+                  <select data-feedback-severity>
+                    <option value="">保持原值</option>
+                    <option value="high">高</option>
+                    <option value="medium">中</option>
+                    <option value="low">低</option>
+                    <option value="note">提示</option>
+                  </select>
+                </label>
+                <label>
+                  评论
+                  <textarea rows="3" maxlength="2000" placeholder="可选；清空后保存会移除已有评论" data-feedback-comment></textarea>
+                </label>
+                <div class="feedback-comment-actions">
+                  <button type="button" class="button" data-feedback-action="comment">保存评论</button>
+                  <span class="ref" role="status" aria-live="polite" data-feedback-message>尚未记录决策</span>
+                </div>
+                </div>
+              </details>
+            </div>
           </div>
-          <span class="badge warn">open</span>
-        </div>
-        <div class="finding-body">
-          <div class="finding-layout">
+        </article>
+      </div>
+    </section>
+    <section class="panel findings-section" data-category="quality">
+      <div class="section-title">
+        <h2>3. 质量</h2>
+        <span class="badge soft">1 条</span>
+      </div>
+      <div class="finding-stack">
+        <article class="finding-card medium" data-node-id="finding-002" data-node-type="finding" data-category="quality" data-severity="medium" data-fingerprint="sha256:8eb3f0b05ecd189b40e9ea87341cf6342f122ace30645f1e0802a5972687faff" data-edge-id="edge-005">
+          <div class="finding-header">
+            <span class="badge warn">中</span>
+            <span class="badge soft category-badge">质量</span>
             <div>
-              <div class="finding-note">
-                <strong>为什么是问题：</strong>新增测试覆盖了已过期和未过期两种情况，但没有覆盖 <code>expires_at == now</code>。时钟漂移场景下可能导致不确定行为。
-              </div>
-              <div class="hunk" data-hunk-id="hunk:tests/test_auth.py:67:1">
-                <div class="hunk-caption">
-                  <span>diff hunk · highlight_lines: 78-82</span>
-                  <span>line_side: new</span>
-                </div>
-                <table class="hunk-table">
-                  <tr class="hunk-ctx"><td class="hunk-stripe"></td><td class="hunk-num">67</td><td class="hunk-code">    def test_expired_token_raises():</td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe"></td><td class="hunk-num">68</td><td class="hunk-code">        service = AuthService(cache=FakeCache())</td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe"></td><td class="hunk-num">69</td><td class="hunk-code">        with pytest.raises(TokenExpiredError):</td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe"></td><td class="hunk-num">70</td><td class="hunk-code">            service.get_token("user-expired")</td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe"></td><td class="hunk-num">71</td><td class="hunk-code"></td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">72</td><td class="hunk-code">+    def test_valid_token_returned():</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">73</td><td class="hunk-code">+        service = AuthService(cache=FakeCache())</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">74</td><td class="hunk-code">+        token = service.get_token("user-valid")</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">75</td><td class="hunk-code">+        assert token.value == "valid-token-123"</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">76</td><td class="hunk-code">+        assert not token.expired</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">77</td><td class="hunk-code">+</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe hunk-stripe-active"></td><td class="hunk-num">78</td><td class="hunk-code">+    # TODO: 缺少 expires_at == now 的边界测试</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe hunk-stripe-active"></td><td class="hunk-num">79</td><td class="hunk-code">+    # def test_boundary_expiry():</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe hunk-stripe-active"></td><td class="hunk-num">80</td><td class="hunk-code">+    #     service = AuthService(cache=FakeCache())</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe hunk-stripe-active"></td><td class="hunk-num">81</td><td class="hunk-code">+    #     token = service.get_token("user-boundary")</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe hunk-stripe-active"></td><td class="hunk-num">82</td><td class="hunk-code">+    #     ???</td></tr>
-                  <tr class="hunk-add"><td class="hunk-stripe"></td><td class="hunk-num">83</td><td class="hunk-code">+</td></tr>
-                  <tr class="hunk-ctx"><td class="hunk-stripe"></td><td class="hunk-num">84</td><td class="hunk-code">    def test_cache_miss_fetches_new():</td></tr>
-                </table>
-              </div>
+              <span class="finding-title">缺少 token 过期边界时间的测试</span>
+              <span class="location">
+tests/test_auth.py:78-82              </span>
             </div>
-            <aside class="chain">
-              <div class="chain-row"><span class="chain-label">Evidence</span><span data-node-id="evidence-002" data-node-type="evidence" data-edge-id="edge-009">隔离宿主审查标记边界测试缺口</span></div>
-              <div class="chain-row"><span class="chain-label">Fix</span><span data-node-id="fix-002" data-node-type="fix" data-edge-id="edge-007">fix-002 · 补边界时间测试</span></div>
-              <div class="chain-row"><span class="chain-label">Decision</span><span>等待用户确认或降级</span></div>
-            </aside>
+            <span class="badge warn">待处理</span>
           </div>
-          <div class="finding-fix" data-node-id="fix-002" data-node-type="fix">
-            <strong>修复建议 fix-002 (P1):</strong> 补充 <code>expires_at == now</code> 的边界测试用例。使用 freezegun 或 mock datetime 固定时间。
+          <div class="finding-body">
+            <div class="finding-layout">
+              <div>
+                <div class="finding-note">
+<strong>为什么是问题：</strong>                  新增的测试覆盖了 token 已过期和未过期两种情况，但没有覆盖恰好处于过期边界（expires_at == now）的情况。这在时钟漂移场景下可能导致不确定行为。
+                </div>
+
+                <div class="hunk" data-hunk-id="hunk:tests/test_auth.py:67:1">
+                  <div class="hunk-caption">
+                    <span>@@ -67,6 +67,18 @@</span>
+                    <span>展示 18/18 行 · <span class="hunk-hit-key">橙色标记</span>：新文件第 78, 79, 80, 81, 82 行</span>
+                  </div>
+                  <div class="hunk-scroll">
+                    <table class="hunk-table" aria-label="可信 unified diff 证据">
+                      <thead><tr><th></th><th>旧行</th><th>新行</th><th>代码</th></tr></thead>
+                      <tbody>
+                        <tr class="hunk-context">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">67</td>
+                          <td class="hunk-num">67</td>
+                          <td class="hunk-code">     def test_expired_token_raises():</td>
+                        </tr>
+                        <tr class="hunk-context">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">68</td>
+                          <td class="hunk-num">68</td>
+                          <td class="hunk-code">         service = AuthService(cache=FakeCache())</td>
+                        </tr>
+                        <tr class="hunk-context">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">69</td>
+                          <td class="hunk-num">69</td>
+                          <td class="hunk-code">         with pytest.raises(TokenExpiredError):</td>
+                        </tr>
+                        <tr class="hunk-context">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">70</td>
+                          <td class="hunk-num">70</td>
+                          <td class="hunk-code">             service.get_token(&#34;user-expired&#34;)</td>
+                        </tr>
+                        <tr class="hunk-context">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">71</td>
+                          <td class="hunk-num">71</td>
+                          <td class="hunk-code"> </td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">72</td>
+                          <td class="hunk-code">+    def test_valid_token_returned():</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">73</td>
+                          <td class="hunk-code">+        service = AuthService(cache=FakeCache())</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">74</td>
+                          <td class="hunk-code">+        token = service.get_token(&#34;user-valid&#34;)</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">75</td>
+                          <td class="hunk-code">+        assert token.value == &#34;valid-token-123&#34;</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">76</td>
+                          <td class="hunk-code">+        assert not token.expired</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">77</td>
+                          <td class="hunk-code">+</td>
+                        </tr>
+                        <tr class="hunk-add hunk-line-active" data-highlighted="true">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">78</td>
+                          <td class="hunk-code">+    # TODO: 缺少 expires_at == now 的边界测试</td>
+                        </tr>
+                        <tr class="hunk-add hunk-line-active" data-highlighted="true">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">79</td>
+                          <td class="hunk-code">+    # def test_boundary_expiry():</td>
+                        </tr>
+                        <tr class="hunk-add hunk-line-active" data-highlighted="true">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">80</td>
+                          <td class="hunk-code">+    #     service = AuthService(cache=FakeCache())</td>
+                        </tr>
+                        <tr class="hunk-add hunk-line-active" data-highlighted="true">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">81</td>
+                          <td class="hunk-code">+    #     token = service.get_token(&#34;user-boundary&#34;)</td>
+                        </tr>
+                        <tr class="hunk-add hunk-line-active" data-highlighted="true">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">82</td>
+                          <td class="hunk-code">+    #     ???</td>
+                        </tr>
+                        <tr class="hunk-add">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num"></td>
+                          <td class="hunk-num">83</td>
+                          <td class="hunk-code">+</td>
+                        </tr>
+                        <tr class="hunk-context">
+                          <td class="hunk-stripe"></td>
+                          <td class="hunk-num">72</td>
+                          <td class="hunk-num">84</td>
+                          <td class="hunk-code">     def test_cache_miss_fetches_new():</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="chain">
+                <div class="chain-row">
+                  <span class="chain-label">审查依据</span>
+                  <span data-node-id="evidence-002" data-node-type="evidence" data-edge-id="edge-009">隔离宿主审查标记 get_token 缓存路径可能绕过 refresh_token 修复</span>
+                </div>
+                <div class="chain-row">
+                  <span class="chain-label">修复建议</span>
+                  <span data-node-id="fix-002" data-node-type="fix" data-edge-id="edge-007">fix-002 · 补充 expires_at == now 的边界测试用例</span>
+                </div>
+              </aside>
+            </div>
+
+            <div class="fix-inline" data-node-id="fix-002" data-node-type="fix">
+              <strong>fix-002（P1）：</strong> 使用 freezegun 或 mock datetime 固定时间，测试 token 恰好处于过期边界时的行为。
+            </div>
+
+            <div class="feedback-placeholder" data-feedback-for="finding-002" data-fingerprint="sha256:8eb3f0b05ecd189b40e9ea87341cf6342f122ace30645f1e0802a5972687faff">
+              <div class="feedback-heading">
+                <div><strong>人工决策</strong><div class="ref">接受问题、标记误报、补充评论或调整严重度。</div></div>
+                <span class="badge soft" data-feedback-state>待决策</span>
+              </div>
+              <div class="feedback-actions" role="group" aria-label="问题决策">
+                <button type="button" class="button" data-feedback-action="accept" aria-pressed="false">接受</button>
+                <button type="button" class="button" data-feedback-action="false_positive" aria-pressed="false">标记误报</button>
+              </div>
+              <details class="feedback-more">
+                <summary>评论与严重度调整</summary>
+                <div class="feedback-controls">
+                <label>
+                  严重度调整
+                  <select data-feedback-severity>
+                    <option value="">保持原值</option>
+                    <option value="high">高</option>
+                    <option value="medium">中</option>
+                    <option value="low">低</option>
+                    <option value="note">提示</option>
+                  </select>
+                </label>
+                <label>
+                  评论
+                  <textarea rows="3" maxlength="2000" placeholder="可选；清空后保存会移除已有评论" data-feedback-comment></textarea>
+                </label>
+                <div class="feedback-comment-actions">
+                  <button type="button" class="button" data-feedback-action="comment">保存评论</button>
+                  <span class="ref" role="status" aria-live="polite" data-feedback-message>尚未记录决策</span>
+                </div>
+                </div>
+              </details>
+            </div>
           </div>
-        </div>
-        <div class="feedback" data-feedback-for="finding-002">
-          <div class="feedback-row">
-            <button type="button" data-action="accept">确认问题</button>
-            <button type="button" data-action="false_positive">标记非问题</button>
-            <button type="button" data-action="severity_override" data-severity="low">降为 LOW</button>
-            <span class="feedback-status">尚未记录反馈</span>
-          </div>
-          <textarea placeholder="补充审计意见，例如这个测试缺口是否必须本轮处理。"></textarea>
-          <div class="feedback-row">
-            <button type="button" data-action="comment">保存评论</button>
-          </div>
-        </div>
-      </article>
+        </article>
+      </div>
     </section>
 
-    <section>
-      <div class="section-title">
-        <h2>3. 修复方案</h2>
-        <span class="badge warn">2 open fixes</span>
+    <section class="panel feedback-toolbar" aria-labelledby="feedback-export-title">
+      <div>
+        <h2 id="feedback-export-title">人工决策</h2>
+        <p class="muted">决策仅保存在当前浏览器，并按 graph、run 与 finding fingerprint 隔离；不会写回 <code>audit.json</code>。</p>
+        <p class="ref">导出会下载 <code>audit-feedback.jsonl</code>；浏览器下载位置不保证等于本审计目录。</p>
       </div>
-      <table>
-        <thead>
-          <tr><th>优先级</th><th>修复项</th><th>验证方式</th><th>状态</th></tr>
-        </thead>
-        <tbody>
-          <tr data-node-id="fix-001" data-node-type="fix">
-            <td>P0</td>
-            <td>在 refresh 成功后立即更新缓存<div class="ref">来源 finding: finding-001</div></td>
-            <td>mock cache.get 返回旧 token，验证 refresh 后 cache.set 被调用</td>
-            <td><span class="badge warn">open</span></td>
-          </tr>
-          <tr data-node-id="fix-002" data-node-type="fix">
-            <td>P1</td>
-            <td>补充 expires_at == now 的边界测试<div class="ref">来源 finding: finding-002</div></td>
-            <td>freezegun 固定时间到 expires_at，断言行为确定</td>
-            <td><span class="badge warn">open</span></td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="feedback-export-actions">
+        <button type="button" class="button primary" data-feedback-export>导出 audit-feedback.jsonl</button>
+        <span class="ref" role="status" aria-live="polite" data-feedback-export-status>尚未导出</span>
+      </div>
     </section>
 
-    <section>
+    <section class="panel">
       <div class="section-title">
-        <h2>4. 多轮对比</h2>
-        <span class="badge soft">single run</span>
+        <h2>4. 修复建议</h2>
+        <span class="badge soft">2 条</span>
       </div>
-      <p class="muted">当前为 run-001（初次审计），暂无历史对比。后续可再次让 AI host 使用 change-audit Skill 审计新的 diff，生成新快照并展示风险下降、finding 关闭和摘要审计状态变化。</p>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>优先级</th><th>修复项</th><th>状态</th><th>来源</th></tr></thead>
+          <tbody>
+            <tr data-node-id="fix-001" data-node-type="fix">
+              <td>P0</td>
+              <td><strong>在 refresh 成功后立即更新缓存</strong><div class="ref">在 get_token 的 refresh 路径中，fetch_token 返回新 token 后应先清除旧缓存再写入新 token。</div></td>
+              <td><span class="badge warn">待处理</span></td>
+              <td class="ref">finding-001</td>
+            </tr>
+            <tr data-node-id="fix-002" data-node-type="fix">
+              <td>P1</td>
+              <td><strong>补充 expires_at == now 的边界测试用例</strong><div class="ref">使用 freezegun 或 mock datetime 固定时间，测试 token 恰好处于过期边界时的行为。</div></td>
+              <td><span class="badge warn">待处理</span></td>
+              <td class="ref">finding-002</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
-    <section>
+
+    <section class="panel">
       <div class="section-title">
-        <h2>5. 证据详情</h2>
-        <span class="badge soft">2 evidence items</span>
+        <h2>5. 审查依据详情</h2>
+        <span class="badge soft">2 条</span>
       </div>
-      <table>
-        <thead>
-          <tr><th>证据</th><th>来源</th><th>状态</th><th>关联</th></tr>
-        </thead>
-        <tbody>
-          <tr data-node-id="evidence-001" data-node-type="evidence" data-status="pass">
-            <td>pytest tests/test_auth.py: 4 passed, 0 failed</td>
-            <td>pytest</td>
-            <td><span class="badge ok">pass</span></td>
-            <td class="ref">说明现有测试通过，但未覆盖 finding-002 的边界</td>
-          </tr>
-          <tr data-node-id="evidence-002" data-node-type="evidence" data-status="fail">
-            <td>隔离宿主审查标记 get_token 缓存路径可能绕过 refresh_token 修复</td>
-            <td>host_llm</td>
-            <td><span class="badge risk">fail</span></td>
-            <td class="ref">挑战 claim-001 · 支持 finding-001, finding-002</td>
-          </tr>
-        </tbody>
-      </table>
+      <details class="evidence-details">
+        <summary>查看全部 2 条审查依据</summary>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>证据</th><th>来源</th><th>状态</th><th>关联</th></tr></thead>
+          <tbody>
+            <tr data-node-id="evidence-001" data-node-type="evidence" data-status="pass">
+              <td>pytest tests/test_auth.py — 4 passed, 0 failed</td>
+              <td>pytest</td>
+              <td><span class="badge ok">通过</span></td>
+              <td class="ref">—</td>
+            </tr>
+            <tr data-node-id="evidence-002" data-node-type="evidence" data-status="fail">
+              <td>隔离宿主审查标记 get_token 缓存路径可能绕过 refresh_token 修复</td>
+              <td>隔离宿主审查</td>
+              <td><span class="badge risk">发现问题</span></td>
+              <td class="ref">finding-001, finding-002</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      </details>
     </section>
   </main>
+  <script>(function attachChangeAuditFeedback(root, factory) {
+  "use strict";
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  }
+  if (root) {
+    root.ChangeAuditFeedback = api;
+    if (root.document) {
+      api.init(root.document, root);
+    }
+  }
+})(typeof window !== "undefined" ? window : null, function createChangeAuditFeedback() {
+  "use strict";
 
-  <script>
-    const feedbackKey = "change-audit:hunk-context-demo:feedback";
+  const PREFIX = "change-audit.feedback.v1";
+  const SEVERITIES = new Set(["high", "medium", "low", "note"]);
 
-    function loadFeedback() {
-      try {
-        return JSON.parse(localStorage.getItem(feedbackKey) || "[]");
-      } catch {
-        return [];
+  function storageKey(identity) {
+    return [PREFIX, identity.graph_id, identity.run_id, identity.fingerprint]
+      .map((value) => encodeURIComponent(String(value)))
+      .join(":");
+  }
+
+  function defaultState(identity) {
+    return {
+      graph_id: identity.graph_id,
+      run_id: identity.run_id,
+      target_type: "finding",
+      target_id: identity.target_id,
+      fingerprint: identity.fingerprint,
+      disposition: null,
+      comment: "",
+      severity_override: null,
+      timestamps: {},
+      updated_at: null,
+    };
+  }
+
+  function matchesIdentity(state, identity) {
+    return state
+      && state.graph_id === identity.graph_id
+      && state.run_id === identity.run_id
+      && state.target_id === identity.target_id
+      && state.fingerprint === identity.fingerprint;
+  }
+
+  function validState(state, identity) {
+    if (!matchesIdentity(state, identity) || state.target_type !== "finding") return false;
+    if (![null, "accept", "false_positive"].includes(state.disposition)) return false;
+    if (typeof state.comment !== "string") return false;
+    if (state.severity_override !== null && !SEVERITIES.has(state.severity_override)) return false;
+    if (!state.timestamps || typeof state.timestamps !== "object") return false;
+    if (state.disposition && typeof state.timestamps.disposition !== "string") return false;
+    if (state.comment && typeof state.timestamps.comment !== "string") return false;
+    if (state.severity_override && typeof state.timestamps.severity_override !== "string") return false;
+    return true;
+  }
+
+  function loadState(storage, identity) {
+    try {
+      const raw = storage.getItem(storageKey(identity));
+      if (!raw) return defaultState(identity);
+      const state = JSON.parse(raw);
+      return validState(state, identity) ? state : defaultState(identity);
+    } catch (_error) {
+      return defaultState(identity);
+    }
+  }
+
+  function saveState(storage, state) {
+    storage.setItem(storageKey(state), JSON.stringify(state));
+    return state;
+  }
+
+  function applyAction(state, action, value, now) {
+    const next = JSON.parse(JSON.stringify(state));
+    const timestamp = now || new Date().toISOString();
+    if (action === "accept" || action === "false_positive") {
+      next.disposition = action;
+      next.timestamps.disposition = timestamp;
+    } else if (action === "comment") {
+      next.comment = String(value || "").trim();
+      if (next.comment) next.timestamps.comment = timestamp;
+      else delete next.timestamps.comment;
+    } else if (action === "severity_override") {
+      const severity = String(value || "");
+      if (severity && !SEVERITIES.has(severity)) {
+        throw new Error("invalid severity override");
       }
+      next.severity_override = severity || null;
+      if (next.severity_override) next.timestamps.severity_override = timestamp;
+      else delete next.timestamps.severity_override;
+    } else {
+      throw new Error("unknown feedback action");
+    }
+    next.updated_at = timestamp;
+    return next;
+  }
+
+  function baseEvent(state, action, createdAt) {
+    return {
+      target_type: "finding",
+      target_id: state.target_id,
+      action,
+      fingerprint: state.fingerprint,
+      graph_id: state.graph_id,
+      run_id: state.run_id,
+      created_at: createdAt,
+    };
+  }
+
+  function stateToEvents(state) {
+    const events = [];
+    if (state.disposition) {
+      events.push(baseEvent(state, state.disposition, state.timestamps.disposition));
+    }
+    if (state.comment) {
+      events.push({
+        ...baseEvent(state, "comment", state.timestamps.comment),
+        comment: state.comment,
+      });
+    }
+    if (state.severity_override) {
+      events.push({
+        ...baseEvent(state, "severity_override", state.timestamps.severity_override),
+        severity: state.severity_override,
+      });
+    }
+    return events;
+  }
+
+  function exportJsonl(states) {
+    const lines = states.flatMap(stateToEvents).map((event) => JSON.stringify(event));
+    return lines.length ? `${lines.join("\n")}\n` : "";
+  }
+
+  function memoryStorage() {
+    const values = new Map();
+    return {
+      getItem(key) { return values.has(key) ? values.get(key) : null; },
+      setItem(key, value) { values.set(key, String(value)); },
+    };
+  }
+
+  function renderState(panel, state, syncInputs) {
+    panel.querySelectorAll("[data-feedback-action='accept'], [data-feedback-action='false_positive']")
+      .forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.feedbackAction === state.disposition));
+      });
+    const badge = panel.querySelector("[data-feedback-state]");
+    const displayState = state.disposition
+      || (state.comment || state.severity_override ? "edited" : "pending");
+    badge.textContent = {
+      accept: "已接受",
+      false_positive: "已标记误报",
+      edited: "已编辑",
+      pending: "待决策",
+    }[displayState];
+    if (syncInputs) {
+      panel.querySelector("[data-feedback-comment]").value = state.comment || "";
+      panel.querySelector("[data-feedback-severity]").value = state.severity_override || "";
+    }
+  }
+
+  function init(documentObject, rootObject) {
+    const shell = documentObject.querySelector("[data-graph-id][data-run-id]");
+    if (!shell) return;
+    let storage;
+    try {
+      storage = rootObject.localStorage;
+      const probe = `${PREFIX}:probe`;
+      storage.setItem(probe, "1");
+      storage.removeItem(probe);
+    } catch (_error) {
+      storage = memoryStorage();
     }
 
-    function saveFeedback(records) {
-      localStorage.setItem(feedbackKey, JSON.stringify(records));
-    }
-
-    function upsertFeedback(record) {
-      const records = loadFeedback();
-      const next = records.filter((item) => !(item.target_id === record.target_id && item.action === record.action));
-      next.push(record);
-      saveFeedback(next);
-      renderFeedbackStatus();
-    }
-
-    function createRecord(panel, action, extra = {}) {
-      const card = panel.closest(".finding-card");
-      const targetId = card.dataset.nodeId;
-      const textarea = panel.querySelector("textarea");
-      return {
-        target_type: "finding",
-        target_id: targetId,
-        action,
-        reason: textarea.value.trim(),
-        fingerprint: card.dataset.fingerprint,
-        created_at: new Date().toISOString(),
-        ...extra
+    const panels = Array.from(documentObject.querySelectorAll("[data-feedback-for][data-fingerprint]"));
+    const entries = panels.map((panel) => {
+      const identity = {
+        graph_id: shell.dataset.graphId,
+        run_id: shell.dataset.runId,
+        target_id: panel.dataset.feedbackFor,
+        fingerprint: panel.dataset.fingerprint,
       };
-    }
+      let state = loadState(storage, identity);
+      renderState(panel, state, true);
+      const message = panel.querySelector("[data-feedback-message]");
 
-    function renderFeedbackStatus() {
-      const records = loadFeedback();
-      document.querySelectorAll(".feedback").forEach((panel) => {
-        const targetId = panel.dataset.feedbackFor;
-        const targetRecords = records.filter((item) => item.target_id === targetId);
-        const status = panel.querySelector(".feedback-status");
-        if (!targetRecords.length) {
-          status.textContent = "尚未记录反馈";
+      panel.querySelectorAll("[data-feedback-action]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.feedbackAction;
+          const value = action === "comment"
+            ? panel.querySelector("[data-feedback-comment]").value
+            : null;
+          state = applyAction(state, action, value);
+          try { saveState(storage, state); } catch (_error) { /* in-memory state remains usable */ }
+          renderState(panel, state, false);
+          message.textContent = action === "comment" && !state.comment ? "评论已移除" : "决策已保存在当前浏览器";
+        });
+      });
+      panel.querySelector("[data-feedback-severity]").addEventListener("change", (event) => {
+        state = applyAction(state, "severity_override", event.target.value);
+        try { saveState(storage, state); } catch (_error) { /* in-memory state remains usable */ }
+        renderState(panel, state, false);
+        message.textContent = state.severity_override ? "严重度调整已保存" : "已恢复原严重度";
+      });
+      return { getState: () => state };
+    });
+
+    const exportButton = documentObject.querySelector("[data-feedback-export]");
+    const exportStatus = documentObject.querySelector("[data-feedback-export-status]");
+    if (exportButton && exportStatus) {
+      exportButton.addEventListener("click", () => {
+        const jsonl = exportJsonl(entries.map((entry) => entry.getState()));
+        if (!jsonl) {
+          exportStatus.textContent = "暂无可导出的决策";
           return;
         }
-        const last = targetRecords[targetRecords.length - 1];
-        status.textContent = `已记录 ${targetRecords.length} 条反馈，最近动作: ${last.action}`;
+        const blob = new rootObject.Blob([jsonl], { type: "application/x-ndjson;charset=utf-8" });
+        const url = rootObject.URL.createObjectURL(blob);
+        const link = documentObject.createElement("a");
+        link.href = url;
+        link.download = "audit-feedback.jsonl";
+        documentObject.body.appendChild(link);
+        link.click();
+        link.remove();
+        rootObject.URL.revokeObjectURL(url);
+        exportStatus.textContent = `已导出 ${jsonl.trimEnd().split("\n").length} 条决策`;
       });
     }
+    documentObject.documentElement.dataset.changeAuditReady = "true";
+  }
 
-    document.querySelectorAll(".feedback button[data-action]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const panel = button.closest(".feedback");
-        const action = button.dataset.action;
-        const extra = action === "severity_override" ? { severity: button.dataset.severity } : {};
-        upsertFeedback(createRecord(panel, action, extra));
-      });
-    });
-
-    document.getElementById("export-feedback").addEventListener("click", () => {
-      const records = loadFeedback();
-      const jsonl = records.map((record) => JSON.stringify(record)).join("\n");
-      const blob = new Blob([jsonl + (jsonl ? "\n" : "")], { type: "application/jsonl" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "audit-feedback.jsonl";
-      link.click();
-      URL.revokeObjectURL(url);
-    });
-
-    renderFeedbackStatus();
-  </script>
+  return {
+    PREFIX,
+    applyAction,
+    defaultState,
+    exportJsonl,
+    init,
+    loadState,
+    memoryStorage,
+    saveState,
+    stateToEvents,
+    storageKey,
+    validState,
+  };
+});
+</script>
 </body>
 </html>

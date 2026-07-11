@@ -1,0 +1,4 @@
+interface:
+  display_name: "Change Audit"
+  short_description: "审计本地 Git 变更并生成可回链的 JSON 与 HTML 报告"
+  default_prompt: "Use $change-audit to review a local Git diff and return the validated audit report path."

@@ -1,0 +1,48 @@
+[project]
+name = "change-audit"
+version = "0.1.0a0"
+description = "Traceable code review artifacts for local Git diffs"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "jinja2>=3.1",
+  "jsonschema>=4.23",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.34"]
+dev = [
+  "build>=1.2",
+  "pytest>=8",
+  "ruff>=0.9",
+]
+
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["change_audit*"]
+
+[tool.setuptools.package-data]
+change_audit = [
+  "schemas/*.json",
+  "renderers/templates/*.j2",
+  "renderers/static/*.css",
+  "renderers/static/*.js",
+  "review/core/*.md",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

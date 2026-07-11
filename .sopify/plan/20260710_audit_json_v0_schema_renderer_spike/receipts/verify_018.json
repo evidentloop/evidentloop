@@ -1,0 +1,116 @@
+{
+  "evidence": {
+    "delivered": [
+      "self-contained change-audit Skill",
+      "Codex isolated host review workflow",
+      "fixed-range Fireworks formal audit pair",
+      "implementation-before versus implementation-after comparison",
+      "long-token responsive renderer hardening"
+    ],
+    "dogfood": {
+      "audit_html_sha256": "af44ec41c14d5e7d5ecb123da769bd79ab90cbe14d520ba53f3fcd1ef6c54779",
+      "audit_json_sha256": "db6566468ce323043ca3e27bf727f1b667d3444502e294d94de345725babae26",
+      "baseline_audit_sha256": "f253d2b2cf53342fe4112e44ce58bf95e6d8329a9d820eaed64737c571d0cd13",
+      "diff": "d5ef26deac6b1ed37ee9b89b52dddb1bcaac6c24..9a64e5a926d430a421a71b5cf433b0553876db28",
+      "finding_count": 4,
+      "raw_analysis_sha256": "198129e806b31a20e5f34594a58555bf5b3bd7c4b18341f0af50e3273ff4dd04",
+      "review_status": "complete",
+      "risk_score": 80,
+      "run_id": "run-82a0006703e94c64835d2c08fbe459c5",
+      "trusted_hunk_count": 4,
+      "unscored_finding_count": 0,
+      "verdict": "concerns"
+    },
+    "knowledge_sync": {
+      "blueprint_index": "updated",
+      "blueprint_tasks": "Qoder model smoke recorded as explicitly deferred",
+      "project": "updated",
+      "sample_docs": "formal README and baseline comparison added"
+    },
+    "verification": [
+      {
+        "command": "pytest -p no:cacheprovider",
+        "evidence": "410 collected, 410 passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "task": "full regression"
+      },
+      {
+        "command": "quick_validate.py; ruff check",
+        "evidence": "Skill is valid; ruff passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "task": "Skill structure and static contract"
+      },
+      {
+        "command": "isolated trigger and fail-closed scenarios",
+        "evidence": "8 of 8 trigger classifications and 3 of 3 failure scenarios passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "task": "host forward tests"
+      },
+      {
+        "command": "assert_valid_audit; validate_html_trace",
+        "evidence": "schema, semantics and HTML trace passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "task": "formal report validation"
+      },
+      {
+        "command": "Chrome headless 1440x1200 and 450x1080 screenshots",
+        "evidence": "long commit range wrapping passed after minimal CSS fix",
+        "result": "retried",
+        "retry_count": 1,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "root_cause": "logic_regression",
+        "task": "responsive rendering"
+      },
+      {
+        "command": "qodercli 1.0.42 workspace link and skills list",
+        "evidence": "CLI startup, temporary link and Skill discovery passed; external model execution not claimed",
+        "reason": "model-level smoke deferred by explicit user decision",
+        "result": "skipped",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "not_applicable",
+          "spec_compliance": "deferred"
+        },
+        "task": "Qoder host"
+      }
+    ],
+    "wave": "4",
+    "wave_review": {
+      "code_quality": "passed after independent re-review",
+      "overdesign": "none detected; host orchestration remains in one Skill and Python business logic is not duplicated",
+      "spec_compliance": "passed for Codex and static Qoder discovery; Qoder model execution explicitly deferred"
+    }
+  },
+  "provenance": {
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_018",
+    "source": "wave_4_closure",
+    "user_decision": "Qoder model smoke will be performed manually later"
+  },
+  "timestamp": "2026-07-10T14:56:20+00:00",
+  "verdict": "wave_4_scope_completed_qoder_model_deferred"
+}

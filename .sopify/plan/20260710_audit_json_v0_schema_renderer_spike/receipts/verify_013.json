@@ -1,0 +1,105 @@
+{
+  "evidence": {
+    "automated_verification": {
+      "atomic_render_failure_preservation": "passed",
+      "deterministic_reference_render": "passed",
+      "html_trace": "passed",
+      "javascript_syntax": "passed",
+      "pytest": "369 collected, 369 passed",
+      "ruff": "passed",
+      "schema_reference_demo": "passed",
+      "wheel": "change_audit-0.1.0a0-py3-none-any.whl built and installed in a clean Python 3.12 environment",
+      "wheel_resources": [
+        "audit-v0.schema.json",
+        "reviewer-prompt.md",
+        "audit.html.j2",
+        "audit.css",
+        "audit.js"
+      ],
+      "xss": "passed"
+    },
+    "implementation_status": "complete",
+    "pending_gate": {
+      "not_claimed": "No live viewport or visual PASS is claimed.",
+      "reason": "The in-app Browser security policy rejected file:// and explicitly prohibited alternate-browser workarounds.",
+      "requirement": "Live 375px and 1280px no-horizontal-overflow verification",
+      "static_evidence": [
+        "body overflow-x hidden",
+        "hunk containers overflow-x auto",
+        "responsive breakpoints at 780px and 420px",
+        "prefers-reduced-motion guard",
+        "generated HTML contains dual old/new hunk columns"
+      ]
+    },
+    "verification": [
+      {
+        "command": "PYTHONDONTWRITEBYTECODE=1 /tmp/change-audit-crossreview-baseline-venv/bin/python -m pytest -p no:cacheprovider",
+        "final_evidence": "369 passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "pending live viewport gate"
+        },
+        "scope": "review migration plus schema, validation, hunk, renderer, CLI and resources",
+        "task": "1.1-2.9 automated Wave 1 suite",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "ruff check --no-cache change_audit tests prompt-lab/run.py",
+        "final_evidence": "All checks passed",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "all Python implementation and tests",
+        "task": "Wave 1 lint",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "python -m build --wheel; clean-venv pip install; python -m change_audit render",
+        "final_evidence": "clean installed package rendered the reference audit",
+        "result": "passed",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "passed",
+          "spec_compliance": "passed"
+        },
+        "scope": "distribution metadata and package resources",
+        "task": "Wave 1 wheel isolation",
+        "verification_source": "project_native"
+      },
+      {
+        "command": "in-app Browser file preview",
+        "final_evidence": "Browser policy rejected the local file before navigation",
+        "reason_code": "browser_local_url_policy",
+        "result": "replan_required",
+        "retry_count": 0,
+        "review_result": {
+          "code_quality": "not affected",
+          "spec_compliance": "pending"
+        },
+        "root_cause": "human_action_required",
+        "scope": "375px and 1280px live DOM overflow",
+        "task": "Wave 1 responsive live browser",
+        "verification_source": "project_contract"
+      }
+    ],
+    "wave": "1",
+    "wave_review": {
+      "code_quality": "passed",
+      "overdesign": "none detected",
+      "spec_compliance": "pending only the live viewport gate"
+    }
+  },
+  "provenance": {
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_013",
+    "source": "wave_1_pending_checkpoint"
+  },
+  "timestamp": "2026-07-10T13:24:39+00:00",
+  "verdict": "wave_1_awaiting_viewport_decision"
+}

@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.2-alpha",
+  "schema_version": "0.2",
   "graph_id": "audit:hunk-context-demo:20260708",
   "source": {
     "type": "git_diff",

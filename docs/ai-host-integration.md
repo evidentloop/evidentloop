@@ -2,7 +2,7 @@
 
 ## 状态
 
-本文件定义一期 `code_diff` profile 的目标契约；实现尚未开始。仓库长期 review 内核是 artifact-general，但非 diff 类型在具备专属 adapter、可信 anchor、eval baseline 和 renderer profile 前，不使用本文件的正式 audit 交付承诺。
+本文件定义一期 `code_diff` profile 的已实现契约。CrossReview 已等价迁入 `change_audit.review`，`prepare`、`finalize`、`render`、可信 hunk adapter、状态完成门、正式产物对提交与 AI host Skill 均已实现；Codex 已完成端到端 dogfood，Qoder 模型级 smoke 按用户决定留待手工验证。仓库长期 review 内核是 artifact-general，但非 diff 类型在具备专属 adapter、可信 anchor、eval baseline 和 renderer profile 前，不使用本文件的正式 audit 交付承诺。
 
 ## 用户看到什么
 
@@ -14,7 +14,7 @@
 
 AI host 通过用户级或宿主级 Skill 发现 `change-audit`，完成审查编排，并返回摘要与 `audit.html` 路径。用户不需要知道 ReviewPack、ReviewResult、CrossReview 或隐藏中间文件。
 
-一期完成后的默认正式产物只有：
+一期默认正式产物只有：
 
 ```text
 audit/YYYYMMDD_<slug>/
@@ -38,7 +38,7 @@ change-audit Python package
   -> code-diff adapter、Audit Graph、校验、风险状态和 HTML renderer
 ```
 
-CrossReview 的能力计划等价迁入 `change_audit.review`。它是包内审查子系统，不是第二个安装项、第二个 Skill 或用户必须理解的产品。
+CrossReview 的可复用能力已等价迁入 `change_audit.review`。它是包内审查子系统，不是第二个安装项、第二个 Skill 或用户必须理解的产品。
 
 默认链路不集成模型 SDK、不读取 API key。宿主已有的 LLM 是一期主要 finding 生产者；Python 只生成机械字段、校验语义输出并渲染稳定报告。
 
@@ -56,6 +56,8 @@ python -m change_audit prepare --diff HEAD~1 [--out DIR]
 - `review-pack.json`：内部 ReviewPack。
 - `hunk-index.json`：可信路径、行范围、hunk ID 和完整代码片段。
 - `prompt.md`：为宿主 LLM 准备的隔离审查提示。
+
+prepare 同时在骨架中冻结 reviewer prompt 的 source、version 与完整渲染文本 SHA-256。当前 product prompt 为 `product/v0.2`：Section/字段名和协议枚举保持英文，`What`、`Why`、Observations 与 Overall Assessment 使用简体中文；`Where` 优先给出最能直接证明问题的一条修改行。文本 diff 不携带 `GIT binary patch`，但 binary 文件路径、change type 与 Git binary 占位仍保留在可信元数据中。
 
 最终目录此时不得出现；staging 根目录也尚未生成候选 `audit.json`。
 
@@ -95,7 +97,7 @@ python -m change_audit finalize --out DIR [--keep-review-artifacts]
 
 一期采用本地单写者、非对抗并发模型，不承诺消除目标检查与 rename 之间的极小竞态。原生 race-proof no-replace、平台专用锁和递归 symlink 防御延后；POSIX 上 staging / `.run/` 的 0700 与中间文件的 0600 只做 best-effort 隐私保护，不是跨平台成功门禁。
 
-合法的零 finding 必须有明确完成信号。缺段、截断或非法输出不得被推断成“未发现问题”，而应映射为 `partial` 或 `failed`。
+finalize 会先校验冻结的 prompt 版本和 SHA-256，再接收宿主结果。合法的零 finding 必须使用明确完成信号；finding block 的声明 ID、实际解析结果和必要字段必须一致。缺段、截断、prompt 漂移或非法输出不得被推断成“未发现问题”，而应硬失败或映射为 `partial` / `failed`。
 
 成功提交前默认清理 `.run/`。宿主拒绝或可归一化的审查失败可以生成 `review_status = failed` 的完整报告对；schema、安全、路径不可读写、render、trace 或目录提交等硬失败返回非零。对 prepare 已接受的新目标，提交前失败时最终目录保持不存在并保留 staging 诊断；检查时已有目标或目标 leaf 是符号链接则拒绝，rename 失败也不能作为本轮成功证据。任何失败路径都不得复用旧报告或宣称成功。
 
@@ -156,18 +158,18 @@ python -m pip install -e /path/to/change-audit
 git+https://github.com/evidentloop/change-audit.git@<real-tag>
 ```
 
-禁止使用 `@latest`。一期不承诺 PyPI；某些宿主可以用 `npx skills add` 安装 Skill，但它不是唯一或跨宿主的安装契约。
+禁止使用 `@latest`。一期不承诺 PyPI，也没有经过验证的跨宿主 Skill 安装器；各宿主使用自己的本地 Skill 注册机制，并注册完整的 `integrations/agent-skill/change-audit/` 目录。
 
-## 宿主顺序
+## 宿主验证状态
 
-- 第一宿主：Codex，完成自然语言触发到 HTML 的首轮 dogfood。
-- 第二宿主：Qoder，复用同一 Skill 并记录发现、安装和展示差异。
+- Codex：已完成自然语言触发到 HTML 的真实 dogfood。
+- Qoder：已确认 QoderCLI 启动、临时链接和 Skill discovery；模型级 smoke 由用户后续手工完成。
 - 其他宿主：后续按其发现机制适配，不要求用户在每个项目复制说明文件。
 
 ## 一期验收
 
 - 中文和英文审计请求能够触发；普通文本 review 不误触发。
 - 缺包、版本不匹配、拒绝安装、prepare/宿主/finalize 任一步失败都返回真实状态。
-- 语义 bug fixture 产生可信锚点 finding；干净 fixture 明确产生 `complete + pass_candidate`；partial fixture 不伪装成干净审查。
+- 语义 bug fixture 产生可信锚点 finding；干净 fixture 在上下文充分时产生 `complete + pass_candidate`、不足时产生 `complete + inconclusive`；partial fixture 不伪装成干净审查。
 - 正式产物只暴露 `audit.json` 和 `audit.html`；中间产物默认清理。
-- Codex 与 Qoder 使用同一个 Skill 流程，不复制 Python 业务逻辑。
+- Codex 与 Qoder 使用同一个 Skill 流程，不复制 Python 业务逻辑；本轮 Qoder 仅确认 CLI 启动与 Skill discovery，模型级结果不计入已验证能力。

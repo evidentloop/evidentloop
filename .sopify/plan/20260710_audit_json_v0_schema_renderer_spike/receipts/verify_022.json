@@ -1,0 +1,41 @@
+{
+  "evidence": {
+    "javascript": {
+      "feedback_behavior": "passed",
+      "syntax": "passed"
+    },
+    "python_matrix": [
+      "3.10",
+      "3.11",
+      "3.12"
+    ],
+    "review_result": {
+      "code_quality": "passed; one workflow and no release automation or extra governance files",
+      "overdesign": "none detected",
+      "spec_compliance": "passed; only authorized CI/license/README/plan changes"
+    },
+    "ruff": "passed",
+    "scope": [
+      "minimal GitHub Actions CI",
+      "MIT LICENSE",
+      "bilingual README license text"
+    ],
+    "tests": "429 passed in 11.72s",
+    "wheel": {
+      "filename": "change_audit-0.1.0a0-py3-none-any.whl",
+      "isolated_install": "passed",
+      "license_included": "passed",
+      "module_cli_help": "passed",
+      "sha256": "d33bd9b9fb6cdd6c6ea0b137cceb3a7b11653088d08874cf75fe99b2360450d3"
+    },
+    "workflow_yaml": "parsed and expected Python matrix confirmed"
+  },
+  "provenance": {
+    "host": "Codex",
+    "plan_id": "20260710_audit_json_v0_schema_renderer_spike",
+    "receipt_id": "verify_022",
+    "source": "release_readiness_followup"
+  },
+  "timestamp": "2026-07-11T00:46:56+00:00",
+  "verdict": "release_readiness_changes_passed"
+}

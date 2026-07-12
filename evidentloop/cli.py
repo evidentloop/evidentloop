@@ -8,12 +8,18 @@ import sys
 from pathlib import Path
 
 from .audit.finalize import AuditWorkflowError, finalize_review, prepare_local_diff
+from .demo import DemoError, run_demo
+from .doctor import collect_diagnostics, render_diagnostics
 from .renderers.html import AuditRenderError, render_audit_file
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="python -m evidentloop")
+    parser = argparse.ArgumentParser(prog="evidentloop")
     commands = parser.add_subparsers(dest="command", required=True)
+    doctor = commands.add_parser("doctor", help="check the local EvidentLoop runtime")
+    doctor.add_argument("--json", action="store_true", dest="as_json")
+    demo = commands.add_parser("demo", help="run the bundled synthetic replay demo")
+    demo.add_argument("--out", type=Path)
     prepare = commands.add_parser("prepare", help="prepare a local Git diff for host review")
     prepare.add_argument("--diff", dest="diff_spec", required=True)
     prepare.add_argument("--out", type=Path)
@@ -28,6 +34,26 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    if args.command == "doctor":
+        diagnostics = collect_diagnostics()
+        if args.as_json:
+            print(json.dumps(diagnostics, ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_diagnostics(diagnostics))
+        return 1 if diagnostics["status"] == "error" else 0
+    if args.command == "demo":
+        try:
+            result = run_demo(args.out)
+        except (DemoError, AuditWorkflowError) as exc:
+            print(f"evidentloop demo: {exc}", file=sys.stderr)
+            return 1
+        print(
+            "EvidentLoop demo: bundled synthetic fixture + frozen reviewer replay; "
+            "no live AI review was performed.",
+            file=sys.stderr,
+        )
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        return 0
     if args.command == "prepare":
         try:
             result = prepare_local_diff(Path.cwd(), args.diff_spec, args.out)

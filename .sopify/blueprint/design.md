@@ -154,7 +154,7 @@ Renderer 使用共同外壳展示 status、verdict、summary、findings、eviden
 
 当前 `audit.html` 支持 finding 的 `accept`、`false_positive`、`comment` 和 `severity_override`，用 localStorage 暂存，并由用户显式导出 `audit-feedback.jsonl`。这是已经实现的反馈采集与导出能力，不冒充已经完成反馈消费。
 
-反馈闭环是长期核心能力：runtime 在明确授权下消费结构化用户决策，重新裁决受影响的 finding，生成与来源 run 和所用反馈可回链的新审计版本，再从该结构化版本确定性渲染新的 `audit.html`。闭环不得直接修改 HTML 或原地覆盖来源 `audit.json`，避免 HTML 成为第二真相源，也保留“原始判断 -> 用户反馈 -> 修订结果”的完整链路。具体 schema、命令与是否纳入首个公开 Alpha 由对应方案和验证收口，不在长期蓝图中硬编码。
+反馈闭环是长期核心能力：runtime 在明确授权下消费结构化用户决策，重新裁决受影响的 finding，生成与来源 run 和所用反馈可回链的新审计版本，再从该结构化版本确定性渲染新的 `audit.html`。闭环不得直接修改 HTML 或原地覆盖来源 `audit.json`，避免 HTML 成为第二真相源，也保留“原始判断 -> 用户反馈 -> 修订结果”的完整链路。首个公开 Alpha 明确只记录并导出反馈；消费、重新裁决与报告重新生成按长期任务后续实施。
 
 ## 宿主与发布
 

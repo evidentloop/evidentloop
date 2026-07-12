@@ -72,6 +72,24 @@ def test_reference_demo_renders_full_dual_line_hunks_and_trace() -> None:
     assert validate_html_trace(html, audit) == []
 
 
+def test_renderer_marks_synthetic_replay_provenance() -> None:
+    audit = minimal_audit()
+    audit["source"]["extensions"] = {
+        "evidentloop": {
+            "execution_mode": "demo_replay",
+            "fixture_id": "synthetic-off-by-one-v1",
+            "reviewer": "frozen_replay",
+            "live_ai_review": False,
+        }
+    }
+
+    html = render_audit_data(audit)
+
+    assert 'data-demo-provenance="frozen-replay"' in html
+    assert "synthetic-off-by-one-v1" in html
+    assert "没有执行实时 AI 审查" in html
+
+
 def test_long_hunk_renders_bounded_trusted_excerpt_without_mutating_json() -> None:
     audit = _long_hunk_audit()
     before = copy.deepcopy(audit)

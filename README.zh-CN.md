@@ -18,7 +18,7 @@
 EvidentLoop 把本地 Git diff 的审查结果整理成经过校验的 `audit.json` 和自包含的 `audit.html`。参与计分的问题必须回到真实修改行；审查缺失、格式错误或输出不完整时，报告会保留真实状态。
 
 > [!IMPORTANT]
-> 当前仓库是本地 Alpha（`0.1.0a0`），尚无 PyPI 发布、release tag、`evidentloop` console script、`demo` 或 `doctor` 命令。本文只使用本地 checkout 和 `python -m evidentloop`。
+> 当前仓库是本地 Alpha（`0.1.0a0`），尚无 PyPI 发布、release tag 或公开 Pages。本地 checkout 安装后已经提供 `evidentloop` console script、`doctor` 和离线合成 `demo`；`python -m evidentloop` 继续作为行为一致的开发与诊断入口。
 
 ## 审计产物
 
@@ -55,8 +55,11 @@ python3.11 --version       # 可替换为任意已安装的 Python >=3.10
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e .
-python -m evidentloop --help
+evidentloop doctor
+evidentloop demo --out evidentloop-demo
 ```
+
+`demo` 使用 wheel 内合成 Git 变更与固定 reviewer replay，不访问模型或网络；终端、JSON 和 HTML 都会明确标记该 provenance。
 
 使用宿主的本地 Skill 机制注册完整的 [`skills/evidentloop/`](./skills/evidentloop/) 目录。不要只复制 `SKILL.md`，同一目录还包含宿主元数据。标准跨宿主安装方式尚未完成验证。
 
@@ -133,8 +136,9 @@ Locator 契约、失败处理、prompt 数据边界与安装授权规则见 [AI 
 | 浏览器本地决策与 JSONL 导出 | 已实现；尚不消费 |
 | 报告语言 | 简体中文 |
 | Folder diff、无 diff 文件审查、远程 PR URL | 不支持 |
-| 自动修复、执行命令、消费反馈 | 不支持 |
-| PyPI、release tag、console script、`demo`、`doctor`、公开 Pages | 尚不可用 |
+| console script、`doctor` 与离线合成 replay `demo` | 本地已实现；尚未发布到 PyPI |
+| 自动修复、执行命令、消费反馈 | 首个公开 Alpha 不支持 |
+| PyPI、release tag、公开 Pages | 尚不可用 |
 | 标准跨宿主 Skill 安装 | 尚未验证 |
 
 当前公开审查目标只有 Git diff。其他 artifact profile 必须具备独立 adapter、可信 anchor、评测基线和 renderer 契约后，才能成为正式能力。

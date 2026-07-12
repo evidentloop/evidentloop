@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from importlib.resources import files
 
 from evidentloop.review.core.prompt import (
@@ -24,6 +25,11 @@ def test_runtime_resources_are_readable_via_importlib() -> None:
         "static/audit.js"
     ).read_text(encoding="utf-8")
     prompt = get_default_reviewer_template()
+    demo_fixture = json.loads(
+        files("evidentloop.demo_resources")
+        .joinpath("fixture.json")
+        .read_text(encoding="utf-8")
+    )
 
     assert schema["$schema"].endswith("2020-12/schema")
     assert schema["$id"] == (
@@ -47,3 +53,5 @@ def test_runtime_resources_are_readable_via_importlib() -> None:
         "d20d5af60cf26c99b4f34a96de61f6013785928c7d435ee8e849dbc220c8ebc6"
     )
     assert "Simplified Chinese" in prompt
+    assert demo_fixture["fixture_id"] == "synthetic-off-by-one-v1"
+    assert "Section 1: Findings" in demo_fixture["review_response"]

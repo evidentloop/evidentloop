@@ -50,4 +50,4 @@ AI coding 会生成代码变更，也会生成 plan、design、analysis、review
 - 不自动修改代码，不把审计结论当作发布阻断策略。
 - demo/replay 不验证模型质量，不得冒充一次真实 AI 审查。
 - 一期不做 folder diff、无 diff artifact 正式审计或远程 PR URL；这些是后续 profile 候选，不是永久排除。
-- 一期不做 hosted dashboard、SVG 产品 renderer 或 Markdown renderer；反馈消费是否纳入首个公开 Alpha 由具体方案和验证决定，不在长期蓝图中排除。
+- 一期不做 hosted dashboard、SVG 产品 renderer 或 Markdown renderer；首个公开 Alpha 只记录并导出反馈，不消费 `audit-feedback.jsonl`、不自动修订，完整反馈闭环继续保留为长期能力。

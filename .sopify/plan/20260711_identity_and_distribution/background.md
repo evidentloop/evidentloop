@@ -53,7 +53,7 @@
 - 不在身份 checkpoint 前修改源码、schema、prompt 或活动 Skill。
 - 不为旧名保留运行时 alias、双 package、双 CLI 或双 Skill；历史证据保留原名与 provenance。
 - 不把非代码 profile 描述为当前能力。
-- 反馈闭环是长期核心能力；本方案不把“完整反馈消费并重新生成报告”设为身份迁移的前置门禁。Wave 2 实施前根据现有能力与验证成本确定首个 Alpha 范围，纳入则补齐结构化契约和闭环测试，延后则在公开能力声明中明确边界。
+- 反馈闭环是长期核心能力；首个公开 Alpha 明确延后“完整反馈消费并重新生成报告”，只保留现有浏览器反馈、localStorage 与 `audit-feedback.jsonl` 导出。README 与未来 Pages 必须说明“不消费反馈、不自动修订”，后续按蓝图长期任务独立实施完整闭环。
 - 不把测试源码、schema 或 release gate 移出 main。
 - 不自研 npm 包、独立二进制、本地 LLM 或宿主 adapter registry。
 - 不永久保存 raw model output、完整日志、coverage 或未脱敏截图。

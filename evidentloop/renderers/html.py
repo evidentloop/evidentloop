@@ -146,6 +146,10 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
     nodes = data["nodes"]
     edges = data["edges"]
     summary = data["summary"]
+    source_provenance = (
+        data["source"].get("extensions", {}).get("evidentloop", {})
+    )
+    demo_replay = source_provenance.get("execution_mode") == "demo_replay"
     current_run = runs[-1] if runs else None
     node_by_id = {node["id"]: node for node in nodes}
     outgoing: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -369,6 +373,8 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
         "current_run": current_run,
         "title": title,
         "source_ref_label": _source_ref_label(str(data["source"]["ref"])),
+        "demo_replay": demo_replay,
+        "demo_fixture_id": source_provenance.get("fixture_id"),
         "changes": changes,
         "primary_change": changes[0] if changes else None,
         "files": files_view,

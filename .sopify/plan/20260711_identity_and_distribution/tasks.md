@@ -2,7 +2,7 @@
 
 目录：`.sopify/plan/20260711_identity_and_distribution/`
 
-> Wave 0 与 Wave 1 已完成，当前停止并等待用户审计。Wave 6 发布 checkpoint 通过前不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
+> Wave 0 至 Wave 2 的本地实现与门禁已完成，当前停在 Wave 2 checkpoint；Wave 3 尚未开始。Wave 6 发布 checkpoint 通过前不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
 
 ## Wave 0：身份与注册风险门禁（最高优先级）
 
@@ -26,11 +26,11 @@
 
 ## Wave 2：Python CLI 产品化
 
-- [ ] 2.1 在 `pyproject.toml` 增加 `evidentloop` console script 与 Homepage / Repository / Issues URLs，并验证与 `python -m evidentloop` 行为一致。
-- [ ] 2.2 实现 `doctor --json`，检查版本、schema、prompt、package resources 和 Git；将 `npx` 缺失作为非阻断提示，不扫描宿主私有目录。
-- [ ] 2.3 实现 `demo`：把独立合成 fixture 打进 wheel，在临时 Git 仓库中复用 `prepare -> replay -> finalize`，并在终端、JSON、HTML 标明 provenance。
-- [ ] 2.4 增加 console script、doctor、demo、离线运行和 clean wheel package resource 测试。
-- [ ] 2.5 在实现 CLI/HTML 改动前审计现有反馈能力，确定首个 Alpha 的反馈消费范围：若纳入完整消费与重新生成，补齐结构化输入输出、状态迁移和回归测试；若延后，保留交互反馈能力并在 README/Pages 明确边界。该选择不回退 EvidentLoop 的长期闭环愿景。
+- [x] 2.1 `pyproject.toml` 已增加 `evidentloop` console script 与 Homepage / Repository / Issues URLs；clean wheel 中 console script 与 `python -m evidentloop` help 完全一致。
+- [x] 2.2 已实现 `doctor [--json]`，检查版本、schema、prompt、package resources 和 Git；`npx` 缺失只产生非阻断 warning，并输出待 Wave 3 隔离验证的标准 Skill 安装候选、手工 fallback 与下一句请求，不扫描宿主私有目录。
+- [x] 2.3 已实现离线 `demo [--out DIR]`：wheel 内独立合成 fixture 在临时 Git 仓库中复用 `prepare -> frozen replay -> finalize`；终端、`audit.json` extension 与 HTML 均明确标记未执行实时 AI 审查。
+- [x] 2.4 Python `326 passed`、Ruff、JS 语法/行为、CI YAML、旧身份 allowlist 自动门禁、clean wheel build/install、console/module entry、doctor、demo 与 package resources 均通过。
+- [x] 2.5 已审计现有反馈能力并确认首个公开 Alpha 延后反馈消费与重新生成；保留浏览器交互、localStorage 与 `audit-feedback.jsonl` 导出，README 明确边界，未来 Pages 继承同一声明，蓝图继续保留完整闭环长期任务。
 
 ## Wave 3：Skill 安装与用户入口
 

@@ -36,7 +36,7 @@ change-audit 来源基线（历史）
 | schema namespace | `extensions.evidentloop`；`$id` 为 `https://evidentloop.github.io/evidentloop/schemas/audit-v0.3.schema.json` |
 | prompt provenance | `source="product"` 保留来源角色；标题、version、marker 与 hash 迁移到 EvidentLoop |
 | runtime identity | staging suffix、run marker、错误前缀、HTML 标题与现有 JS global 统一为 `evidentloop` |
-| feedback identity | 只迁移现有 localStorage prefix；`audit-feedback.jsonl` 结构是否扩展留给 Wave 2 反馈范围决策 |
+| feedback identity | 只迁移现有 localStorage prefix；首个公开 Alpha 保持 `audit-feedback.jsonl` 只导出、不消费，结构扩展与重新生成延后 |
 
 ## Clean-break 迁移契约
 

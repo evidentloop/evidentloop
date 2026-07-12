@@ -181,10 +181,12 @@ def _file_nodes(bundle: Any) -> list[dict[str, Any]]:
     return nodes
 
 
-def prepare_local_diff(
+def _prepare_local_diff(
     repo_path: str | Path,
     diff_spec: str,
     output_dir: str | Path | None = None,
+    *,
+    source_extensions: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     """Prepare a hidden review workspace and return its machine locator."""
     repo_root = Path(repo_path).resolve()
@@ -241,6 +243,13 @@ def prepare_local_diff(
         "prompt_path": str(run_dir / "prompt.md"),
         "raw_analysis_path": str(run_dir / "raw-analysis.md"),
     }
+    source: dict[str, Any] = {
+        "type": "git_diff",
+        "ref": diff_spec,
+        "description": f"{repository_name} 本地 Git diff 审计",
+    }
+    if source_extensions:
+        source["extensions"] = dict(source_extensions)
     skeleton = {
         "schema_version": "1",
         "run_id": run_id,
@@ -258,11 +267,7 @@ def prepare_local_diff(
             "version": PRODUCT_REVIEWER_PROMPT_VERSION,
             "sha256": _sha256_text(prompt),
         },
-        "source": {
-            "type": "git_diff",
-            "ref": diff_spec,
-            "description": f"{repository_name} 本地 Git diff 审计",
-        },
+        "source": source,
         "run": {
             "id": run_id,
             "label": f"{repository_name} 代码变更审计",
@@ -294,6 +299,15 @@ def prepare_local_diff(
             f"cannot write review workspace: {exc}", staging_dir=staging_dir
         ) from exc
     return locator
+
+
+def prepare_local_diff(
+    repo_path: str | Path,
+    diff_spec: str,
+    output_dir: str | Path | None = None,
+) -> dict[str, str]:
+    """Prepare a normal host-reviewed Git diff without synthetic provenance."""
+    return _prepare_local_diff(repo_path, diff_spec, output_dir)
 
 
 def _completion_state(raw_analysis: str) -> str:

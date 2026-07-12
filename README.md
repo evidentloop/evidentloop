@@ -18,7 +18,7 @@
 EvidentLoop turns a review of a local Git diff into a validated `audit.json` and a self-contained `audit.html`. A scored finding must resolve to a real changed line. Missing, malformed, or incomplete review output remains visibly incomplete.
 
 > [!IMPORTANT]
-> This repository is a local Alpha (`0.1.0a0`). It has no PyPI release, release tag, `evidentloop` console script, `demo`, or `doctor` command yet. The documented path uses a local checkout and `python -m evidentloop`.
+> This repository is a local Alpha (`0.1.0a0`) with no PyPI release, release tag, or public Pages site yet. A local checkout install provides the `evidentloop` console script, `doctor`, and an offline synthetic `demo`; `python -m evidentloop` remains equivalent for development and diagnostics.
 
 ## Output
 
@@ -55,8 +55,11 @@ python3.11 --version       # any installed Python >=3.10
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e .
-python -m evidentloop --help
+evidentloop doctor
+evidentloop demo --out evidentloop-demo
 ```
+
+`demo` uses a bundled synthetic Git change and frozen reviewer replay. It does not access a model or the network, and its terminal, JSON, and HTML outputs explicitly mark that provenance.
 
 Register the complete [`skills/evidentloop/`](./skills/evidentloop/) directory with the host's local Skill mechanism. Do not copy only `SKILL.md`; the directory also contains host metadata. A standard cross-host installer has not been verified yet.
 
@@ -133,8 +136,9 @@ See [AI host integration](./docs/ai-host-integration.md) for the locator contrac
 | Browser-local decisions and JSONL export | Implemented; not consumed |
 | Report language | Simplified Chinese |
 | Folder diff, file-only review, or remote PR URL | Not supported |
-| Automatic fixes, command execution, or feedback ingestion | Not supported |
-| PyPI, release tag, console script, `demo`, `doctor`, or public Pages | Not available |
+| Console script, `doctor`, and offline synthetic replay `demo` | Implemented locally; not published to PyPI |
+| Automatic fixes, command execution, or feedback ingestion | Not supported in the first public Alpha |
+| PyPI, release tag, or public Pages | Not available |
 | Standard cross-host Skill installation | Not yet verified |
 
 The current public audit target is a Git diff. Additional artifact profiles require their own adapter, trusted anchors, evaluation baseline, and renderer contract before they can become supported review targets.

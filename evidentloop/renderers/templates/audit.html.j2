@@ -59,6 +59,12 @@
         <strong>{{ status_heading }}</strong>
         <div>{{ status_message }}</div>
       </div>
+      {% if demo_replay %}
+      <div class="status-callout warning" data-demo-provenance="frozen-replay">
+        <strong>合成演示 · 固定 replay</strong>
+        <div>fixture：{{ demo_fixture_id }}。本报告没有执行实时 AI 审查，只演示离线确定性审计链路。</div>
+      </div>
+      {% endif %}
     </header>
 
     {% if changes or current_run %}

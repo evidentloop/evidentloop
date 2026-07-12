@@ -19,6 +19,14 @@ dependencies = [
   "jsonschema>=4.23",
 ]
 
+[project.scripts]
+evidentloop = "evidentloop.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/evidentloop/evidentloop"
+Repository = "https://github.com/evidentloop/evidentloop"
+Issues = "https://github.com/evidentloop/evidentloop/issues"
+
 [project.optional-dependencies]
 dev = [
   "build>=1.2",
@@ -41,6 +49,7 @@ evidentloop = [
   "renderers/static/*.css",
   "renderers/static/*.js",
   "review/core/*.md",
+  "demo_resources/*.json",
 ]
 
 [tool.pytest.ini_options]

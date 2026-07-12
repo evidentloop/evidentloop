@@ -42,3 +42,6 @@ jobs:
           /tmp/evidentloop-wheel-smoke/bin/python -m pip install /tmp/evidentloop-dist/*.whl
           cd /tmp
           /tmp/evidentloop-wheel-smoke/bin/python -m evidentloop --help
+          /tmp/evidentloop-wheel-smoke/bin/evidentloop --help
+          /tmp/evidentloop-wheel-smoke/bin/evidentloop doctor --json
+          /tmp/evidentloop-wheel-smoke/bin/evidentloop demo --out /tmp/evidentloop-demo-smoke

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from change_audit.renderers.html import (
+from evidentloop.renderers.html import (
     AuditRenderError,
     render_audit_data,
     render_audit_file,

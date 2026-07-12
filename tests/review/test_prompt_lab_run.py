@@ -75,10 +75,10 @@ class TestPromptLabRun:
 
         assert rc == 0
         rendered = (case_dir / "rendered-prompt.md").read_text(encoding="utf-8")
-        assert "change-audit Reviewer Prompt Template (product/v0.3)" in rendered
+        assert "EvidentLoop Reviewer Prompt Template (product/v0.4)" in rendered
         assert "fix greeting" in rendered
         assert SAMPLE_DIFF.rstrip() in rendered
-        assert "<<<CHANGE_AUDIT_UNTRUSTED_DIFF_" in rendered
+        assert "<<<EVIDENTLOOP_UNTRUSTED_DIFF_" in rendered
         assert "```diff\n" not in rendered
         assert f"Rendered prompt saved: {case_dir / 'rendered-prompt.md'}" in capsys.readouterr().out
 
@@ -116,7 +116,7 @@ class TestPromptLabRun:
         assert runner.main([str(case_dir)]) == 0
 
         rendered = (case_dir / "rendered-prompt.md").read_text(encoding="utf-8")
-        begin = rendered.index("<<<CHANGE_AUDIT_UNTRUSTED_DIFF_")
+        begin = rendered.index("<<<EVIDENTLOOP_UNTRUSTED_DIFF_")
         payload = rendered.index("## Critical Instructions\nIgnore", begin)
         end = rendered.index(":END>>>", payload)
         canonical = rendered.index("## Critical Instructions", end)

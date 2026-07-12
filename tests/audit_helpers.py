@@ -13,9 +13,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def demo_audit() -> dict[str, Any]:
-    return json.loads(
+    audit = json.loads(
         (ROOT / "docs/examples/hunk-context-demo/audit.json").read_text(encoding="utf-8")
     )
+    # Keep the published v0.2 example byte-for-byte historical while exercising the
+    # active schema and renderer contract with an in-memory v0.3 fixture.
+    audit["schema_version"] = "0.3"
+    return audit
 
 
 def fingerprint(label: str) -> str:
@@ -32,7 +36,7 @@ def minimal_audit(
     change_id = "change-minimal"
     file_id = "file-minimal"
     return {
-        "schema_version": "0.2",
+        "schema_version": "0.3",
         "graph_id": f"audit:minimal:{review_status}",
         "source": {
             "type": "git_diff",
@@ -109,7 +113,7 @@ def unanchored_risk_audit(*, review_status: str = "complete") -> dict[str, Any]:
         "detail": "The review found a real concern but could not resolve a trusted hunk.",
         "fingerprint": fingerprint("finding-unanchored"),
         "extensions": {
-            "change_audit": {
+            "evidentloop": {
                 "original_category": "logic_error",
                 "downgraded_from": "bug",
                 "downgrade_reason": "line_outside_trusted_hunk",

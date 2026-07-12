@@ -21,8 +21,8 @@ def initialized_repo(root: Path) -> Path:
     repo = root / "repo"
     repo.mkdir()
     git(repo, "init", "-q")
-    git(repo, "config", "user.email", "change-audit@example.invalid")
-    git(repo, "config", "user.name", "change-audit tests")
+    git(repo, "config", "user.email", "evidentloop@example.invalid")
+    git(repo, "config", "user.name", "evidentloop tests")
     (repo / "app.py").write_text("value = 1\n", encoding="utf-8")
     (repo / "delete.txt").write_text("delete me\n", encoding="utf-8")
     (repo / "rename.txt").write_text("rename me\n", encoding="utf-8")

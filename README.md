@@ -1,6 +1,6 @@
-<h1 align="center">change-audit</h1>
+<h1 align="center">EvidentLoop</h1>
 
-<p align="center"><strong>Traceable code review for local Git diffs.</strong></p>
+<p align="center"><strong>Evidence-grounded review for local Git diffs.</strong></p>
 
 <p align="center">
   <a href="./README.md">English</a> ·
@@ -10,83 +10,75 @@
 <p align="center">
   <img alt="Status: Alpha" src="https://img.shields.io/badge/status-alpha-F59E0B">
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776AB">
-  <img alt="Code-diff schema 0.2" src="https://img.shields.io/badge/code--diff%20schema-0.2-0F766E">
+  <img alt="Code-diff schema 0.3" src="https://img.shields.io/badge/code--diff%20schema-0.3-0F766E">
 </p>
 
-![change-audit cover](./docs/assets/change-audit-cover.png)
+![EvidentLoop cover](./docs/assets/evidentloop-cover.png)
 
-`change-audit` turns a review of a local Git diff into two artifacts you can inspect and keep: a validated `audit.json` and a self-contained `audit.html`. A scored finding must resolve to a real changed line. Incomplete or malformed reviews stay visibly incomplete.
+EvidentLoop turns a review of a local Git diff into a validated `audit.json` and a self-contained `audit.html`. A scored finding must resolve to a real changed line. Missing, malformed, or incomplete review output remains visibly incomplete.
 
 > [!IMPORTANT]
-> The repository is a local Alpha (`0.1.0a0`). There is no PyPI release, release tag, or `change-audit` console script yet. The instructions below use a local checkout and `python -m change_audit`.
+> This repository is a local Alpha (`0.1.0a0`). It has no PyPI release, release tag, `evidentloop` console script, `demo`, or `doctor` command yet. The documented path uses a local checkout and `python -m evidentloop`.
 
-## What you get
+## Output
 
-| Artifact | Role |
+| File | Purpose |
 |---|---|
-| `audit.json` | Validated machine-readable source of truth, including the complete trusted hunks and graph relationships. |
-| `audit.html` | Self-contained Chinese report with bounded code evidence, changed-line highlights, and browser-local decisions. |
-| `audit-feedback.jsonl` | Optional export of human decisions; the Alpha does not consume it or edit code. |
+| `audit.json` | Canonical, validated audit record with trusted hunks and graph relationships. |
+| `audit.html` | Self-contained browser report with bounded code evidence, changed-line highlights, and local decisions. |
+| `audit-feedback.jsonl` | Optional export of reviewer decisions. The Alpha records this feedback but does not consume it or edit code. |
 
-Three rules shape the product:
+The implementation enforces three rules:
 
-- Findings are checked against the Git diff parsed by Python; the reviewer cannot invent trusted paths, hunks, IDs, fingerprints, or scores.
-- JSON and HTML are validated and published as one artifact pair. A hard failure cannot leave a half-report that looks successful.
-- `complete` means the reviewer returned the complete output contract. It does not claim complete behavioral coverage or “all bugs found.”
+- Python checks findings against the prepared Git diff. The semantic reviewer cannot create trusted paths, hunk IDs, fingerprints, or scores.
+- JSON and HTML are validated and published as one pair. A hard failure cannot leave a half-report that looks successful.
+- `complete` means the reviewer satisfied the output contract. It does not mean every behavioral risk was found.
 
-## See a real report
+## Historical reports
 
-The current [Fireworks Tech Graph `product/v0.3` dogfood](./docs/examples/dogfood-fireworks-tech-graph-v03/) was generated through the consolidated single-product path from this exact range:
+The repository keeps three reports generated before the EvidentLoop identity migration:
 
-```text
-d5ef26deac6b1ed37ee9b89b52dddb1bcaac6c24..9a64e5a926d430a421a71b5cf433b0553876db28
-```
+- [Fireworks Tech Graph `product/v0.3` dogfood](./docs/examples/dogfood-fireworks-tech-graph-v03/)
+- [Fireworks Tech Graph `product/v0.2` dogfood](./docs/examples/dogfood-fireworks-tech-graph/)
+- [Hunk rendering reference](./docs/examples/hunk-context-demo/)
 
-It covers 21 files and 52 hunks, with 7 findings anchored to real added lines and 0 unscored findings. The final state is `complete + concerns`; its diagnostics still report partial intent coverage and `0.65` pack completeness.
-
-- Open the [self-contained HTML report](./docs/examples/dogfood-fireworks-tech-graph-v03/audit.html).
-- Inspect the [canonical audit.json](./docs/examples/dogfood-fireworks-tech-graph-v03/audit.json).
-- Read the [same-range v0.2/v0.3 comparison](./docs/examples/dogfood-fireworks-tech-graph-v03/README.md).
-
-The earlier [`product/v0.2` sample](./docs/examples/dogfood-fireworks-tech-graph/) remains byte-for-byte unchanged as local comparison evidence; its sample-only SVG annotation is not part of the product pipeline.
-
-The report is evidence of the implemented pipeline, not a claim that the reviewer found every defect in the range.
+Their `audit.json` and `audit.html` files retain the original schema `0.2` and product provenance. They are frozen historical evidence, not current schema `0.3` fixtures, and the identity migration does not rewrite them.
 
 ## Local quick start
 
-Requirements: Git, Python 3.10 or newer, and an AI host that can run a local Agent Skill and create an isolated reviewer context.
+Requirements: Git, Python 3.10 or newer, and an AI host that can load a local Agent Skill and create an isolated reviewer context.
 
 ```bash
-git clone https://github.com/evidentloop/change-audit.git
-cd change-audit
-python3.11 --version       # use any installed Python >=3.10
+git clone https://github.com/evidentloop/change-audit.git evidentloop
+cd evidentloop
+python3.11 --version       # any installed Python >=3.10
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e .
-python -m change_audit --help
+python -m evidentloop --help
 ```
 
-Register the entire [`integrations/agent-skill/change-audit/`](./integrations/agent-skill/change-audit/) directory with your host's local Skill mechanism. Do not copy only `SKILL.md`: the bundle also contains host metadata. This Alpha does not yet ship a verified cross-host installer or a maintainer-published fixed tag for external installation.
+Register the complete [`skills/evidentloop/`](./skills/evidentloop/) directory with the host's local Skill mechanism. Do not copy only `SKILL.md`; the directory also contains host metadata. A standard cross-host installer has not been verified yet.
 
-Then, inside the Git repository you want to inspect, ask your host:
+Then, inside the Git repository to inspect, ask the host:
 
 ```text
-Use change-audit to audit my staged changes and generate the HTML report.
+Use EvidentLoop to audit my staged changes and generate the HTML report.
 ```
 
 Or in Chinese:
 
 ```text
-帮我用 change-audit 审计 staged changes，并生成 HTML 报告。
+帮我用 EvidentLoop 审计 staged changes，并生成 HTML 报告。
 ```
 
-The Skill checks package/schema compatibility, prepares a trusted workspace, sends only the generated review prompt to an isolated host reviewer, finalizes the artifact pair, and returns the report paths. The current report UI and reviewer prose are Simplified Chinese; English natural-language triggering does not imply English report localization.
+The Skill checks package, schema, and prompt compatibility; prepares a trusted workspace; sends only the generated prompt to an isolated semantic reviewer; finalizes the report pair; and returns the report paths. The current report UI and reviewer prose are Simplified Chinese.
 
 ## How it works
 
 ```text
 natural-language request
-  → Agent Skill resolves repository and diff scope
+  → EvidentLoop Skill resolves repository and diff scope
   → Python prepare freezes Git evidence and prompt provenance
   → isolated host reviewer returns semantic findings
   → Python verifies changed-line anchors and builds the Audit Graph
@@ -95,58 +87,57 @@ natural-language request
   → optional browser-local feedback export
 ```
 
-![change-audit architecture](./docs/assets/change-audit-architecture.png)
+![EvidentLoop architecture](./docs/assets/evidentloop-architecture.png)
 
-change-audit uses the model capability already provided by the AI host, so no separate model service or API key is required. Reviewed diffs and model output are treated as untrusted data, and commands embedded in them are never executed.
+EvidentLoop uses the model capability already supplied by the AI host. It does not require a separate model SDK or API key. Reviewed diffs and model output are untrusted data; commands embedded in either are never executed.
 
 ## Host integrator commands
 
-Most users should use the Skill. Integrators can use the three module commands directly:
+Most users should use the Skill. Integrators can call the module commands directly:
 
 ```bash
-# 1. Creates a hidden staging workspace and prints a JSON locator.
-python -m change_audit prepare --diff staged --out audit/20260710_example
+# 1. Create a hidden staging workspace and print one JSON locator.
+python -m evidentloop prepare --diff staged --out audit/20260710_example
 
-# 2. The host opens locator.prompt_path in a fresh isolated reviewer context
-#    and writes the reviewer's exact response to locator.raw_analysis_path.
+# 2. Open locator.prompt_path in a fresh isolated reviewer context
+#    and write the exact response to locator.raw_analysis_path.
 
-# 3. Validates and publishes the formal pair; the final directory must not exist.
-python -m change_audit finalize --out audit/20260710_example
+# 3. Validate and publish the report pair. The final directory must not exist.
+python -m evidentloop finalize --out audit/20260710_example
 
-# Independent re-render from an existing validated JSON artifact.
-python -m change_audit render \
+# Re-render a current schema 0.3 JSON artifact.
+python -m evidentloop render \
   audit/20260710_example/audit.json \
   --out audit/20260710_example/audit.html
 ```
 
-`review` is a Skill action, not a Python command. `prepare` and `finalize` are not a meaningful two-command shortcut: an isolated host review must write the exact raw result between them. Explicit `render --out` authorizes replacement of that HTML file only and never modifies `audit.json`.
+`review` is a Skill action, not a Python command. `prepare` and `finalize` are not a shortcut pair: an isolated host review must write the raw result between them. Explicit `render --out` replaces only that HTML file and never modifies `audit.json`.
 
-The public Python entry points are available from `change_audit.api`:
+The public Python API is available from `evidentloop.api`:
 
 ```python
-from change_audit.api import finalize_review, prepare_local_diff, render_audit_file
+from evidentloop.api import finalize_review, prepare_local_diff, render_audit_file
 ```
 
 See [AI host integration](./docs/ai-host-integration.md) for the locator contract, failure handling, prompt boundary, and installation consent rules.
 
-## Current scope
+## Current Alpha scope
 
-| Capability | Alpha status |
+| Capability | Status |
 |---|---|
 | Local Git `staged`, `unstaged`, ref, and range diffs | Implemented |
 | Added, modified, deleted, renamed, and binary-file metadata | Implemented |
-| `code_diff` schema and self-contained HTML | Version `0.2` |
-| Exact add/delete-line anchors and bounded trusted hunk excerpts | Implemented |
+| `code_diff` schema and self-contained HTML | Schema `0.3` |
+| Exact add/delete-line anchors and bounded trusted hunks | Implemented |
 | Complete, partial, failed, and inconclusive states | Implemented |
 | Browser-local decisions and JSONL export | Implemented; not consumed |
-| Codex end-to-end dogfood | Completed with `product/v0.3` on the Fireworks range above |
-| Qoder model-level smoke | Deferred for manual verification; not claimed as passed |
-| Report language | Simplified Chinese in v0 |
+| Report language | Simplified Chinese |
 | Folder diff, file-only review, or remote PR URL | Not supported |
 | Automatic fixes, command execution, or feedback ingestion | Not supported |
-| PyPI package, release tag, or console script | Not published |
+| PyPI, release tag, console script, `demo`, `doctor`, or public Pages | Not available |
+| Standard cross-host Skill installation | Not yet verified |
 
-Schema `0.2` currently only supports Git diff.
+The current public audit target is a Git diff. Additional artifact profiles require their own adapter, trusted anchors, evaluation baseline, and renderer contract before they can become supported review targets.
 
 ## Development
 
@@ -157,14 +148,11 @@ python -m ruff check .
 python -m build
 ```
 
-Useful references:
+References:
 
 - [V0 scope](./docs/v0-scope.md)
 - [Data model](./docs/data-model.md)
 - [AI host integration](./docs/ai-host-integration.md)
-- [Hunk rendering reference](./docs/examples/hunk-context-demo/)
-- [Current Fireworks `product/v0.3` dogfood](./docs/examples/dogfood-fireworks-tech-graph-v03/)
-- [Preserved Fireworks `product/v0.2` sample](./docs/examples/dogfood-fireworks-tech-graph/)
 
 ## License
 

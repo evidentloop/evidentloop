@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from change_audit.audit.finalize import AuditWorkflowError, finalize_review, prepare_local_diff
-from change_audit.cli import main
-from change_audit.renderers.html import AuditRenderError
-from change_audit.validation import AuditValidationError, ValidationIssue, assert_valid_audit
+from evidentloop.audit.finalize import AuditWorkflowError, finalize_review, prepare_local_diff
+from evidentloop.cli import main
+from evidentloop.renderers.html import AuditRenderError
+from evidentloop.validation import AuditValidationError, ValidationIssue, assert_valid_audit
 from tests.git_helpers import initialized_repo, stage_simple_change
 
 
@@ -43,7 +43,7 @@ def _analysis(
         else ""
     )
     return f"""\
-<!-- change-audit-run-id: {locator['run_id']} -->
+<!-- evidentloop-run-id: {locator['run_id']} -->
 ## Section 1: Findings
 
 **f-001**
@@ -85,8 +85,8 @@ def test_finalize_publishes_exact_bug_pair_and_cleans_run_dir(tmp_path: Path) ->
     assert finding["category"] == "bug"
     assert finding["hunk"].startswith(trusted_header)
     assert audit["runs"][0]["summary"] == "The diff has one concrete problem."
-    assert audit["extensions"]["change_audit"]["reviewer_prompt"]["version"] == "v0.3"
-    assert audit["extensions"]["change_audit"]["reviewer_prompt"]["sha256"].startswith(
+    assert audit["extensions"]["evidentloop"]["reviewer_prompt"]["version"] == "v0.4"
+    assert audit["extensions"]["evidentloop"]["reviewer_prompt"]["sha256"].startswith(
         "sha256:"
     )
     assert_valid_audit(audit)
@@ -100,7 +100,7 @@ def test_finalize_distinguishes_clean_partial_failed_and_unanchored(tmp_path: Pa
     clean = _prepare(tmp_path / "clean")
     _write_raw(
         clean,
-        f"<!-- change-audit-run-id: {clean['run_id']} -->\n"
+        f"<!-- evidentloop-run-id: {clean['run_id']} -->\n"
         "## Section 1: Findings\n\n未发现问题。\n\n"
         "## Section 3: Overall Assessment\n\nThe diff is clean.\n",
     )
@@ -128,7 +128,7 @@ def test_finalize_distinguishes_clean_partial_failed_and_unanchored(tmp_path: Pa
     failed = _prepare(tmp_path / "failed")
     _write_raw(
         failed,
-        f"<!-- change-audit-run-id: {failed['run_id']} -->\nI cannot comply with this review.",
+        f"<!-- evidentloop-run-id: {failed['run_id']} -->\nI cannot comply with this review.",
     )
     failed_result = finalize_review(failed["final_dir"])
     assert failed_result["review_status"] == "failed"
@@ -149,7 +149,7 @@ def test_finalize_distinguishes_clean_partial_failed_and_unanchored(tmp_path: Pa
     malformed = _prepare(tmp_path / "malformed-finding")
     _write_raw(
         malformed,
-        f"<!-- change-audit-run-id: {malformed['run_id']} -->\n"
+        f"<!-- evidentloop-run-id: {malformed['run_id']} -->\n"
         "## Section 1: Findings\n\n"
         "### f-001\n"
         "- **Where**: `app.py`, line 1\n"
@@ -255,7 +255,7 @@ def test_json_render_trace_and_rename_failures_preserve_staging(
     invalid = _prepare(tmp_path / "invalid")
     _write_raw(invalid, _analysis(invalid))
     monkeypatch.setattr(
-        "change_audit.audit.finalize.assert_valid_audit",
+        "evidentloop.audit.finalize.assert_valid_audit",
         lambda audit: (_ for _ in ()).throw(
             AuditValidationError([ValidationIssue("forced", "/", "forced")])
         ),
@@ -269,7 +269,7 @@ def test_json_render_trace_and_rename_failures_preserve_staging(
     render = _prepare(tmp_path / "render")
     _write_raw(render, _analysis(render))
     monkeypatch.setattr(
-        "change_audit.audit.finalize.render_audit_file",
+        "evidentloop.audit.finalize.render_audit_file",
         lambda source, target: (_ for _ in ()).throw(AuditRenderError("forced render")),
     )
     with pytest.raises(AuditWorkflowError, match="forced render"):
@@ -281,7 +281,7 @@ def test_json_render_trace_and_rename_failures_preserve_staging(
     trace = _prepare(tmp_path / "trace")
     _write_raw(trace, _analysis(trace))
     monkeypatch.setattr(
-        "change_audit.renderers.html.validate_html_trace",
+        "evidentloop.renderers.html.validate_html_trace",
         lambda html, audit: ["forced trace"],
     )
     with pytest.raises(AuditWorkflowError, match="forced trace"):
@@ -293,7 +293,7 @@ def test_json_render_trace_and_rename_failures_preserve_staging(
     rename = _prepare(tmp_path / "rename")
     _write_raw(rename, _analysis(rename))
     monkeypatch.setattr(
-        "change_audit.audit.finalize.os.rename",
+        "evidentloop.audit.finalize.os.rename",
         lambda source, target: (_ for _ in ()).throw(OSError("forced rename")),
     )
     with pytest.raises(AuditWorkflowError, match="forced rename"):

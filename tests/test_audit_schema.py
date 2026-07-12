@@ -6,7 +6,7 @@ import copy
 
 import pytest
 
-from change_audit.validation import (
+from evidentloop.validation import (
     AuditValidationError,
     assert_valid_audit,
     load_audit_schema,
@@ -24,9 +24,21 @@ def test_schema_declares_2020_12_and_validates_reference_demo() -> None:
 
 def test_strict_core_allows_namespaced_extensions() -> None:
     audit = minimal_audit()
-    audit["extensions"] = {"change_audit": {"test": True}}
+    audit["extensions"] = {"evidentloop": {"test": True}}
     audit["nodes"][0]["extensions"] = {"vendor.profile": {"value": 1}}
     assert validate_audit(audit) == []
+
+
+def test_previous_public_schema_version_is_historical_only() -> None:
+    audit = minimal_audit()
+    audit["schema_version"] = "0.2"
+
+    issues = validate_structure(audit)
+
+    assert any(
+        issue.code == "schema.const" and issue.path == "/schema_version"
+        for issue in issues
+    )
 
 
 def test_strict_core_rejects_unknown_fields_and_bad_extension_names() -> None:

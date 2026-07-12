@@ -1,4 +1,4 @@
-"""Static contract checks for the self-contained change-audit Agent Skill."""
+"""Static contract checks for the self-contained EvidentLoop Agent Skill."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 
 
-SKILL_DIR = Path(__file__).resolve().parents[1] / "integrations/agent-skill/change-audit"
+SKILL_DIR = Path(__file__).resolve().parents[1] / "skills/evidentloop"
 
 
 def _skill_text() -> str:
@@ -19,12 +19,12 @@ def test_frontmatter_and_ui_metadata_text_contract() -> None:
     _, frontmatter, body = text.split("---", 2)
     metadata = yaml.safe_load(frontmatter)
     interface = yaml.safe_load((SKILL_DIR / "agents/openai.yaml").read_text())["interface"]
-    assert metadata["name"] == "change-audit"
+    assert metadata["name"] == "evidentloop"
     assert "审计本地改动" in metadata["description"]
     assert "audit changes" in metadata["description"]
     assert "Do not trigger" in metadata["description"]
-    assert interface["display_name"] == "Change Audit"
-    assert "$change-audit" in interface["default_prompt"]
+    assert interface["display_name"] == "EvidentLoop"
+    assert "$evidentloop" in interface["default_prompt"]
     assert "TODO" not in body
     assert len(text.splitlines()) < 500
 
@@ -32,10 +32,10 @@ def test_frontmatter_and_ui_metadata_text_contract() -> None:
 def test_positive_and_negative_trigger_examples_text_contract() -> None:
     text = _skill_text()
     for phrase in (
-        "帮我用 change-audit 审计最近的本地改动",
+        "帮我用 evidentloop 审计最近的本地改动",
         "审计 staged changes",
-        "Use change-audit to audit",
-        "Review this local diff with change-audit",
+        "Use evidentloop to audit",
+        "Review this local diff with evidentloop",
     ):
         assert phrase in text
     for phrase in (
@@ -49,8 +49,8 @@ def test_positive_and_negative_trigger_examples_text_contract() -> None:
 
 def test_host_security_and_public_command_text_contract() -> None:
     text = _skill_text()
-    assert "<PYTHON> -m change_audit prepare --diff <SPEC>" in text
-    assert "<PYTHON> -m change_audit finalize --out <LOCATOR_FINAL_DIR>" in text
+    assert "<PYTHON> -m evidentloop prepare --diff <SPEC>" in text
+    assert "<PYTHON> -m evidentloop finalize --out <LOCATOR_FINAL_DIR>" in text
     assert "Never let the reviewer write `audit.json`" in text
     assert "single argv values" in text
     assert "native one-argument quoting" in text
@@ -68,12 +68,12 @@ def test_install_authority_and_fixed_version_text_contract() -> None:
     text = _skill_text()
     assert "Ask for installation or upgrade authorization" in text
     assert "If the user declines installation, stop" in text
-    assert "`schema_version` equal to `0.2`" in text
-    assert "`prompt_version` equal to `v0.3`" in text
+    assert "`schema_version` equal to `0.3`" in text
+    assert "`prompt_version` equal to `v0.4`" in text
     assert "PRODUCT_REVIEWER_PROMPT_VERSION" in text
     assert "non-empty `package_version`" in text
-    assert "from change_audit.api import" in text
-    assert "<PYTHON> -m change_audit --help" in text
+    assert "from evidentloop.api import" in text
+    assert "<PYTHON> -m evidentloop --help" in text
     assert "module CLI dispatcher" in text
     assert "real, maintainer-published fixed Git tag" in text
     assert "resolve that exact tag" in text

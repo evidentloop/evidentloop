@@ -1,4 +1,4 @@
-"""Tests for change_audit.review.pack — 1B.1 pack assembly."""
+"""Tests for evidentloop.review.pack — 1B.1 pack assembly."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from change_audit.review.pack import (
+from evidentloop.review.pack import (
     assemble_pack,
     build_diff_source,
     compute_pack_completeness,
@@ -15,7 +15,7 @@ from change_audit.review.pack import (
     pack_to_dict,
     pack_to_json,
 )
-from change_audit.review.schema import (
+from evidentloop.review.schema import (
     ArtifactType,
     ContextFile,
     GitDiffSource,
@@ -522,7 +522,7 @@ class TestAssemblePackDiffSource:
         assert d["diff_source"]["head"] == "HEAD"
 
     def test_diff_source_round_trips_through_json(self):
-        from change_audit.review.schema import review_pack_from_dict
+        from evidentloop.review.schema import review_pack_from_dict
         ds = GitDiffSource(type="staged", captured_at="2026-04-29T00:00:00+00:00")
         pack = assemble_pack(SIMPLE_DIFF, diff_source=ds)
         data = pack_to_dict(pack)
@@ -532,7 +532,7 @@ class TestAssemblePackDiffSource:
         assert restored.diff_source.captured_at == "2026-04-29T00:00:00+00:00"
 
     def test_no_diff_source_round_trips_as_none(self):
-        from change_audit.review.schema import review_pack_from_dict
+        from evidentloop.review.schema import review_pack_from_dict
         pack = assemble_pack(SIMPLE_DIFF)
         data = pack_to_dict(pack)
         assert data["diff_source"] is None
@@ -541,7 +541,7 @@ class TestAssemblePackDiffSource:
 
     def test_artifact_diff_source_round_trips(self):
         """ArtifactDiffSource (v1 discriminant) deserializes to the correct class."""
-        from change_audit.review.schema import ArtifactDiffSource, review_pack_from_dict
+        from evidentloop.review.schema import ArtifactDiffSource, review_pack_from_dict
         ds = ArtifactDiffSource(
             type="artifact_diff",
             artifact_kind="design_doc",
@@ -559,7 +559,7 @@ class TestAssemblePackDiffSource:
 
     def test_unknown_diff_source_type_is_rejected(self):
         """Unknown discriminants should fail instead of being silently coerced."""
-        from change_audit.review.schema import review_pack_from_dict
+        from evidentloop.review.schema import review_pack_from_dict
         pack = assemble_pack(SIMPLE_DIFF)
         data = pack_to_dict(pack)
         data["diff_source"] = {"type": "artifact_dif"}

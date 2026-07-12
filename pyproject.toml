@@ -1,5 +1,5 @@
 [project]
-name = "change-audit"
+name = "evidentloop"
 version = "0.1.0a0"
 description = "Traceable code review artifacts for local Git diffs"
 readme = "README.md"
@@ -32,10 +32,10 @@ requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["change_audit*"]
+include = ["evidentloop*"]
 
 [tool.setuptools.package-data]
-change_audit = [
+evidentloop = [
   "schemas/*.json",
   "renderers/templates/*.j2",
   "renderers/static/*.css",

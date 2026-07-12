@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from change_audit.review.normalizer import declared_finding_ids, normalize_review_output
-from change_audit.review.schema import (
+from evidentloop.review.normalizer import declared_finding_ids, normalize_review_output
+from evidentloop.review.schema import (
     Confidence,
     ContextFile,
     Evidence,
@@ -412,7 +412,7 @@ The changes address real concerns but the URL classifier is too loose.
 ## Section 1: Findings
 
 ### f-001: Version mismatch between __init__.py and pyproject.toml
-- **Where**: `change_audit/__init__.py`, line 3
+- **Where**: `evidentloop/__init__.py`, line 3
 - **What**: Hardcoded version does not match pyproject.toml.
 - **Why**: Package will report wrong version at runtime.
 - **Severity estimate**: HIGH
@@ -502,8 +502,8 @@ The changes address real concerns but the URL classifier is too loose.
         """End-to-end regression: real host-first spike output must not produce
         a silent false-pass. Reviewer reports 3 findings; normalizer must extract
         all 3 and verdict must not be pass_candidate."""
-        from change_audit.review.adjudicator import determine_advisory_verdict
-        from change_audit.review.schema import BudgetStatus
+        from evidentloop.review.adjudicator import determine_advisory_verdict
+        from evidentloop.review.schema import BudgetStatus
 
         raw = """\
 ## Section 1: Findings

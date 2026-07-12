@@ -1,4 +1,4 @@
-"""Tests for change_audit.review.schema — covers 1A.1, 1A.2, 1A.3.
+"""Tests for evidentloop.review.schema — covers 1A.1, 1A.2, 1A.3.
 
 Validates:
   - ReviewPack, Finding, ReviewResult structural correctness and defaults
@@ -14,7 +14,7 @@ import json
 
 import pytest
 
-from change_audit.review.schema import (
+from evidentloop.review.schema import (
     AdvisoryVerdict,
     ArtifactType,
     BudgetStatus,
@@ -414,7 +414,7 @@ class TestReviewResultValidation:
         assert validate_eval_review_result_contract(payload) == []
 
     def test_review_result_round_trip_preserves_prompt_provenance(self):
-        from change_audit.review.schema import review_result_from_dict, review_result_to_json
+        from evidentloop.review.schema import review_result_from_dict, review_result_to_json
 
         result = ReviewResult(
             artifact_fingerprint="artifact",
@@ -468,7 +468,7 @@ class TestReviewResultValidation:
     def test_findings_from_data_rejects_missing_required_keys(self):
         """Parser-level guard: a finding missing required keys (e.g. severity)
         raises ValueError, which load_fixture() wraps into EvalContractError."""
-        from change_audit.review.schema import review_result_from_dict
+        from evidentloop.review.schema import review_result_from_dict
 
         base = {
             "review_status": "complete",
@@ -580,6 +580,6 @@ class TestSubStructures:
         assert b.max_files == 5
 
     def test_advisory_verdict(self):
-        from change_audit.review.schema import AdvisoryVerdict
+        from evidentloop.review.schema import AdvisoryVerdict
         av = AdvisoryVerdict(verdict=Verdict.CONCERNS, rationale="found issues")
         assert av.verdict == Verdict.CONCERNS

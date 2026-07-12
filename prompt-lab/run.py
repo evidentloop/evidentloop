@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the canonical change-audit reviewer prompt for a saved case.
+"""Render the canonical EvidentLoop reviewer prompt for a saved case.
 
 Usage:
     python prompt-lab/run.py prompt-lab/cases/001-auth-refresh
@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from change_audit.review.core.prompt import render_host_reviewer_prompt  # noqa: E402
+from evidentloop.review.core.prompt import render_host_reviewer_prompt  # noqa: E402
 
 
 def load_pack(case_dir: Path) -> dict:
@@ -47,7 +47,7 @@ def load_pack(case_dir: Path) -> dict:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Render the canonical change-audit reviewer prompt for a saved case.",
+        description="Render the canonical EvidentLoop reviewer prompt for a saved case.",
         allow_abbrev=False,
     )
     parser.add_argument("case_dir", type=Path)

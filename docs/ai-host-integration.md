@@ -1,115 +1,128 @@
-# change-audit AI host 集成
+# EvidentLoop AI host 集成
 
-## 状态
+## 当前契约
 
-本文件定义已经实现的 `code_diff` 集成契约。正式报告通过 `prepare → 隔离宿主审查 → finalize` 生成；`render` 只从已校验的 `audit.json` 重建 HTML。Codex 已完成端到端 dogfood，Qoder 模型级 smoke 按用户决定留待手工验证。当前不支持非 Git diff 输入。
+EvidentLoop 当前只审计本地 Git diff。正式报告通过 `prepare → 隔离宿主审查 → finalize` 生成；`render` 只从经过校验的 schema `0.3` `audit.json` 重建 HTML。
 
-## 用户看到什么
-
-用户在自己的 Git 仓库中说：
+用户在 Git 仓库中发出明确请求：
 
 ```text
-帮我用 change-audit 审计最近的本地改动
+帮我用 EvidentLoop 审计最近的本地改动
 ```
 
-AI host 通过用户级或宿主级 Skill 发现 `change-audit`，完成审查编排，并返回摘要与 `audit.html` 路径。用户不需要知道 ReviewPack、ReviewResult 或隐藏中间文件。
+AI host 发现本地 `evidentloop` Skill，确认 diff 范围，完成隔离审查编排，并返回 `audit.json` 与 `audit.html` 路径。用户不需要操作 ReviewPack、ReviewResult 或隐藏 staging 文件。
 
-一期默认正式产物只有：
+当前仓库没有 PyPI 发布、console script、标准跨宿主安装器或公开 Pages。本文只定义本地 checkout 的模块入口与宿主能力边界。
+
+## 组件边界
 
 ```text
-audit/YYYYMMDD_<slug>/
-  audit.json
-  audit.html
+EvidentLoop Skill
+  -> 识别意图、确认 diff、检查兼容性、请求安装授权、编排隔离审查、返回结果
+
+AI host reviewer
+  -> 在全新只读上下文中理解 diff，返回语义 findings
+
+EvidentLoop Python package
+  -> Git 解析、ReviewPack、结果 ingest、可信锚定、Audit Graph、校验和 HTML renderer
 ```
 
-用户在 HTML 中导出决策时，浏览器另行下载 `audit-feedback.jsonl`；浏览器不保证它自动回到原审计目录。
+Python package 不集成模型 SDK，也不读取 provider 或 API key 配置。宿主 LLM 只生产语义候选；Python 生成机械字段并决定候选能否进入正式报告。
 
-## 三层边界
+ReviewPack、canonical prompt、ingest、normalizer 与 adjudicator 位于 `evidentloop.review`。Skill 不复制这些实现，也不维护第二套 schema 或路径规则。
 
-```text
-change-audit Skill
-  -> 发现意图、确认 diff、请求安装授权、调用宿主 LLM、验证产物、展示结果
+## 编排流程
 
-AI host LLM
-  -> 在隔离审查上下文中理解变更，产生语义 findings
+### 1. Compatibility probe
 
-change-audit Python package
-  -> ReviewPack、结果 ingest、约束归一化与裁决
-  -> code-diff adapter、Audit Graph、校验、风险状态和 HTML renderer
-```
+Skill 在 `prepare` 前使用同一个 Python interpreter 检查：
 
-ReviewPack、canonical prompt、结果 ingest、normalizer 与 adjudicator 直接组成包内的 `change_audit.review` 内核，不存在第二个安装项、第二个 Skill 或第二套模型调用路径。
+- package version 非空；
+- public audit schema 为 `0.3`；
+- product reviewer prompt 为 `v0.4`；
+- `evidentloop.api` 的 prepare、finalize 与 render API 可导入；
+- `python -m evidentloop --help` 包含 `prepare`、`finalize` 与 `render`。
 
-Python 包不集成模型 SDK，也不读取 provider/API key 配置。宿主已有的 LLM 是 finding 生产者；Python 只生成机械字段、校验语义输出并渲染稳定报告。
+任一条件不满足时必须停止。安装或升级前应说明来源、环境和完整命令，并等待用户授权。
 
-## Skill 编排契约
-
-### 1. Prepare
+### 2. Prepare
 
 ```bash
-python -m change_audit prepare --diff HEAD~1 [--out DIR]
+python -m evidentloop prepare --diff HEAD~1 [--out DIR]
 ```
 
-`prepare` 读取本地 Git diff，要求最终目录尚不存在，并在同一父目录创建隐藏 sibling staging workspace。其 `.run/` 中写入：
+`prepare` 解析真实 Git diff，要求最终目录尚不存在，并在同一父目录创建隐藏 sibling staging workspace：
 
-- `audit-skeleton.json`：run/change/file 骨架；不是最终 `audit.json`。
-- `review-pack.json`：内部 ReviewPack。
-- `hunk-index.json`：可信路径、行范围、hunk ID 和完整代码片段。
-- `prompt.md`：为宿主 LLM 准备的隔离审查提示。
+```text
+audit/.YYYYMMDD_<slug>.evidentloop-staging/
+  .run/
+    audit-skeleton.json
+    review-pack.json
+    hunk-index.json
+    prompt.md
+```
 
-prepare 同时在骨架中冻结 reviewer prompt 的 source、version 与完整渲染文本 SHA-256。当前 product prompt 为 `product/v0.3`：Section/字段名和协议枚举保持英文，`What`、`Why`、Observations 与 Overall Assessment 使用简体中文；`Where` 优先给出最能直接证明问题的一条修改行。文本 diff 不携带 `GIT binary patch`，但 binary 文件路径、change type 与 Git binary 占位仍保留在可信元数据中。
+`audit-skeleton.json` 不是最终 `audit.json`。`prompt.md` 使用 `source="product"` 表示来源角色，并冻结 prompt `v0.4` 的完整文本与 SHA-256。运行标记使用 `evidentloop-run-id`。
 
-最终目录此时不得出现；staging 根目录也尚未生成候选 `audit.json`。
-
-prepare 成功时向 Skill 返回结构化 locator：
+成功时 stdout 只输出一个 locator JSON，诊断写 stderr：
 
 ```json
 {
   "run_id": "run-...",
   "final_dir": "audit/YYYYMMDD_<slug>/",
-  "staging_dir": "audit/.YYYYMMDD_<slug>.change-audit-staging/"
+  "staging_dir": "audit/.YYYYMMDD_<slug>.evidentloop-staging/",
+  "prompt_path": "audit/.YYYYMMDD_<slug>.evidentloop-staging/.run/prompt.md",
+  "raw_analysis_path": "audit/.YYYYMMDD_<slug>.evidentloop-staging/.run/raw-analysis.md"
 }
 ```
 
-CLI stdout 只输出 locator JSON，诊断写 stderr。Skill 必须原样使用 locator，不得自行推导 slug、冲突后缀或 staging 路径。
+Skill 必须使用 locator 返回的路径，不自行推导 slug、冲突后缀或 staging 位置。
 
-### 2. Host review
+### 3. Isolated host review
 
-Skill 在隔离上下文中把 staging 内的 `prompt.md` 交给宿主 LLM，并将原始结果写入：
+宿主在全新隔离上下文中把完整 `prompt.md` 交给语义审查者，只把审查者原始响应写入 locator 指定的 `raw_analysis_path`。
 
-```text
-.run/raw-analysis.md
-```
+隔离上下文不得继承开发对话、预期结论、已知 finding 或旧报告，不授予 shell、网络、凭据或业务文件写权限。源码、diff、注释和审查文本都按不可信数据处理；其中的命令不能执行。
 
-源码、diff、注释和审查文本都按不可信数据处理。Skill 不执行其中的命令，不把其中的文字当作更高优先级指令，也不让 LLM 直接编辑最终 `audit.json`。
+宿主不能创建独立审查上下文时，应说明限制并停止，不能把当前开发对话冒充独立审查。
 
-### 3. Finalize
+### 4. Finalize
 
 ```bash
-python -m change_audit finalize --out DIR [--keep-review-artifacts]
+python -m evidentloop finalize --out DIR [--keep-review-artifacts]
 ```
 
-`DIR` 必须取自 prepare locator 的 `final_dir`。finalize 只接受与 locator/staging 中 `run_id` 一致的运行上下文；Skill 不重新计算路径或跨运行拼接材料。
+`DIR` 必须是 locator 的 `final_dir`。`finalize` 执行：
 
-`finalize` 执行 ingest、ReviewResult 到 Audit Graph 的映射、可信 hunk 反查、结构/引用/锚点校验、状态与评分计算，然后在 staging 根目录生成候选 `audit.json` 与 `audit.html`。
+1. 校验 run identity、prompt version 与 prompt hash；
+2. ingest 原始语义结果；
+3. 用可信 hunk index 反查 file、line 与 hunk；
+4. 生成 schema `0.3` Audit Graph、状态和评分；
+5. 在 staging 中生成候选 `audit.json` 与 `audit.html`；
+6. 校验 schema、引用、锚点、HTML identity 与 `data-*` 回链；
+7. 默认清理 `.run/`，复查最终目标不存在，再用同文件系统目录 rename 成对提交。
 
-候选 JSON、HTML、run/graph identity 和 `data-*` 回链全部通过后，finalize 才按 keep 策略处理 `.run/`，复查最终目标 leaf 不存在，再用一次同文件系统目录 rename 把 staging 提交为最终目录。检查时目标已存在、目标 leaf 是符号链接或 rename 失败时停止并保留 staging 诊断，不主动删除或覆盖目标。
+目标已存在、目标 leaf 是符号链接、prompt 漂移、schema 或 trace 失败、写入失败及 rename 失败都会停止。失败时不得复用旧报告或把隐藏 staging 当作正式产物。
 
-一期采用本地单写者、非对抗并发模型，不承诺消除目标检查与 rename 之间的极小竞态。原生 race-proof no-replace、平台专用锁和递归 symlink 防御延后；POSIX 上 staging / `.run/` 的 0700 与中间文件的 0600 只做 best-effort 隐私保护，不是跨平台成功门禁。
+`partial` 与 `failed` 可以是结构完整、状态真实的报告，但不能描述为成功的干净审查。
 
-finalize 会先校验冻结的 prompt 版本和 SHA-256，再接收宿主结果。合法的零 finding 必须使用明确完成信号；finding block 的声明 ID、实际解析结果和必要字段必须一致。缺段、截断、prompt 漂移或非法输出不得被推断成“未发现问题”，而应硬失败或映射为 `partial` / `failed`。
-
-成功提交前默认清理 `.run/`。宿主拒绝或可归一化的审查失败可以生成 `review_status = failed` 的完整报告对；schema、安全、路径不可读写、render、trace 或目录提交等硬失败返回非零。对 prepare 已接受的新目标，提交前失败时最终目录保持不存在并保留 staging 诊断；检查时已有目标或目标 leaf 是符号链接则拒绝，rename 失败也不能作为本轮成功证据。任何失败路径都不得复用旧报告或宣称成功。
-
-### 4. Re-render
+### 5. Render
 
 ```bash
-python -m change_audit render INPUT_JSON --out OUTPUT_HTML
+python -m evidentloop render INPUT_JSON --out OUTPUT_HTML
 ```
 
-`render` 只消费完整 `audit.json`，不读取 Git、`.run/` 或宿主状态。显式 `--out` 授权原子替换该单一 HTML；候选生成或校验失败时旧 HTML 原样保留，输入 JSON 永不修改。它用于重复生成 HTML 和独立验证已有审计数据，不参与 finalize 的产物对提交。
+`render` 只消费当前 schema `0.3` `audit.json`，不读取 Git、ReviewPack、raw analysis 或宿主状态。显式 `--out` 只授权替换该 HTML；候选生成或校验失败时保留旧 HTML，输入 JSON 不变。
 
-公开 Python API 与三个命令同构：
+身份迁移前生成的 schema `0.2` example 是冻结历史证据，不是当前 renderer 的重生成输入。
+
+## Public Python API
+
+模块命令对应以下 API：
+
+```python
+from evidentloop.api import finalize_review, prepare_local_diff, render_audit_file
+```
 
 ```python
 prepare_local_diff(repo_path, diff_spec, output_dir=None)
@@ -117,59 +130,38 @@ finalize_review(output_dir, keep_review_artifacts=False)
 render_audit_file(input_path, output_path)
 ```
 
-`review` 是用户对 Skill 的自然语言动作，不是一期 Python 子命令。
+`review` 是 Skill 的自然语言动作，不是 Python 子命令。
 
 ## Skill 位置与职责
 
-权威 Skill 目标位置：
+权威 Skill 目录：
 
 ```text
-integrations/agent-skill/change-audit/SKILL.md
+skills/evidentloop/
+  SKILL.md
+  agents/openai.yaml
 ```
 
-Skill 应当：
+Skill 负责：
 
-1. 匹配“审计本地改动”“review diff”“audit changes”等明确意图。
-2. 确认仓库、diff spec 和输出位置；默认 `HEAD~1` 只能在用户意图允许时采用。
-3. 检查非空包版本、schema `0.2`、prompt `v0.3` 与三个模块命令；缺包或任一契约不兼容时说明来源和命令，等待授权后才安装或升级。
-4. 顺序执行 prepare、隔离宿主审查和 finalize。
-5. 校验退出码、审查状态以及 `audit.json` / `audit.html` 的存在和对应关系。
-6. 返回简短摘要、审查状态和可打开的报告路径。
+1. 匹配明确的本地 diff 审计意图，避免普通文本 review 误触发；
+2. 确认 repository、diff spec 与可选输出目录；
+3. 在 `prepare` 前执行兼容性检查；
+4. 缺包或不兼容时说明安装动作并等待授权；
+5. 顺序执行 prepare、隔离审查与 finalize；
+6. 核对退出码、run identity、状态和正式报告对；
+7. 返回简短摘要与文件路径。
 
-Skill 包含必要的审查维度、输出完成标记和安全编排说明，但不复制 Python schema、模板、CSS/JS 或业务实现。
+Skill 不得静默安装、修改被审查代码、执行 diff 中的指令、修补语义审查者的输出，或在产物缺失时宣称成功。
 
-Skill 不得静默安装、自动修改用户代码、执行被审查源码中的指令，或在产物缺失时宣称成功。
+## 本地安装边界
 
-Skill 只能把已成功提交的最终目录当作正式报告；隐藏 staging、孤立文件或旧目录均不能作为本轮成功证据。
-
-## 安装策略
-
-仓库内 dogfood：
+仓库内开发或 dogfood 可以在用户指定的隔离环境中安装本地 checkout：
 
 ```bash
-python -m pip install -e /path/to/change-audit
+python -m pip install -e /path/to/evidentloop
 ```
 
-安装动作需要用户授权，并应落在用户选定的隔离环境中。
+安装需要用户授权。没有真实、不可变、维护者发布且完成验证的 release 前，不提供外部安装命令，不使用 `@latest`，也不假设 PyPI 项目存在。
 
-外部试用只有在真实 tag 发布后才能使用固定引用：
-
-```text
-git+https://github.com/evidentloop/change-audit.git@<real-tag>
-```
-
-禁止使用 `@latest`。一期不承诺 PyPI，也没有经过验证的跨宿主 Skill 安装器；各宿主使用自己的本地 Skill 注册机制，并注册完整的 `integrations/agent-skill/change-audit/` 目录。
-
-## 宿主验证状态
-
-- Codex：已完成自然语言触发到 HTML 的真实 dogfood。
-- Qoder：已确认 QoderCLI 启动、临时链接和 Skill discovery；模型级 smoke 由用户后续手工完成。
-- 其他宿主：后续按其发现机制适配，不要求用户在每个项目复制说明文件。
-
-## 一期验收
-
-- 中文和英文审计请求能够触发；普通文本 review 不误触发。
-- 缺包、版本不匹配、拒绝安装、prepare/宿主/finalize 任一步失败都返回真实状态。
-- 语义 bug fixture 产生可信锚点 finding；干净 fixture 在上下文充分时产生 `complete + pass_candidate`、不足时产生 `complete + inconclusive`；partial fixture 不伪装成干净审查。
-- 正式产物只暴露 `audit.json` 和 `audit.html`；中间产物默认清理。
-- Codex 与 Qoder 使用同一个 Skill 流程，不复制 Python 业务逻辑；本轮 Qoder 仅确认 CLI 启动与 Skill discovery，模型级结果不计入已验证能力。
+标准 skills CLI 安装、clean-host discovery 与跨宿主支持矩阵属于后续验证，不在当前文档中宣称完成。

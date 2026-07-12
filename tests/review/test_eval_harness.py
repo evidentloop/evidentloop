@@ -9,8 +9,8 @@ from pathlib import Path
 
 import yaml
 
-from change_audit.review import schema as schema_mod
-from change_audit.review.schema import (
+from evidentloop.review import schema as schema_mod
+from evidentloop.review.schema import (
     AdvisoryVerdict,
     BudgetStatus,
     Confidence,

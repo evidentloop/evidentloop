@@ -1,4 +1,4 @@
-"""Offline fixture evaluator for change-audit Prompt Lab.
+"""Offline fixture evaluator for the EvidentLoop Prompt Lab.
 
 The v0 harness is intentionally an offline aggregator:
 
@@ -26,7 +26,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from change_audit.review.schema import (  # noqa: E402
+from evidentloop.review.schema import (  # noqa: E402
     ReviewResult,
     ReviewStatus,
     review_pack_from_dict,
@@ -590,7 +590,7 @@ def build_report(fixtures_root: Path, *, mode: str = "release-gate") -> dict[str
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python prompt-lab/eval.py",
-        description="Offline change-audit fixture evaluator.",
+        description="Offline EvidentLoop fixture evaluator.",
     )
     parser.add_argument(
         "--fixtures",

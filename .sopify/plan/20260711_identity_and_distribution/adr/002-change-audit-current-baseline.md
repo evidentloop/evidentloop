@@ -2,7 +2,7 @@
 
 ## 状态
 
-复议中（当前代码基线）
+已废弃（由 ADR-004 取代）
 
 ## 日期
 
@@ -18,19 +18,19 @@
 
 ## 决策
 
-在 ADR-004 激活前，仓库保持以下当前身份基线；其中外部资源状态不被描述为已经取得：
+本 ADR 记录 ADR-004 生效前的仓库身份基线；其中外部资源状态不被描述为已经取得：
 
 | 层面 | 身份 |
 |---|---|
 | 产品、repository basename、CLI | `change-audit` |
 | Python import/source package | `change_audit` |
-| Skill | `skills/change-audit/` |
+| Skill | `integrations/agent-skill/change-audit/` |
 | PyPI 候选（未取得） | `change-audit` |
 | Pages 基线路径（未启用） | `https://evidentloop.github.io/change-audit/` |
 
 当前 v0 仍只宣称 Git diff 审计。不得因为 ADR-004 尚未激活，就把 `change-audit` 推导为首个公开 Alpha 的最终品牌。
 
-身份 checkpoint 前不修改 repo/package/import/schema namespace、prompt provenance 或 Skill 身份。若 ADR-004 的正式筛查或用户 checkpoint 未通过，则停止改名并另行决策，而不是自动恢复本 ADR 原先的长期语义判断。
+2026-07-12 用户明确采用 `EvidentLoop` 并停止继续审计名称风险，ADR-004 随即生效。本表只保留为迁移来源与历史 provenance，不再约束活动身份。
 
 ## 理由
 
@@ -47,5 +47,5 @@
 ## 影响
 
 - 当前 schema 0.2、`extensions.change_audit`、prompt `v0.3` 和历史证据在 checkpoint 前保持不变。
-- ADR-004 只有完成正式名称筛查并取得用户确认后才标为“已采纳”；届时本 ADR 标为“已废弃”，并由 Wave 1 执行一次 clean break。
-- 若 ADR-004 未激活，本 ADR 也不自动恢复为长期品牌结论；方案必须记录失败原因和下一步身份决策。
+- ADR-004 已采纳，本 ADR 已废弃；Wave 1 执行一次 clean break。
+- 历史 schema 0.2、报告与图仍保留 `change-audit` provenance，不创建运行时 alias。

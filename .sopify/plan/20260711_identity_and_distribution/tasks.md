@@ -2,25 +2,27 @@
 
 目录：`.sopify/plan/20260711_identity_and_distribution/`
 
-> 当前只进入方案评审。Wave 0 身份 checkpoint 通过前不得修改源码身份；Wave 6 发布 checkpoint 通过前不得提交或推送身份实现与发布候选，不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。经用户明确授权的纯方案文档 commit/push 不属于发布操作。
+> Wave 0 与 Wave 1 已完成，当前停止并等待用户审计。Wave 6 发布 checkpoint 通过前不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
 
 ## Wave 0：身份与注册风险门禁（最高优先级）
 
-- [ ] 0.1 按 USPTO 官方策略检索 `EVIDENTLOOP`、`EVIDENT LOOP`、相近读音/拼写及相关软件/SaaS 服务，保存查询式、结果链接、检索日期和判断；交互数据库无法验证时不得用搜索引擎零命中替代。
-- [ ] 0.2 在 WIPO Global Brand Database 执行相同精确词与近似词筛查，并记录数据库覆盖限制；基础筛查发现同类软件中的实质混淆风险时再停车决定是否补充 EUIPO/CNIPA 或专业法律意见，不把专业检索设为默认 Alpha 前置条件。
-- [ ] 0.3 核验 `evidentloop` PyPI 项目页、GitHub org/repository 目标、`evidentloop.com` WHOIS 与相邻品牌 `Evidently` / `EvidenceLoop`，区分“未发现公开项目”“可注册”“已取得”三种状态。
-- [ ] 0.4 按“相邻品牌可接受；精确同名或同类软件中的实质混淆才阻断”形成名称判断，冻结目标身份矩阵、旧标识 allowlist、schema/prompt 版本策略、历史证据策略和所有外部预留动作；不使用 placeholder package 抢占 PyPI。
-- [ ] 0.5 身份 checkpoint：向用户提交 0.1-0.4 证据与 ADR-004，获得明确确认后才将 ADR-004 标为已采纳、ADR-002 标为已废弃并进入 Wave 1；未通过则保持 `change-audit` 并停止迁移。
+- [x] 0.1 按 USPTO 官方策略检索 `EVIDENTLOOP`、`EVIDENT LOOP`、相近读音/拼写及相关软件/SaaS 服务；精确候选为 0，近似结果未发现直接冲突。
+- [x] 0.2 WIPO Global Brand Database 未取得可验证结果；用户明确接受该缺口并要求停止继续审计名称风险，未伪造“未发现”结论。
+- [x] 0.3 已核验 PyPI、GitHub、`.com` / `.dev` RDAP 与相邻品牌状态；`Evidence Loop` 面向医疗研究证据，`Evidently` 面向 AI evaluation / monitoring，均记录为相邻品牌。
+- [x] 0.4 冻结 `EvidentLoop` 目标矩阵、schema `0.3` canonical URI、prompt `v0.4`、package `0.1.0a0`、精确 allowlist、历史证据策略与外部动作边界，详见 ADR-004 与 `design.md`。
+- [x] 0.5 身份 checkpoint：用户明确采用 `EvidentLoop` 并停止继续审计名称风险；ADR-004 已采纳，ADR-002 已废弃，允许进入 Wave 1。本决定不授权外部改名、注册或发布。
 
 ## Wave 1：本地身份 clean break
 
-- [ ] 1.1 生成受版本管理文件的旧身份清单，按 source、tests、schema、prompt、Skill、docs、`.sopify`、历史证据分类；冻结仅允许 ADR-002、迁移说明和历史证据保留旧名的 allowlist。
-- [ ] 1.2 将 distribution、source package、Python import、module entry 与版本读取统一为 `evidentloop`；不保留 `change_audit` import alias。
-- [ ] 1.3 将 schema `$id`、title、extension namespace 与 validator 统一为 EvidentLoop；按 checkpoint 结论升级 schema 并验证旧报告只作为历史证据读取。
-- [ ] 1.4 将 reviewer prompt 标题、source、version、hash、run marker 与 ingest identity 统一为 EvidentLoop；任何 prompt 文本变化都必须重新冻结 provenance 测试。
-- [ ] 1.5 将 staging suffix、CLI/error prefix、HTML title/kicker、feedback localStorage prefix、导出 provenance 与默认目录名统一为 EvidentLoop。
-- [ ] 1.6 将活动测试、fixture、prompt-lab、dogfood 入口和生成脚本迁移到新 identity；历史已归档输出不重写。
-- [ ] 1.7 执行格式、schema、Python、JS 与完整测试；对受版本管理活动文件运行旧标识扫描，只有 allowlist 命中可通过。
+- [x] 1.1 已生成旧身份清单并冻结精确 allowlist：历史 `.sopify`、历史报告及其 provenance、旧架构/时序快照，以及 Wave 7 前仍真实存在的 remote URL。
+- [x] 1.2 distribution、source package、Python import、module entry 与版本读取已统一为 `evidentloop`，未保留 `change_audit` import alias。
+- [x] 1.3 public audit schema 已升级到 `0.3`，canonical `$id`、title、`extensions.evidentloop` 与 validator 已同步；旧报告只作为历史证据保留。
+- [x] 1.4 reviewer prompt 保留 `source="product"`，标题、version `v0.4`、hash、run marker 及解析逻辑已迁移并由 provenance 测试冻结。
+- [x] 1.5 staging suffix、CLI/error prefix、HTML title/kicker、JS global 与 feedback localStorage prefix 已统一；未新增 locator 或 feedback event 品牌字段，领域契约未改名。
+- [x] 1.6 活动测试、fixture、prompt-lab 与生成入口已迁移；三个 example 的 6 个历史报告 hash 不变。
+- [x] 1.7 活动 Skill 已迁到唯一目录 `skills/evidentloop/`，frontmatter、metadata、触发词与命令已同步，旧 Skill 已删除。
+- [x] 1.8 活动 README、核心文档、封面与架构 SVG/PNG 已同步；旧封面删除，历史架构/时序快照字节不变，新图只陈述当前 Git diff 能力。
+- [x] 1.9 Python `317 passed`、Ruff、JS、clean wheel、module CLI、schema/prompt probe、旧身份扫描、历史 hash、Markdown 链接、SVG 结构与浏览器视觉验证均通过。最终 clean wheel 只包含 `evidentloop/` 与 dist-info，SHA-256 为 `d7e7d39a6d1eec4f085577d9f0a0f3f6ad5ed7fe5779d97f46c53f8d763ae9b4`。
 
 ## Wave 2：Python CLI 产品化
 
@@ -30,12 +32,11 @@
 - [ ] 2.4 增加 console script、doctor、demo、离线运行和 clean wheel package resource 测试。
 - [ ] 2.5 在实现 CLI/HTML 改动前审计现有反馈能力，确定首个 Alpha 的反馈消费范围：若纳入完整消费与重新生成，补齐结构化输入输出、状态迁移和回归测试；若延后，保留交互反馈能力并在 README/Pages 明确边界。该选择不回退 EvidentLoop 的长期闭环愿景。
 
-## Wave 3：标准 Skill 与用户文档
+## Wave 3：Skill 安装与用户入口
 
-- [ ] 3.1 将现有 `integrations/agent-skill/change-audit/` 迁移为唯一活动目录 `skills/evidentloop/`，更新 frontmatter、agent metadata、触发词与命令，不保留双 Skill。
-- [ ] 3.2 删除 Codex/Qoder 作为产品前提的表述，改为宿主能力契约和实测支持矩阵；明示 CLI/schema/prompt 兼容范围并在 `prepare` 前 fail closed。
-- [ ] 3.3 在隔离临时 HOME 中用标准 skills CLI 从本地 checkout 安装 `evidentloop`，验证嵌套目录、辅助文件、全局安装形态与 discovery。
-- [ ] 3.4 重写中英文 README 首屏为“在线看 -> `uvx` demo -> 正式安装 -> 一句话审计”，首版只陈述 Git diff，并补充 uv 主路径、pipx fallback、诊断、更新/卸载和高级人工通道。
+- [ ] 3.1 删除 Codex/Qoder 作为产品前提的表述，改为宿主能力契约和实测支持矩阵；明示 CLI/schema/prompt 兼容范围并在 `prepare` 前 fail closed。
+- [ ] 3.2 在隔离临时 HOME 中用标准 skills CLI 从本地 checkout 安装最终 Skill，验证嵌套目录、辅助文件、全局安装形态与 discovery。
+- [ ] 3.3 把中英文 README 首次成功路径收敛为“在线看 -> `uvx` demo -> 正式安装 -> 一句话审计”，首版只陈述 Git diff，并补充 uv 主路径、pipx fallback、诊断、更新/卸载和高级人工通道。
 
 ## Wave 4：本地集成与外部试跑
 
@@ -47,7 +48,7 @@
 ## Wave 5：evidence worktree 与 Pages
 
 - [ ] 5.1 在本地准备 orphan `audit-evidence` branch 与固定 worktree，写全新机器可复制的 fetch、worktree、symlink、验证、恢复与移除命令，不硬编码绝对路径。
-- [ ] 5.2 把整个 `.sopify` 和现有 dogfood/生成证据复制到 evidence worktree；保留旧报告原身份，确认 state/user、raw output、密钥和本地绝对路径不进入分支，再从 main 移除并加入 ignore。
+- [ ] 5.2 把整个 `.sopify`、现有 dogfood/生成证据及其引用的旧架构/时序快照一起复制到 evidence worktree；保留旧报告原身份，确认历史链接全部可解析，并确认 state/user、raw output、密钥和本地绝对路径不进入分支，再从 main 移除并加入 ignore。旧快照不得在引用它们的 history 之前单独移走。
 - [ ] 5.3 在 `audit-evidence` 建立 `docs/` Pages 入口和 `evidence/releases/<tag>/<source-sha>/` bundle；manifest 必须记录产品身份与版本，永久证据只含脱敏 audit、测试摘要与 checksums。
 - [ ] 5.4 验证 main checkout 在没有 evidence worktree 时仍可完整测试、build、安装和运行；验证维护环境通过 symlink 可恢复 Sopify，main 不再跟踪 `.sopify` 或生成型证据。
 

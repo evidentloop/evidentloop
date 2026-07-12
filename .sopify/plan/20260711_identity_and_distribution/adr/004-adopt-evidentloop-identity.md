@@ -2,7 +2,7 @@
 
 ## 状态
 
-待定
+已采纳
 
 ## 日期
 
@@ -14,15 +14,19 @@
 
 `EvidentLoop` 由两个常见词构成：`Evident` 表达依据可检查，`Loop` 表达审查反馈闭环。它可以统一当前单产品组织的 GitHub、repository、PyPI、CLI、Python import 与 Skill 身份，不绑定 code diff、Audit Graph 或 anchor 等单一实现。
 
-初步公开检索未发现有影响力的精确同名软件，但存在 `Evidently` 与 `EvidenceLoop` 等相邻名称。当前风险偏好接受相邻品牌；只有精确同名，或同类软件中足以造成实质混淆的近似名称，才阻断本次命名。PyPI 无公开项目页和域名 WHOIS `No match` 都不等于已经取得名称。正式迁移前仍需完成 USPTO/WIPO 基础筛查并由用户确认风险；专业法律意见只在基础筛查发现实质风险时另行决定。
+Wave 0 的 USPTO 精确检索没有发现 `EVIDENTLOOP` 或 `EVIDENT LOOP`。`Evidence Loop` 与候选名称只相差 `t` / `ce`，但它面向 health outcomes 与 clinical effectiveness evidence；当前产品面向开发者 artifact audit，服务范围、用户与渠道不同。`EVIDENTLY` 与 `EVIDENTLY AI` 是 AI evaluation / monitoring 软件领域的相邻标识，但不是同一名称。
+
+2026-07-12 用户明确要求停止继续审计名称风险并直接采用 `EvidentLoop`。WIPO 未验证作为已接受缺口记录，不再阻断本地身份迁移。PyPI 404、目标 GitHub repository 404 和域名 RDAP 404 仍只代表“未发现”，不代表可注册或已取得；相关外部动作继续受发布 checkpoint 约束。
 
 ## 决策
 
-满足以下激活条件后，采用 `EvidentLoop` 作为唯一产品身份，并取代 ADR-002：
+采用 `EvidentLoop` 作为唯一产品身份，并取代 ADR-002。冻结契约如下：
 
-1. 完成 USPTO、WIPO 的精确词、近似拼写/读音及相关软件/SaaS 服务基础筛查，保留可审计证据，并按上述实质混淆标准给出判断。
-2. 复核 PyPI、GitHub、域名与相邻品牌状态，明确区分“未发现公开项目”“可注册”“已取得”。
-3. 用户在身份 checkpoint 明确接受风险、目标身份矩阵、版本策略与后续外部动作边界；这不等于授权立即执行 repository 改名、域名购买或发布。
+1. 产品、repository 目标、PyPI、CLI、Python import、source package 与 Skill 统一使用 `EvidentLoop` / `evidentloop`。
+2. public audit schema 升级到 `0.3`，canonical `$id` 使用 `https://evidentloop.github.io/evidentloop/schemas/audit-v0.3.schema.json`，extension namespace 使用 `extensions.evidentloop`。
+3. product reviewer prompt 升级到 `v0.4`；`source="product"` 保持来源角色，标题、run marker、boundary 与 hash 迁移到新身份。
+4. package version 保持 `0.1.0a0`；身份迁移本身不制造额外公开版本。
+5. 采用 clean break 与既定 allowlist；repository 改名、域名、PyPI、tag、Pages 和发布仍需后续 checkpoint，本决定不授权外部操作。
 
 激活后的身份为：
 
@@ -33,11 +37,13 @@
 | PyPI / CLI / Python import | `evidentloop` |
 | Skill | `skills/evidentloop/` |
 | Pages | `https://evidentloop.github.io/evidentloop/` |
-| schema / prompt / runtime namespace | `evidentloop` |
+| schema | `0.3`；`https://evidentloop.github.io/evidentloop/schemas/audit-v0.3.schema.json`；`extensions.evidentloop` |
+| runtime namespace | `evidentloop` |
+| prompt provenance | `source="product"` 保持来源角色；标题、version、marker 与 hash 使用 EvidentLoop 身份 |
 
 迁移采用 clean break：不保留旧 import、旧 CLI、旧 Skill 或双 namespace alias。历史 `.sopify`、dogfood 与已生成报告保留原始 `change-audit` 身份，通过迁移说明与 release manifest 维持 provenance。
 
-ADR-004 在激活前保持“待定”，`change-audit` 仍是当前代码事实；不得仅凭本 ADR 修改源码或执行外部注册操作。
+本 ADR 授权 Wave 1 的本地身份 clean break，但不授权外部注册、远端改名或发布。分支实现的 commit/push 由用户单独授权；迁移期间 `change-audit` 只作为来源身份和历史 provenance 保留，不创建技术 alias。
 
 ## 理由
 

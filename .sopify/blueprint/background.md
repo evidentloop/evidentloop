@@ -1,4 +1,4 @@
-# change-audit 背景
+# EvidentLoop 背景
 
 ## 产品问题
 
@@ -14,17 +14,17 @@ AI coding 会生成代码变更，也会生成 plan、design、analysis、review
 
 ## 产品定位
 
-`change-audit` 是面向 AI 变更与可审查产物的可回链审计工具。
+`EvidentLoop` 是面向 AI 变更与可审查产物的可回链审计工具。
 
-- `change_audit.review` 是 artifact-general 隔离审查内核；AI host 的 LLM 负责目标相关的语义判断。
-- `change_audit.audit` 与 renderer 是 profile-specific 正式产品层；只有具备 adapter、可信 anchor、eval baseline 和 renderer profile 的类型，才承诺完整审计产物。
+- `evidentloop.review` 是 artifact-general 隔离审查内核；AI host 的 LLM 负责目标相关的语义判断。
+- `evidentloop.audit` 与 renderer 是 profile-specific 正式产品层；只有具备 adapter、可信 anchor、eval baseline 和 renderer profile 的类型，才承诺完整审计产物。
 - 产品 runtime 不内置 LLM SDK 或 provider/API key 配置；它负责构造可信上下文、约束审查输出、生成机械字段、校验引用并确定性呈现。
-- `change_audit.review` 直接承载 ReviewPack、prompt、ingest、normalizer 与 adjudicator；迁移来源不形成第二个产品或第二套运行链路。
+- `evidentloop.review` 直接承载 ReviewPack、prompt、ingest、normalizer 与 adjudicator；迁移来源不形成第二个产品或第二套运行链路。
 - Python CLI 是唯一 runtime 与版本真相源；标准薄 Skill 只负责发现和宿主编排。普通用户不需要 clone 仓库、手建 venv、editable install 或手工复制 Skill 目录。
 
 ## 用户入口
 
-用户链路按四步递进：先在 GitHub Pages 在线查看真实报告；再用 `uvx change-audit demo` 运行冻结 reviewer replay；正式使用时通过 `uv tool install change-audit`（或 pipx）安装 CLI，并通过标准 skills CLI 安装同仓库 Skill；最后在满足能力契约的 AI host 中说“用 change-audit 审计本地改动”。Skill 负责选择 diff 范围、编排宿主 LLM、运行确定性阶段并展示报告路径。用户项目无需复制集成说明或中间契约。
+用户链路按四步递进：先在 GitHub Pages 在线查看真实报告；再用 `uvx evidentloop demo` 运行冻结 reviewer replay；正式使用时通过 `uv tool install evidentloop`（或 pipx）安装 CLI，并通过标准 skills CLI 安装同仓库 Skill；最后在满足能力契约的 AI host 中说“用 EvidentLoop 审计本地改动”。Skill 负责选择 diff 范围、编排宿主 LLM、运行确定性阶段并展示报告路径。用户项目无需复制集成说明或中间契约。
 
 无 AI host 时，`demo` 用冻结输入和 reviewer replay 走通完整机械链并生成明确标记的演示报告。高级集成者也可以手工执行 `prepare -> external review -> finalize`，但产品不提供本地 LLM、provider SDK 或自动模型调用。底层命令是稳定、可调试的集成入口；`review` 仍是 Skill 表达的用户动作，不伪装成脱离宿主即可完成的单命令。
 

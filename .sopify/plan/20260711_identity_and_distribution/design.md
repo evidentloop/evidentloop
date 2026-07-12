@@ -3,25 +3,25 @@
 ## 权威决策
 
 - [ADR-001](adr/001-pypi-cli-standard-skill.md)：PyPI CLI 是 runtime 与版本真相源，Skill 是静态薄编排层。
-- [ADR-002](adr/002-change-audit-current-baseline.md)：`change-audit` 是商标与注册门禁通过前的当前身份基线。
-- [ADR-004](adr/004-adopt-evidentloop-identity.md)：门禁通过后采用 `EvidentLoop` 单一身份并执行 clean break；生效时取代 ADR-002。
+- [ADR-002](adr/002-change-audit-current-baseline.md)：已废弃；仅记录 `change-audit` 来源身份基线。
+- [ADR-004](adr/004-adopt-evidentloop-identity.md)：已采纳 `EvidentLoop` 单一身份与 clean break。
 - [ADR-003](adr/003-main-and-audit-evidence-placement.md)：main 是产品面，`audit-evidence` 是维护与证据面；首次 Alpha 前完成隔离，evidence 失败即阻断发布。
+- [ADR-004](adr/004-adopt-evidentloop-identity.md) 同时记录 Wave 0 的名称接受决定；用户已停止继续审计名称风险。
 
 ## 身份状态机
 
 ```text
-change-audit 当前基线
-  -> USPTO/WIPO 与注册风险初筛
-  -> 用户身份 checkpoint
-     ├─ 未通过：保持基线，停止身份迁移
-     └─ 通过：ADR-004 生效
-               -> 本地 clean-break 迁移
-               -> clean wheel / Skill / 宿主验证
-               -> 发布 checkpoint
-               -> 经授权改名远端 repository 并发布 EvidentLoop Alpha
+change-audit 来源基线（历史）
+  -> USPTO/registry 初筛完成，WIPO 缺口由用户接受
+  -> 2026-07-12 用户身份 checkpoint 通过
+  -> ADR-004 生效，采用 EvidentLoop
+  -> Wave 1 本地 clean-break 迁移
+  -> clean wheel / Skill / 宿主验证
+  -> 发布 checkpoint
+  -> 经授权改名远端 repository 并发布 EvidentLoop Alpha
 ```
 
-身份 checkpoint 之前，`change-audit` 仍是代码事实；以下矩阵只是通过门禁后的唯一目标态。
+以下矩阵是 checkpoint 已冻结的唯一活动目标态；`change-audit` 只在迁移说明与历史 provenance 中保留。
 
 ## 目标身份矩阵
 
@@ -33,19 +33,20 @@ change-audit 当前基线
 | source package | `evidentloop/` |
 | Skill | `skills/evidentloop/`，frontmatter `name: evidentloop` |
 | Pages | `https://evidentloop.github.io/evidentloop/` |
-| schema namespace | `extensions.evidentloop`；`$id` 使用 EvidentLoop URL |
-| prompt provenance | source、标题、marker 与 hash 统一为 EvidentLoop；内容变化必须升级 prompt version |
-| runtime identity | staging suffix、run marker、错误前缀与 locator 身份统一为 `evidentloop` |
-| feedback identity | localStorage prefix 与导出 provenance 统一为 `evidentloop` |
+| schema namespace | `extensions.evidentloop`；`$id` 为 `https://evidentloop.github.io/evidentloop/schemas/audit-v0.3.schema.json` |
+| prompt provenance | `source="product"` 保留来源角色；标题、version、marker 与 hash 迁移到 EvidentLoop |
+| runtime identity | staging suffix、run marker、错误前缀、HTML 标题与现有 JS global 统一为 `evidentloop` |
+| feedback identity | 只迁移现有 localStorage prefix；`audit-feedback.jsonl` 结构是否扩展留给 Wave 2 反馈范围决策 |
 
 ## Clean-break 迁移契约
 
 1. 首个公开 Alpha 前没有 `change-audit` PyPI 用户或稳定外部兼容承诺，因此活动 runtime 不保留旧 import、旧 CLI、旧 Skill 或双 namespace alias。
-2. schema `$id`、extension namespace 和 prompt provenance 属于契约迁移；目标方案建议将 public audit schema 从 `0.2` 升为 `0.3`，product reviewer prompt 从 `v0.3` 升为 `v0.4`，由 Wave 0 checkpoint 最终确认。
-3. package version 继续使用发布候选所确认的 Alpha 版本，不因内部重命名自动创建公开版本。
+2. schema `$id`、extension namespace 和 prompt provenance 属于契约迁移；public audit schema 从 `0.2` 升为 `0.3`，product reviewer prompt 从 `v0.3` 升为 `v0.4`。
+3. package version 保持 `0.1.0a0`，不因内部重命名自动创建公开版本。
 4. 历史 `.sopify/history`、旧 dogfood 和既有审计报告不重写，只在迁移说明与 release manifest 中标注来源身份。
-5. 活动源码、测试、fixture、prompt-lab、Skill 与用户文档不得残留未 allowlist 的旧标识；allowlist 仅允许历史证据、迁移说明和 ADR-002。
+5. 活动源码、测试、fixture、prompt-lab、Skill、用户文档与视觉资产不得残留未 allowlist 的旧产品标识。allowlist 只允许 `.sopify/history/**`、ADR-002、当前迁移说明、既有自包含报告及其同目录 provenance 说明、历史视觉快照，以及 Wave 7 前仍真实存在的精确远端 URL `evidentloop/change-audit`；不允许其他活动文案继续使用裸旧品牌。`audit.json`、`audit.html`、`audit-feedback.jsonl`、`AuditGraph`、`change_type`、`changed_files` 与默认 `audit/` 是稳定领域契约，不因品牌迁移改名。
 6. GitHub repository 改名属于外部操作，延后到发布 checkpoint 后执行；本地代码迁移与验证不依赖远端先改名。
+7. 既有 `audit.json` / `audit.html` 是历史证据，迁移前冻结 hash，迁移后复核字节不变；不为 schema `0.2` 建旧 renderer 或迁移器。
 
 ## Wave 依赖
 
@@ -90,6 +91,8 @@ evidence/releases/v0.1.0a0/<source-sha>/
 manifest 记录 repository、产品身份、`source_commit`、release tag、package/schema/prompt version、audit status、脱敏结果和文件 hashes。旧证据保留原始 `change-audit` 身份；新 release bundle 只使用已经通过验证的 EvidentLoop 身份。
 
 ## 用户链路
+
+![EvidentLoop 候选用户路径与证据闭环](diagrams/distribution-user-flow.svg)
 
 1. GitHub Pages 提供零安装预览。
 2. `uvx evidentloop demo` 运行离线合成 replay，并显著标记 provenance。

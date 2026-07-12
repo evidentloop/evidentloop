@@ -16,19 +16,20 @@
 评分理由：
 
 - 方案质量扣 1 分：main/evidence 双 commit 无法原子更新，仍需依靠 `source_commit` 校验与 fail-closed 发布门禁。
-- 落地就绪扣 3 分：`EvidentLoop` 的 USPTO/WIPO 近似词筛查尚未完成；身份迁移涉及 schema、prompt provenance、Skill、历史证据和远端仓库；CLI、demo、doctor、Pages 与真实宿主 E2E 仍待实现。
+- 落地就绪扣 3 分：身份与版本契约已经冻结，但本地 clean break、CLI/Skill 安装、evidence 隔离与真实宿主 E2E 仍待完成。
 
 ## 决策状态
 
 - 分发方式遵循[ADR-001](adr/001-pypi-cli-standard-skill.md)。
-- `change-audit` 是当前代码与历史证据基线，遵循[ADR-002](adr/002-change-audit-current-baseline.md)。
-- `EvidentLoop` 是待门禁激活的目标身份，遵循[ADR-004](adr/004-adopt-evidentloop-identity.md)；ADR-004 生效后取代 ADR-002。
+- `change-audit` 是历史代码与证据基线；[ADR-002](adr/002-change-audit-current-baseline.md) 已由 ADR-004 取代。
+- [ADR-004](adr/004-adopt-evidentloop-identity.md) 已采纳 `EvidentLoop` 单一身份与 clean break。
+- Wave 0 身份 checkpoint 已通过；用户明确停止继续审计名称风险并直接采用 `EvidentLoop`。接受决定与冻结契约见 [ADR-004](adr/004-adopt-evidentloop-identity.md)。
 - main/evidence 边界、首次 Alpha 前隔离和 fail-closed 发布遵循[ADR-003](adr/003-main-and-audit-evidence-placement.md)。
 
 方案包含两个必须停车的 checkpoint：
 
 1. Wave 0 身份 checkpoint：提交官方商标初筛、注册风险、相邻品牌、目标身份矩阵和迁移契约；确认前不改源码身份。
-2. Wave 6 发布 checkpoint：提交准确 commit、版本、构建物、测试、真实宿主 smoke、证据与外部操作清单；确认前不提交或推送身份实现与发布候选，不 tag/publish/启用 Pages。经用户明确授权的纯方案文档 commit/push 不属于发布操作。
+2. Wave 6 发布 checkpoint：提交准确 commit、版本、构建物、测试、真实宿主 smoke、证据与外部操作清单；确认前不改名远端 repository，不注册域名或 PyPI，不创建 tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
 
 ## 用户成功标准
 
@@ -59,7 +60,7 @@
 
 ## 主要风险
 
-- 名称冲突风险：接受 `Evidently`、`EvidenceLoop` 等非直接冲突的相邻品牌并记录搜索风险；只有精确同名，或同类软件中足以造成实质混淆的近似名称，才阻断 `EvidentLoop`。必须完成官方基础筛查并保留证据，不默认把专业法律意见设为 Alpha 前置条件。
+- 名称风险：用户已接受现有筛查结果与 WIPO 未验证缺口，要求停止继续审计；后续不再把名称检索设为实现门禁。
 - 身份漂移：迁移必须由单一矩阵驱动，并用旧标识 allowlist 与全仓扫描阻断半迁移状态。
 - 历史证据断链：旧 dogfood 不重写；新证据通过 manifest 显式记录旧/新身份与来源 commit。
 - 双分支漂移：manifest 绑定准确 `source_commit`；不一致即阻断发布。

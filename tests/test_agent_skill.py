@@ -71,7 +71,8 @@ def test_install_authority_and_fixed_version_text_contract() -> None:
     assert "`schema_version` equal to `0.3`" in text
     assert "`prompt_version` equal to `v0.4`" in text
     assert "PRODUCT_REVIEWER_PROMPT_VERSION" in text
-    assert "non-empty `package_version`" in text
+    assert "`package_version` equal to `0.1.0a0`" in text
+    assert "Treat any other value as incompatible and stop before `prepare`" in text
     assert "from evidentloop.api import" in text
     assert "<PYTHON> -m evidentloop --help" in text
     assert "module CLI dispatcher" in text

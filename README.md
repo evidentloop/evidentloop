@@ -44,9 +44,37 @@ The repository keeps three reports generated before the EvidentLoop identity mig
 
 Their `audit.json` and `audit.html` files retain the original schema `0.2` and product provenance. They are frozen historical evidence, not current schema `0.3` fixtures, and the identity migration does not rewrite them.
 
-## Local quick start
+## Quick start
 
-Requirements: Git, Python 3.10 or newer, and an AI host that can load a local Agent Skill and create an isolated reviewer context.
+Requirements: Git, Python 3.10 or newer, and an AI host that can discover the Skill and create an isolated reviewer context.
+
+### Public Alpha path
+
+The public release will use one short path: view the report at `https://evidentloop.github.io/evidentloop/`, try the offline replay, install the CLI and Skill, run diagnostics, then ask for an audit.
+
+```bash
+uvx evidentloop demo
+uv tool install evidentloop
+npx skills@latest add evidentloop/evidentloop --skill evidentloop -g
+evidentloop doctor
+```
+
+These commands are the release target, not a claim of current availability. PyPI, the renamed repository, remote Skill installation, and Pages remain unavailable until the release checkpoint is complete. Use `pipx install evidentloop` only as the published CLI fallback.
+
+After release, update or remove the installation with:
+
+```bash
+uv tool upgrade evidentloop
+npx skills@latest update evidentloop -g
+uv tool uninstall evidentloop
+npx skills@latest remove evidentloop -g -y
+```
+
+For pipx, use `pipx upgrade evidentloop` or `pipx uninstall evidentloop`.
+
+### Current local Alpha
+
+Until the public release, install from this checkout:
 
 ```bash
 git clone https://github.com/evidentloop/change-audit.git evidentloop
@@ -57,11 +85,12 @@ source .venv/bin/activate
 python -m pip install -e .
 evidentloop doctor
 evidentloop demo --out evidentloop-demo
+npx skills@latest add . --skill evidentloop --agent codex -g --copy
 ```
 
 `demo` uses a bundled synthetic Git change and frozen reviewer replay. It does not access a model or the network, and its terminal, JSON, and HTML outputs explicitly mark that provenance.
 
-Register the complete [`skills/evidentloop/`](./skills/evidentloop/) directory with the host's local Skill mechanism. Do not copy only `SKILL.md`; the directory also contains host metadata. A standard cross-host installer has not been verified yet.
+The local installer command was verified in an isolated HOME with Codex. It installs the complete [`skills/evidentloop/`](./skills/evidentloop/) directory, including host metadata. Installation and discovery are verified separately from the real audit E2E, which remains a later gate.
 
 Then, inside the Git repository to inspect, ask the host:
 
@@ -75,7 +104,7 @@ Or in Chinese:
 帮我用 EvidentLoop 审计 staged changes，并生成 HTML 报告。
 ```
 
-The Skill checks package, schema, and prompt compatibility; prepares a trusted workspace; sends only the generated prompt to an isolated semantic reviewer; finalizes the report pair; and returns the report paths. The current report UI and reviewer prose are Simplified Chinese.
+The Skill requires package `0.1.0a0`, schema `0.3`, and prompt `v0.4` before `prepare`; any mismatch stops the run. It then prepares a trusted workspace, sends only the generated prompt to an isolated semantic reviewer, finalizes the report pair, and returns the report paths. The current report UI and reviewer prose are Simplified Chinese.
 
 ## How it works
 
@@ -139,7 +168,7 @@ See [AI host integration](./docs/ai-host-integration.md) for the locator contrac
 | Console script, `doctor`, and offline synthetic replay `demo` | Implemented locally; not published to PyPI |
 | Automatic fixes, command execution, or feedback ingestion | Not supported in the first public Alpha |
 | PyPI, release tag, or public Pages | Not available |
-| Standard cross-host Skill installation | Not yet verified |
+| Standard Skill installation | Local checkout install and Codex discovery verified; remote release install unavailable |
 
 The current public audit target is a Git diff. Additional artifact profiles require their own adapter, trusted anchors, evaluation baseline, and renderer contract before they can become supported review targets.
 

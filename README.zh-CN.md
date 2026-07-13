@@ -44,9 +44,37 @@ EvidentLoop 把本地 Git diff 的审查结果整理成经过校验的 `audit.js
 
 这些目录中的 `audit.json` 与 `audit.html` 保留原始 schema `0.2` 和产品 provenance。它们是冻结的历史证据，不是当前 schema `0.3` fixture；身份迁移不会重写这些文件。
 
-## 本地快速开始
+## 快速开始
 
-需要 Git、Python 3.10 或更高版本，以及能够加载本地 Agent Skill、创建隔离审查上下文的 AI host。
+需要 Git、Python 3.10 或更高版本，以及能够发现 Skill、创建隔离审查上下文的 AI host。
+
+### 公开 Alpha 路径
+
+正式发布后，用户路径保持为四步：在 `https://evidentloop.github.io/evidentloop/` 查看报告，运行离线 replay，安装 CLI 与 Skill，执行诊断后发起审计。
+
+```bash
+uvx evidentloop demo
+uv tool install evidentloop
+npx skills@latest add evidentloop/evidentloop --skill evidentloop -g
+evidentloop doctor
+```
+
+这些命令是发布目标，不代表当前已经可用。PyPI、改名后的 repository、远程 Skill 安装和 Pages 要等发布 checkpoint 完成后才开放。正式发布后，`pipx install evidentloop` 作为 CLI 安装 fallback。
+
+正式发布后的更新与卸载命令：
+
+```bash
+uv tool upgrade evidentloop
+npx skills@latest update evidentloop -g
+uv tool uninstall evidentloop
+npx skills@latest remove evidentloop -g -y
+```
+
+使用 pipx 时，对应命令为 `pipx upgrade evidentloop` 和 `pipx uninstall evidentloop`。
+
+### 当前本地 Alpha
+
+正式发布前，从当前 checkout 安装：
 
 ```bash
 git clone https://github.com/evidentloop/change-audit.git evidentloop
@@ -57,11 +85,12 @@ source .venv/bin/activate
 python -m pip install -e .
 evidentloop doctor
 evidentloop demo --out evidentloop-demo
+npx skills@latest add . --skill evidentloop --agent codex -g --copy
 ```
 
 `demo` 使用 wheel 内合成 Git 变更与固定 reviewer replay，不访问模型或网络；终端、JSON 和 HTML 都会明确标记该 provenance。
 
-使用宿主的本地 Skill 机制注册完整的 [`skills/evidentloop/`](./skills/evidentloop/) 目录。不要只复制 `SKILL.md`，同一目录还包含宿主元数据。标准跨宿主安装方式尚未完成验证。
+本地安装命令已在隔离 HOME 的 Codex 环境中验证，会安装完整的 [`skills/evidentloop/`](./skills/evidentloop/) 目录及宿主元数据。安装与 discovery 已验证，真实审计 E2E 仍是后续门禁。
 
 进入要审计的 Git 仓库后，对宿主说：
 
@@ -75,7 +104,7 @@ evidentloop demo --out evidentloop-demo
 Use EvidentLoop to audit my staged changes and generate the HTML report.
 ```
 
-Skill 会核对 package、schema 与 prompt 兼容性，准备可信 workspace，只把生成的 prompt 交给隔离语义审查者，再校验并发布正式报告对，最后返回文件路径。当前报告 UI 和审查正文使用简体中文。
+Skill 在 `prepare` 前精确要求 package `0.1.0a0`、schema `0.3` 和 prompt `v0.4`，任一不符即停止。随后准备可信 workspace，只把生成的 prompt 交给隔离语义审查者，再校验并发布正式报告对，最后返回文件路径。当前报告 UI 和审查正文使用简体中文。
 
 ## 工作原理
 
@@ -139,7 +168,7 @@ Locator 契约、失败处理、prompt 数据边界与安装授权规则见 [AI 
 | console script、`doctor` 与离线合成 replay `demo` | 本地已实现；尚未发布到 PyPI |
 | 自动修复、执行命令、消费反馈 | 首个公开 Alpha 不支持 |
 | PyPI、release tag、公开 Pages | 尚不可用 |
-| 标准跨宿主 Skill 安装 | 尚未验证 |
+| 标准 Skill 安装 | 本地 checkout 安装与 Codex discovery 已验证；远程发布安装尚不可用 |
 
 当前公开审查目标只有 Git diff。其他 artifact profile 必须具备独立 adapter、可信 anchor、评测基线和 renderer 契约后，才能成为正式能力。
 

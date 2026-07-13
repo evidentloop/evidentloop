@@ -33,7 +33,7 @@ def test_doctor_json_keeps_missing_npx_non_blocking(monkeypatch, capsys) -> None
     assert checks["npx"]["status"] == "warning"
     assert checks["npx"]["blocking"] is False
     assert payload["next_steps"]["skill_install"] == (
-        "npx skills add evidentloop/evidentloop --skill evidentloop -g"
+        "npx skills@latest add evidentloop/evidentloop --skill evidentloop -g"
     )
 
 
@@ -71,7 +71,7 @@ def test_doctor_human_output_is_compact(monkeypatch, capsys) -> None:
     output = capsys.readouterr().out
     assert output.startswith("EvidentLoop doctor: warning\n")
     assert "[WARN] npx:" in output
-    assert "Skill install: npx skills add evidentloop/evidentloop" in output
+    assert "Skill install: npx skills@latest add evidentloop/evidentloop" in output
     assert "Then ask: Use EvidentLoop to audit my staged changes" in output
     assert ".codex" not in output
     assert ".config" not in output

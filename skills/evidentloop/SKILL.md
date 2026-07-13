@@ -36,7 +36,7 @@ Run this read-only compatibility probe with the selected interpreter:
 <PYTHON> -c 'import json; import evidentloop; from evidentloop.api import finalize_review, prepare_local_diff, render_audit_file; from evidentloop.review.core.prompt import PRODUCT_REVIEWER_PROMPT_VERSION; from evidentloop.validation import SCHEMA_VERSION; print(json.dumps({"package_version": evidentloop.__version__, "schema_version": SCHEMA_VERSION, "prompt_version": PRODUCT_REVIEWER_PROMPT_VERSION}))'
 ```
 
-Require a non-empty `package_version`, `schema_version` equal to `0.3`, and `prompt_version` equal to `v0.4`. The API imports prove that `prepare`, `finalize`, and `render` are present.
+Require `package_version` equal to `0.1.0a0`, `schema_version` equal to `0.3`, and `prompt_version` equal to `v0.4`. Treat any other value as incompatible and stop before `prepare`. The API imports prove that `prepare`, `finalize`, and `render` are present.
 
 Also run `<PYTHON> -m evidentloop --help` and require exit code 0 with the `prepare`, `finalize`, and `render` subcommands listed. This separately proves the module CLI dispatcher.
 
@@ -47,7 +47,7 @@ If the package is missing or incompatible:
 3. Ask for installation or upgrade authorization.
 4. Continue only after explicit approval and a successful repeated compatibility probe.
 
-For repository dogfood, offer an editable install from the user-provided local checkout into the user-approved environment. For external installation, use only a real, maintainer-published fixed Git tag. Before proposing an install command, resolve that exact tag from the maintainer repository and record its commit. Never invent a tag, use `@latest`, assume PyPI availability, or install from a moving branch. If no verified fixed tag exists, external installation is not yet available.
+For repository dogfood, offer an editable install from the user-provided local checkout into the user-approved environment. For external installation, use only a real, maintainer-published fixed Git tag. Before proposing an install command, resolve that exact tag from the maintainer repository and record its commit. Never invent a tag, use `@latest` as the EvidentLoop source, assume PyPI availability, or install from a moving branch. If no verified fixed tag exists, external installation is not yet available.
 
 If the user declines installation, stop and report that no audit ran.
 

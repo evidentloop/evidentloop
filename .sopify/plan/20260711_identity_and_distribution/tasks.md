@@ -2,7 +2,7 @@
 
 目录：`.sopify/plan/20260711_identity_and_distribution/`
 
-> Wave 0 至 Wave 2 的本地实现与门禁已完成，当前停在 Wave 2 checkpoint；Wave 3 尚未开始。Wave 6 发布 checkpoint 通过前不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
+> Wave 0 至 Wave 3 的本地实现与门禁已完成，当前停在 Wave 3 checkpoint；Wave 4 尚未开始。Wave 6 发布 checkpoint 通过前不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
 
 ## Wave 0：身份与注册风险门禁（最高优先级）
 
@@ -34,9 +34,9 @@
 
 ## Wave 3：Skill 安装与用户入口
 
-- [ ] 3.1 删除 Codex/Qoder 作为产品前提的表述，改为宿主能力契约和实测支持矩阵；明示 CLI/schema/prompt 兼容范围并在 `prepare` 前 fail closed。
-- [ ] 3.2 在隔离临时 HOME 中用标准 skills CLI 从本地 checkout 安装最终 Skill，验证嵌套目录、辅助文件、全局安装形态与 discovery。
-- [ ] 3.3 把中英文 README 首次成功路径收敛为“在线看 -> `uvx` demo -> 正式安装 -> 一句话审计”，首版只陈述 Git diff，并补充 uv 主路径、pipx fallback、诊断、更新/卸载和高级人工通道。
+- [x] 3.1 已按宿主能力定义集成边界并建立实测矩阵；Skill 在 `prepare` 前精确要求 package `0.1.0a0`、schema `0.3`、prompt `v0.4`，任一不符即停止。未增加旧版本兼容、迁移器或宿主适配层。
+- [x] 3.2 已用 skills CLI `1.5.16` 在隔离 HOME 中从本地 checkout 完成用户级 copy 安装；默认递归找到嵌套 Skill，`SKILL.md` 与 `agents/openai.yaml` 完整一致。Codex CLI `0.144.1` 的 `skills/list` 将其识别为启用的用户级 Skill，且无解析错误。
+- [x] 3.3 中英文 README 已收敛为公开发布目标路径与当前本地 Alpha 路径；补齐 uv 主路径、pipx fallback、诊断、更新/卸载和高级人工入口，并明确 PyPI、远程 Skill 与 Pages 当前尚不可用。
 
 ## Wave 4：本地集成与外部试跑
 

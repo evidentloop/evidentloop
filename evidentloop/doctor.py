@@ -128,7 +128,8 @@ def collect_diagnostics() -> dict[str, Any]:
         "checks": checks,
         "next_steps": {
             "skill_install": (
-                "npx skills add evidentloop/evidentloop --skill evidentloop -g"
+                "npx skills@latest add evidentloop/evidentloop "
+                "--skill evidentloop -g"
             ),
             "manual_install": (
                 "If the standard installer is unavailable, copy the complete "

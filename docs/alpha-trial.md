@@ -2,13 +2,13 @@
 
 本轮在 macOS arm64、Python 3.11、Codex CLI `0.144.3` 上只复跑首次安装与一句话审计的产物 provenance 和耗时。`0.144.3` 的隔离链路已经验证并纳入支持范围；Codex CLI 版本只记录实测环境，不作为精确门禁，真正门禁是可观察的隔离信号和失败即停止的断言。
 
-复跑候选固定为：
+当前没有可执行候选。`74c7d16887a69de5c5f1f6e8ada6ac3ff9427088` 对应的 archive 与 wheel provenance 已验证，但该候选暴露了解释器安装和 Skill runtime discovery 阻塞，已经退役，不得重用。维护者完成修复 commit 与 clean build 后，必须在此处填入新的固定值再交给试用者：
 
-- source commit：`74c7d16887a69de5c5f1f6e8ada6ac3ff9427088`
-- source archive：`source-74c7d168.tar`
-- source archive SHA-256：`ad3cc339da7d15281143518513790d84e13910dc43caa7695447a2c9222116dc`
+- source commit：`<NEW_SOURCE_COMMIT>`
+- source archive：`source-<NEW_SOURCE_SHORT_SHA>.tar`
+- source archive SHA-256：`<NEW_SOURCE_ARCHIVE_SHA256>`
 - wheel：`evidentloop-0.1.0a0-py3-none-any.whl`
-- wheel SHA-256：`a12e26fb311513901fb8c56dbc4a12ce6f02c977d37a41248baff1fe75112c18`
+- wheel SHA-256：`<NEW_WHEEL_SHA256>`
 
 source archive 由上述 commit 直接执行 `git archive` 生成，wheel 从该 archive 的原样解包目录构建。不创建 tag，不使用 PyPI、移动分支或远程 Skill 安装。
 
@@ -21,7 +21,9 @@ source archive 由上述 commit 直接执行 `git archive` 生成，wheel 从该
 ```bash
 sw_vers
 uname -m
-python3.11 --version
+PYTHON_PATH="$(command -v python3.11)"
+test -n "$PYTHON_PATH"
+"$PYTHON_PATH" --version
 uv --version
 codex --version
 node --version
@@ -31,21 +33,37 @@ npx skills@1.5.16 --version
 2. 核对 source archive 的 commit 与两个 SHA-256，再从该 archive 安装 CLI 和 Skill：
 
 ```bash
-SOURCE_TAR="/path/to/source-74c7d168.tar"
-WHEEL_PATH="/path/to/evidentloop-0.1.0a0-py3-none-any.whl"
-SOURCE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/evidentloop-alpha.XXXXXX")"
+set -euo pipefail
 
-test "$(git get-tar-commit-id < "$SOURCE_TAR")" = "74c7d16887a69de5c5f1f6e8ada6ac3ff9427088"
-test "$(shasum -a 256 "$SOURCE_TAR" | awk '{print $1}')" = "ad3cc339da7d15281143518513790d84e13910dc43caa7695447a2c9222116dc"
-test "$(shasum -a 256 "$WHEEL_PATH" | awk '{print $1}')" = "a12e26fb311513901fb8c56dbc4a12ce6f02c977d37a41248baff1fe75112c18"
+SOURCE_COMMIT="<NEW_SOURCE_COMMIT>"
+SOURCE_TAR="/path/to/source-<NEW_SOURCE_SHORT_SHA>.tar"
+SOURCE_TAR_SHA256="<NEW_SOURCE_ARCHIVE_SHA256>"
+WHEEL_PATH="/path/to/evidentloop-0.1.0a0-py3-none-any.whl"
+WHEEL_SHA256="<NEW_WHEEL_SHA256>"
+PYTHON_PATH="$(command -v python3.11)"
+
+test "$SOURCE_COMMIT" != "<NEW_SOURCE_COMMIT>"
+test "$SOURCE_TAR_SHA256" != "<NEW_SOURCE_ARCHIVE_SHA256>"
+test "$WHEEL_SHA256" != "<NEW_WHEEL_SHA256>"
+test -n "$PYTHON_PATH"
+test "$(git get-tar-commit-id < "$SOURCE_TAR")" = "$SOURCE_COMMIT"
+test "$(shasum -a 256 "$SOURCE_TAR" | awk '{print $1}')" = "$SOURCE_TAR_SHA256"
+test "$(shasum -a 256 "$WHEEL_PATH" | awk '{print $1}')" = "$WHEEL_SHA256"
+SOURCE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/evidentloop-alpha.XXXXXX")"
 tar -xf "$SOURCE_TAR" -C "$SOURCE_DIR"
 
 INSTALL_STARTED_AT="$(date +%s)"
-uv tool install --force "$WHEEL_PATH"
+uv tool install --force --python "$PYTHON_PATH" "$WHEEL_PATH"
 npm_config_cache="$(mktemp -d "${TMPDIR:-/tmp}/evidentloop-npm.XXXXXX")" \
   npx skills@1.5.16 add "$SOURCE_DIR" \
   --skill evidentloop --agent codex -g --copy -y
-evidentloop doctor --json
+EVIDENTLOOP_CLI="$(command -v evidentloop)"
+case "$EVIDENTLOOP_CLI" in /*) ;; *) exit 1 ;; esac
+DOCTOR_JSON="$(env -u PYTHONPATH -u PYTHONHOME PYTHONNOUSERSITE=1 "$EVIDENTLOOP_CLI" doctor --json)"
+printf '%s\n' "$DOCTOR_JSON"
+EVIDENTLOOP_PYTHON="$(printf '%s\n' "$DOCTOR_JSON" | "$PYTHON_PATH" -I -c 'import json, os, sys; value = json.load(sys.stdin)["python_executable"]; assert isinstance(value, str) and os.path.isabs(value); print(value)')"
+test -x "$EVIDENTLOOP_PYTHON"
+"$EVIDENTLOOP_PYTHON" -I -m evidentloop --help >/dev/null
 INSTALL_SECONDS="$(( $(date +%s) - INSTALL_STARTED_AT ))"
 printf 'install_seconds=%s\n' "$INSTALL_SECONDS"
 ```
@@ -59,6 +77,8 @@ printf 'install_seconds=%s\n' "$INSTALL_SECONDS"
 4. 只有以下条件全部满足才记为走通。thread、事件和目录检查必须实际执行断言并在不满足时返回失败；注释、目测或仅打印计数不能替代断言：
 
 - package 为 `0.1.0a0`、schema 为 `0.3`、prompt 为 `v0.4`；
+- `doctor --json` 返回非空绝对 `python_executable`，该路径可以用 `-I -m evidentloop` 驱动后续兼容探针、`prepare` 与 `finalize`；
+- console script 与 `python_executable` 的原始路径及 canonical target 均不位于被审计仓库内；
 - orchestrator 与 reviewer 的 `thread.started` ID 非空且不同；
 - reviewer JSONL 恰有一个最终 `item.completed.item.type == "agent_message"` 和 `turn.completed`，最终文本从 `item.text` 提取，没有工具、命令、文件修改或协作事件；
 - reviewer 的空工作目录没有产生文件；
@@ -68,7 +88,7 @@ printf 'install_seconds=%s\n' "$INSTALL_SECONDS"
 
 ## 脱敏反馈模板
 
-请只返回以下信息，不发送仓库路径、源码、diff、prompt、raw analysis、报告文件、凭据或代理配置。
+请只返回以下信息，不发送仓库路径、`python_executable` 等本机绝对路径、源码、diff、prompt、raw analysis、报告文件、凭据或代理配置。
 
 ```text
 候选 commit：

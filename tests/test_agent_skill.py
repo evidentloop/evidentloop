@@ -49,8 +49,19 @@ def test_positive_and_negative_trigger_examples_text_contract() -> None:
 
 def test_host_security_and_public_command_text_contract() -> None:
     text = _skill_text()
-    assert "<PYTHON> -m evidentloop prepare --diff <SPEC>" in text
-    assert "<PYTHON> -m evidentloop finalize --out <LOCATOR_FINAL_DIR>" in text
+    assert "resolve `evidentloop`" in text
+    assert "`doctor --json`" in text
+    assert "`python_executable`" in text
+    assert "absolute console-script path" in text
+    assert "canonical target" in text
+    assert "never its canonical target" in text
+    assert "removes `PYTHONPATH` and `PYTHONHOME`" in text
+    assert "`PYTHONNOUSERSITE=1`" in text
+    assert "Never search the filesystem" in text
+    assert "controlled fixed-wheel trial" in text
+    assert "<PYTHON> -I -c" in text
+    assert "<PYTHON> -I -m evidentloop prepare --diff <SPEC>" in text
+    assert "<PYTHON> -I -m evidentloop finalize --out <LOCATOR_FINAL_DIR>" in text
     assert "Never let the reviewer write `audit.json`" in text
     assert "single argv values" in text
     assert "native one-argument quoting" in text
@@ -94,7 +105,7 @@ def test_install_authority_and_fixed_version_text_contract() -> None:
     assert "`package_version` equal to `0.1.0a0`" in text
     assert "Treat any other value as incompatible and stop before `prepare`" in text
     assert "from evidentloop.api import" in text
-    assert "<PYTHON> -m evidentloop --help" in text
+    assert "<PYTHON> -I -m evidentloop --help" in text
     assert "module CLI dispatcher" in text
     assert "real, maintainer-published fixed Git tag" in text
     assert "resolve that exact tag" in text

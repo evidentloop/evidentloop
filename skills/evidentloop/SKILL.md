@@ -26,28 +26,35 @@ Confirm the repository and Git diff spec from the user's request.
 - Use `HEAD~1` only when “recent/latest change” clearly permits that default; otherwise ask for the diff scope.
 - Pass an explicit output directory only when the user chose it. Let `prepare` own default naming and collision suffixes.
 
-Use one Python interpreter for every step. Run commands from the repository being audited.
+Use one Python interpreter for every step. Bootstrap it only from the installed console script:
+
+1. Use the host-native executable lookup restricted to `PATH` to resolve `evidentloop` without executing repository content. Require a non-empty absolute console-script path. For containment checks only, inspect both that path and its canonical target; reject either one when it is inside the audited repository unless the user explicitly selected that exact dogfood environment. Continue to execute the original path, never its canonical target.
+2. Invoke that exact console-script path with `doctor --json` as argv values in an environment that removes `PYTHONPATH` and `PYTHONHOME` and sets `PYTHONNOUSERSITE=1`. Do not inherit Python import-path overrides from the audited repository.
+3. Require exit code 0 and parse stdout as exactly one JSON object.
+4. Require a non-empty absolute `python_executable` value. Apply the same original-path and canonical-target containment check without replacing the returned path; outside explicit dogfood, reject either one when it is inside the audited repository. Invoke the original returned path with `-I -m evidentloop --help`, and use it as `<PYTHON>` for every remaining Python command. Pass the path as one argv value and keep `-I` on every probe and module CLI call so the untrusted repository cannot shadow the installed package.
+
+Never run the probe with an unverified system `python3`. Never search the filesystem, user directories, parent directories, package caches, or repository checkouts to find either an interpreter or an EvidentLoop installation. If the console script is absent, its JSON is invalid, or `python_executable` cannot run the module CLI, stop before `prepare` and report the detected state. Run all commands from the repository being audited.
 
 ## 2. Check compatibility and installation authority
 
 Run this read-only compatibility probe with the selected interpreter:
 
 ```text
-<PYTHON> -c 'import json; import evidentloop; from evidentloop.api import finalize_review, prepare_local_diff, render_audit_file; from evidentloop.review.core.prompt import PRODUCT_REVIEWER_PROMPT_VERSION; from evidentloop.validation import SCHEMA_VERSION; print(json.dumps({"package_version": evidentloop.__version__, "schema_version": SCHEMA_VERSION, "prompt_version": PRODUCT_REVIEWER_PROMPT_VERSION}))'
+<PYTHON> -I -c 'import json; import evidentloop; from evidentloop.api import finalize_review, prepare_local_diff, render_audit_file; from evidentloop.review.core.prompt import PRODUCT_REVIEWER_PROMPT_VERSION; from evidentloop.validation import SCHEMA_VERSION; print(json.dumps({"package_version": evidentloop.__version__, "schema_version": SCHEMA_VERSION, "prompt_version": PRODUCT_REVIEWER_PROMPT_VERSION}))'
 ```
 
 Require `package_version` equal to `0.1.0a0`, `schema_version` equal to `0.3`, and `prompt_version` equal to `v0.4`. Treat any other value as incompatible and stop before `prepare`. The API imports prove that `prepare`, `finalize`, and `render` are present.
 
-Also run `<PYTHON> -m evidentloop --help` and require exit code 0 with the `prepare`, `finalize`, and `render` subcommands listed. This separately proves the module CLI dispatcher.
+Also run `<PYTHON> -I -m evidentloop --help` and require exit code 0 with the `prepare`, `finalize`, and `render` subcommands listed. This separately proves the module CLI dispatcher.
 
-If the package is missing or incompatible:
+If the console script or package is missing or incompatible:
 
 1. Stop before `prepare`.
 2. Explain the detected state, intended source, target environment, and exact install command.
 3. Ask for installation or upgrade authorization.
 4. Continue only after explicit approval and a successful repeated compatibility probe.
 
-For repository dogfood, offer an editable install from the user-provided local checkout into the user-approved environment. For external installation, use only a real, maintainer-published fixed Git tag. Before proposing an install command, resolve that exact tag from the maintainer repository and record its commit. Never invent a tag, use `@latest` as the EvidentLoop source, assume PyPI availability, or install from a moving branch. If no verified fixed tag exists, external installation is not yet available.
+Treat a checkout as repository dogfood only when the user explicitly identifies that exact checkout as the intended install source. Never infer dogfood from a nearby or discovered directory. A controlled fixed-wheel trial must keep using its verified wheel and copied Skill; never replace either with an editable checkout. For external installation, use only a real, maintainer-published fixed Git tag. Before proposing an install command, resolve that exact tag from the maintainer repository and record its commit. Never invent a tag, use `@latest` as the EvidentLoop source, assume PyPI availability, or install from a moving branch. If no verified fixed tag exists, external installation is not yet available.
 
 If the user declines installation, stop and report that no audit ran.
 
@@ -56,7 +63,7 @@ If the user declines installation, stop and report that no audit ran.
 Pass `<SPEC>` and optional `<DIR>` as one argument each using the boundary above; reject NUL bytes. Run:
 
 ```text
-<PYTHON> -m evidentloop prepare --diff <SPEC> [--out <DIR>]
+<PYTHON> -I -m evidentloop prepare --diff <SPEC> [--out <DIR>]
 ```
 
 Require exit code 0 and parse stdout as exactly one JSON locator. Require non-empty `run_id`, `final_dir`, `staging_dir`, `prompt_path`, and `raw_analysis_path`.
@@ -120,7 +127,7 @@ Pass `<PROMPT_TEXT>` as one argv value, not shell source. Require a non-empty re
 Pass the locator's `final_dir`, never `staging_dir`:
 
 ```text
-<PYTHON> -m evidentloop finalize --out <LOCATOR_FINAL_DIR> [--keep-review-artifacts]
+<PYTHON> -I -m evidentloop finalize --out <LOCATOR_FINAL_DIR> [--keep-review-artifacts]
 ```
 
 Use `--keep-review-artifacts` only when the user requests diagnostics. Require exit code 0 and parse stdout as exactly one JSON result.

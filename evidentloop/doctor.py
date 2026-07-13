@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 from importlib.resources import files
 from typing import Any
 
@@ -125,6 +126,7 @@ def collect_diagnostics() -> dict[str, Any]:
     return {
         "status": status,
         "version": __version__,
+        "python_executable": sys.executable,
         "checks": checks,
         "next_steps": {
             "skill_install": (

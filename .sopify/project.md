@@ -23,7 +23,7 @@
 - Reviewer payload：Git 文本 diff 不携带 `GIT binary patch`；binary 文件保留路径/change_type 元数据，视觉内容明确不在一期文本审查范围。
 - 集成形态：PyPI 包是唯一 runtime 与产品版本真相源；同仓库 `skills/evidentloop/` 是静态薄编排层；GitHub Pages 提供零安装预览。产品不自研 npm launcher、跨平台独立二进制、宿主 adapter 框架或模型 provider 层。
 - Skill 兼容门禁：公开 Alpha 前精确要求 package `0.1.0a0`、schema `0.3` 与 prompt `v0.4`；任一不符就在 `prepare` 前停止。没有外部用户的预发布版本不增加兼容别名、迁移器或宽松版本区间。
-- 诊断边界：`doctor` 可以提示 `npx` 是否可用，但不扫描宿主私有目录或把文件存在宣称为 Skill discovery；安装异常优先使用标准 skills CLI 与宿主文档诊断。
+- 诊断边界：`doctor --json` 返回当前安装环境的实际 `python_executable`，供 Skill 从 PATH 上的 console script 引导同一 runtime；bootstrap 移除 `PYTHONPATH` / `PYTHONHOME` 并禁用 user site，后续 module CLI 使用该绝对路径与 `-I`。非显式 dogfood 时，console 与 interpreter 的原始路径或 canonical target 均不得位于被审计仓库；canonical path 只用于 containment 比较，不替换虚拟环境执行路径。`doctor` 可以提示 `npx` 是否可用，但不扫描宿主私有目录或把文件存在宣称为 Skill discovery；安装异常优先使用标准 skills CLI 与宿主文档诊断。
 - demo fixture：使用 wheel 内独立合成资源，在临时 Git 仓库中复用正式主链；不把真实 dogfood 证据作为运行依赖，也不为 demo 新增 diff 输入协议。
 - 一期默认输入：本地 Git diff；长期输入按 artifact profile 管理。
 - 默认产物：`audit.json` 和 `audit.html`；`audit-feedback.jsonl` 由用户显式导出。

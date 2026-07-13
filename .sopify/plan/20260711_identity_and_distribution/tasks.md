@@ -2,7 +2,7 @@
 
 目录：`.sopify/plan/20260711_identity_and_distribution/`
 
-> Wave 0 至 Wave 3 的本地实现与门禁、Wave 4.1 clean 本地产物安装和 Wave 4.2 Codex 真实审计 E2E 已完成。Codex CLI `0.144.3` 的隔离链路已验证并纳入支持范围，不精确锁定 `0.144.1`；Wave 4.3 首次外部试跑仍因候选 commit 与 wheel provenance 不一致而等待基于 `74c7d16` clean archive 的最小复跑。Wave 6 发布 checkpoint 通过前不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
+> Wave 0 至 Wave 3 的本地实现与门禁、Wave 4.1 clean 本地产物安装和 Wave 4.2 Codex 真实审计 E2E 已完成。Codex CLI `0.144.3` 的隔离链路已验证并纳入支持范围，不精确锁定 `0.144.1`；Wave 4.3 的固定产物复跑已通过 provenance 核对，但首次安装未绑定 Python 3.11，Skill 也未从 uv tool 环境确定 runtime interpreter，导致自然语言 discovery 在 reviewer 前阻塞。`74c7d16` 候选已退役，须完成最小修复、冻结新产物并再次外部复跑；4.3 未完成，4.4 未开始。Wave 6 发布 checkpoint 通过前不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
 
 ## Wave 0：身份与注册风险门禁（最高优先级）
 
@@ -42,7 +42,7 @@
 
 - [x] 4.1 已从 `e05db14` 的 clean source archive 构建 sdist/wheel；macOS arm64、Python 3.11.15 下 wheel × uv 0.11.28 与 sdist × pipx 1.15.0 均隔离安装成功。安装后在先证明拒绝网络连接的 macOS sandbox 中完成 CLI、module entry、兼容探针、doctor、demo、6 类 package resources 与 demo provenance 验证；wheel SHA-256 为 `e01b4cda…d650b`，sdist SHA-256 为 `b07a61a7…824a`。
 - [x] 4.2 macOS arm64、Python 3.11.15、Codex CLI `0.144.1` 的全新 HOME 已用本地 wheel 与复制安装的 Skill 完成一句话真实审计。独立 reviewer thread 与 orchestrator thread 不同；除 thread/turn 生命周期事件外，JSONL 仅有一个最终 `agent_message`，无工具、命令、文件修改或协作事件。最终报告为 `complete / concerns`，风险分 40，`billing.py:3` 精确锚定 1 条 high finding，`.run/` 已清理。canonical `Where` 与精确 section heading 已冻结在 prompt `v0.4`，未修改 demo fixture；文档收口后的 clean 候选 wheel SHA-256 为 `3c108b40…1370a`，sdist 为 `4623350b…dded8`，其 wheel runtime 文件与 E2E 实测 wheel 完全一致。
-- [ ] 4.3 用本地 wheel 与 Skill 找至少一名外部试用者按 `docs/alpha-trial.md` 独立走通首次安装与一句话审计，记录环境、耗时、阻塞、误解与脱敏反馈；Codex CLI `0.144.3` 的宿主能力已经接受，最小复跑只补 `74c7d16` clean source archive、绑定 SHA-256 与精确耗时，不收集源码，不要求 evidence worktree 或公开发布。
+- [ ] 4.3 用本地 wheel 与 Skill 找至少一名外部试用者按 `docs/alpha-trial.md` 独立走通首次安装与一句话审计，记录环境、耗时、阻塞、误解与脱敏反馈；固定 `74c7d16` 候选已通过 provenance 核对，但因 uv 解释器未绑定和 Skill runtime discovery 缺口在 reviewer 前阻塞。先以最小修复生成新的 clean source archive、wheel 与绑定 SHA-256，再复跑安装、自然语言触发、隔离 reviewer 和正式报告对；不收集源码，不要求 evidence worktree 或公开发布。
 - [ ] 4.4 根据 4.2-4.3 修正 CLI、Skill 与文档后重跑 clean wheel、完整测试和真实宿主 smoke。
 
 ## Wave 5：evidence worktree 与 Pages

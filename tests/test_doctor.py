@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from types import SimpleNamespace
 
 import evidentloop.doctor as doctor
@@ -26,6 +27,7 @@ def test_doctor_json_keeps_missing_npx_non_blocking(monkeypatch, capsys) -> None
     payload = json.loads(capsys.readouterr().out)
     checks = {item["name"]: item for item in payload["checks"]}
     assert payload["status"] == "warning"
+    assert payload["python_executable"] == sys.executable
     assert checks["schema"]["status"] == "ok"
     assert checks["prompt"]["status"] == "ok"
     assert checks["package_resources"]["status"] == "ok"

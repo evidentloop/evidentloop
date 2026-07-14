@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 720" width="1600" height="720" role="img" aria-labelledby="title desc">
+  <title id="title">EvidentLoop v0 cover</title>
+  <desc id="desc">A local Git diff becomes anchored findings and a validated audit.json and audit.html pair. A human can inspect the report, export feedback, revise the code, and run another audit.</desc>
+  <style>
+    text { font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif; fill: #111827; }
+    .brand { font-size: 54px; font-weight: 750; letter-spacing: -0.025em; }
+    .tagline { font-size: 23px; font-weight: 600; fill: #374151; }
+    .summary { font-size: 15px; fill: #6b7280; }
+    .node-title { font-size: 22px; font-weight: 700; }
+    .node-sub { font-size: 15px; fill: #6b7280; }
+    .micro { font-size: 13px; fill: #6b7280; }
+    .edge-label { font-size: 13px; font-weight: 650; fill: #4b5563; }
+    .legend { font-size: 13px; fill: #6b7280; }
+    .node { fill: #ffffff; stroke: #d1d5db; stroke-width: 2; }
+    .main-flow { fill: none; stroke: #2563eb; stroke-width: 3; marker-end: url(#arrow-blue); }
+    .feedback-flow { fill: none; stroke: #9333ea; stroke-width: 2.5; stroke-dasharray: 8 6; marker-end: url(#arrow-purple); }
+  </style>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0,10 3.5,0 7" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0,10 3.5,0 7" fill="#9333ea"/>
+    </marker>
+  </defs>
+
+  <rect width="1600" height="720" fill="#ffffff"/>
+  <rect x="0" y="0" width="1600" height="14" fill="#0f766e"/>
+
+  <text x="88" y="92" class="brand">EvidentLoop</text>
+  <text x="88" y="132" class="tagline">Traceable review for local Git diffs</text>
+  <text x="88" y="163" class="summary">Validated anchors · audit.json + audit.html · human feedback export</text>
+  <rect x="1340" y="58" width="172" height="44" rx="22" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.5"/>
+  <text x="1426" y="86" text-anchor="middle" fill="#0f766e" font-size="14" font-weight="700">v0 · Git diff</text>
+
+  <rect x="64" y="194" width="1472" height="438" rx="22" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.5"/>
+
+  <path d="M410 315 H522" class="main-flow"/>
+  <text x="466" y="300" text-anchor="middle" class="edge-label">review</text>
+  <path d="M880 315 H992" class="main-flow"/>
+  <text x="936" y="300" text-anchor="middle" class="edge-label">validate</text>
+
+  <rect x="104" y="230" width="306" height="170" rx="16" class="node" stroke="#93c5fd"/>
+  <path d="M142 260 H215 L236 281 V365 H142 Z" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <path d="M215 260 V281 H236" fill="none" stroke="#2563eb" stroke-width="2"/>
+  <line x1="160" y1="302" x2="214" y2="302" stroke="#93c5fd" stroke-width="5" stroke-linecap="round"/>
+  <line x1="160" y1="323" x2="204" y2="323" stroke="#fca5a5" stroke-width="5" stroke-linecap="round"/>
+  <line x1="160" y1="344" x2="220" y2="344" stroke="#86efac" stroke-width="5" stroke-linecap="round"/>
+  <text x="264" y="292" class="node-title">Local Git diff</text>
+  <text x="264" y="322" class="node-sub">staged · range</text>
+  <text x="264" y="354" class="micro">trusted hunk context</text>
+
+  <rect x="522" y="214" width="358" height="202" rx="18" class="node" stroke="#5eead4"/>
+  <circle cx="630" cy="308" r="59" fill="#f0fdfa" stroke="#14b8a6" stroke-width="2.5"/>
+  <circle cx="630" cy="308" r="43" fill="#ffffff" stroke="#99f6e4" stroke-width="2"/>
+  <path d="M603 292 H642" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
+  <path d="M603 310 H627" stroke="#86efac" stroke-width="5" stroke-linecap="round"/>
+  <path d="M603 328 H638" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
+  <path d="M645 315 L656 326 L678 297" fill="none" stroke="#16a34a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M671 351 L703 383" stroke="#0f766e" stroke-width="9" stroke-linecap="round"/>
+  <text x="718" y="291" class="node-title">Anchored findings</text>
+  <text x="718" y="322" class="node-sub">changed-line verified</text>
+  <text x="718" y="354" class="micro">status · score · identity</text>
+
+  <rect x="992" y="230" width="426" height="170" rx="16" class="node" stroke="#86efac"/>
+  <path d="M1028 262 H1121 L1139 280 V365 H1028 Z" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <path d="M1121 262 V280 H1139" fill="none" stroke="#16a34a" stroke-width="2"/>
+  <text x="1083" y="308" text-anchor="middle" font-size="16" font-weight="700" fill="#166534">audit.json</text>
+  <text x="1083" y="334" text-anchor="middle" class="micro">validated record</text>
+  <rect x="1166" y="262" width="216" height="103" rx="9" fill="#ffffff" stroke="#16a34a" stroke-width="2"/>
+  <rect x="1166" y="262" width="216" height="23" rx="9" fill="#dcfce7"/>
+  <circle cx="1180" cy="273" r="3.5" fill="#ef4444"/>
+  <circle cx="1192" cy="273" r="3.5" fill="#f59e0b"/>
+  <circle cx="1204" cy="273" r="3.5" fill="#10b981"/>
+  <rect x="1184" y="300" width="73" height="8" rx="4" fill="#bbf7d0"/>
+  <rect x="1184" y="318" width="166" height="7" rx="3.5" fill="#e5e7eb"/>
+  <rect x="1184" y="335" width="132" height="7" rx="3.5" fill="#e5e7eb"/>
+  <text x="1274" y="388" text-anchor="middle" class="node-sub">audit.html</text>
+
+  <path d="M1280 400 V457" class="feedback-flow"/>
+  <text x="1297" y="438" class="edge-label">export</text>
+  <rect x="1100" y="460" width="318" height="104" rx="16" fill="#faf5ff" stroke="#c4b5fd" stroke-width="2"/>
+  <circle cx="1143" cy="503" r="19" fill="#7c3aed"/>
+  <path d="M1134 503 H1152 M1143 494 V512" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <text x="1178" y="498" class="node-title">Human feedback</text>
+  <text x="1178" y="529" class="node-sub">inspect · decide · export JSONL</text>
+  <path d="M1100 525 H260 V403" class="feedback-flow"/>
+  <text x="638" y="509" text-anchor="middle" class="edge-label">human revises and reruns</text>
+
+  <line x1="92" y1="594" x2="130" y2="594" class="main-flow"/>
+  <text x="142" y="599" class="legend">validated audit path</text>
+  <line x1="330" y1="594" x2="368" y2="594" class="feedback-flow"/>
+  <text x="380" y="599" class="legend">human-controlled review loop</text>
+  <text x="1500" y="599" text-anchor="end" class="legend">Semantic review stays in the AI host.</text>
+</svg>

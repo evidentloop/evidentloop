@@ -1,4 +1,6 @@
-# Fireworks Tech Graph `product/v0.3` 对比证据
+# Fireworks Tech Graph `product/v0.3` 历史对比证据
+
+> 本目录由原 `change-audit` 身份和 public schema `0.2` 生成。`audit.json` 与 `audit.html` 保留原始 provenance 和文件字节，只作为身份迁移前的历史证据，不作为 EvidentLoop schema `0.3` 的 renderer fixture。
 
 本目录保存 Wave 5 单产品收口后的真实 dogfood。它与[保留的 v0.2 样张](../dogfood-fireworks-tech-graph/)使用完全相同的 Git diff，但从全新 staging 独立执行：
 

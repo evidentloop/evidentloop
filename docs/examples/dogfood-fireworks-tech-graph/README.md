@@ -1,6 +1,8 @@
-# Fireworks Tech Graph 真实 dogfood
+# Fireworks Tech Graph 历史 dogfood
 
-这份目录以 `change-audit` 在实现完成后生成的真实能力样张为核心。输入与实现前模拟基线完全相同，报告没有复制基线的 finding、claim 或修复建议；它从全新 staging 重新执行了 `prepare → 隔离宿主审查 → finalize`。
+这份目录保存原 `change-audit` 身份和 public schema `0.2` 下生成的真实能力样张。输入与实现前模拟基线完全相同，报告没有复制基线的 finding、claim 或修复建议；它从全新 staging 重新执行了 `prepare → 隔离宿主审查 → finalize`。
+
+`audit.json`、`audit.html` 与图解保留原始 provenance 和文件字节，只作为身份迁移前的历史证据，不作为 EvidentLoop schema `0.3` fixture。
 
 真实链路完成后，按本样张审计需要，另用 Fireworks Tech Graph Skill 从同一 diff 提炼了一张技术架构 SVG，并以内联 data URI 加入当前 `audit.html` 的“变更摘要与审计结论”区。这个阅读附注没有修改 `audit.json`、finding、评分、renderer、schema 或正式生成链路。
 
@@ -48,14 +50,6 @@ d527cc76f384b2cf9a38cd0cd95f111f05a116486e1226c94cb0c2e083357f1d  audit.html
 
 HTML 在应用内浏览器中通过 localhost 实测：1280px 和 375px 都没有页面级横向溢出；7 个 hunk 无横向或纵向内部滚动，代码按行换行完整显示；文件列表、审查依据和高级反馈默认折叠。架构图在 1280px 下完整自适应且无滚动；375px 下保留图卡内部横向查看，避免把 1200px 图缩小到不可读。`file://` 自动化被宿主安全策略拒绝不属于页面故障，因此实时 DOM 门禁统一通过 `http://127.0.0.1` 执行。
 
-## 重生成
+## 冻结边界
 
-以下命令只重建 renderer 的原始 HTML，不重新调用审查者，也不会修改 `audit.json`；它会移除当前样张专用架构图，需要保留图解时不要覆盖本文件：
-
-```bash
-python -m change_audit render \
-  docs/examples/dogfood-fireworks-tech-graph/audit.json \
-  --out docs/examples/dogfood-fireworks-tech-graph/audit.html
-```
-
-要重新审查，必须换一个尚不存在的输出目录，从 `prepare` 开始；不得覆盖本目录后把旧产物当作新运行。
+当前 `python -m evidentloop render` 只接受 schema `0.3`，不用于覆盖这组 schema `0.2` 历史文件。要生成新的 EvidentLoop 报告，必须选择尚不存在的输出目录并从 `prepare` 开始；不得覆盖本目录后把旧产物当作新运行。

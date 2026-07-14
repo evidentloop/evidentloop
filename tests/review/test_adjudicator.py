@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from change_audit.review.adjudicator import determine_advisory_verdict, determine_intent_coverage
-from change_audit.review.schema import (
+from evidentloop.review.adjudicator import determine_advisory_verdict, determine_intent_coverage
+from evidentloop.review.schema import (
     BudgetStatus,
     Confidence,
     Evidence,

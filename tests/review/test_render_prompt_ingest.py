@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from change_audit.review.core.prompt import (
+from evidentloop.review.core.prompt import (
     get_default_reviewer_template,
     render_reviewer_prompt,
 )
-from change_audit.review.ingest import run_ingest
-from change_audit.review.pack import assemble_pack
-from change_audit.review.schema import (
+from evidentloop.review.ingest import run_ingest
+from evidentloop.review.pack import assemble_pack
+from evidentloop.review.schema import (
     Evidence,
     EvidenceStatus,
     FileMeta,

@@ -1,5 +1,5 @@
 [project]
-name = "change-audit"
+name = "evidentloop"
 version = "0.1.0a0"
 description = "Traceable code review artifacts for local Git diffs"
 readme = "README.md"
@@ -19,6 +19,14 @@ dependencies = [
   "jsonschema>=4.23",
 ]
 
+[project.scripts]
+evidentloop = "evidentloop.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/evidentloop/evidentloop"
+Repository = "https://github.com/evidentloop/evidentloop"
+Issues = "https://github.com/evidentloop/evidentloop/issues"
+
 [project.optional-dependencies]
 dev = [
   "build>=1.2",
@@ -32,15 +40,16 @@ requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["change_audit*"]
+include = ["evidentloop*"]
 
 [tool.setuptools.package-data]
-change_audit = [
+evidentloop = [
   "schemas/*.json",
   "renderers/templates/*.j2",
   "renderers/static/*.css",
   "renderers/static/*.js",
   "review/core/*.md",
+  "demo_resources/*.json",
 ]
 
 [tool.pytest.ini_options]

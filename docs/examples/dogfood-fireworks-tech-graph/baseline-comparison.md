@@ -1,5 +1,7 @@
 # 同源基线对比
 
+> 本文比较的是原 `change-audit` 身份下的历史运行。列出的 prompt、schema、hash 和文件大小均保留当时事实，不代表当前 EvidentLoop schema `0.3` 契约。
+
 三份材料使用完全相同的 Fireworks Git diff：
 
 ```text

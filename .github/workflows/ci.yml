@@ -30,15 +30,18 @@ jobs:
       - run: python -m pytest -p no:cacheprovider -q
       - run: python -m ruff check .
         if: matrix.python-version == '3.12'
-      - run: node --check change_audit/renderers/static/audit.js
+      - run: node --check evidentloop/renderers/static/audit.js
         if: matrix.python-version == '3.12'
       - run: node tests/js/audit-feedback.test.cjs
         if: matrix.python-version == '3.12'
       - name: Build and install wheel
         if: matrix.python-version == '3.12'
         run: |
-          python -m build --wheel --outdir /tmp/change-audit-dist
-          python -m venv /tmp/change-audit-wheel-smoke
-          /tmp/change-audit-wheel-smoke/bin/python -m pip install /tmp/change-audit-dist/*.whl
+          python -m build --wheel --outdir /tmp/evidentloop-dist
+          python -m venv /tmp/evidentloop-wheel-smoke
+          /tmp/evidentloop-wheel-smoke/bin/python -m pip install /tmp/evidentloop-dist/*.whl
           cd /tmp
-          /tmp/change-audit-wheel-smoke/bin/python -m change_audit --help
+          /tmp/evidentloop-wheel-smoke/bin/python -m evidentloop --help
+          /tmp/evidentloop-wheel-smoke/bin/evidentloop --help
+          /tmp/evidentloop-wheel-smoke/bin/evidentloop doctor --json
+          /tmp/evidentloop-wheel-smoke/bin/evidentloop demo --out /tmp/evidentloop-demo-smoke

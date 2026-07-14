@@ -6,11 +6,11 @@ from typing import Any
 
 import pytest
 
-from change_audit.audit.adapter import SEVERITY_WEIGHTS, build_audit_graph
-from change_audit.review.ingest import run_ingest
-from change_audit.review.pack import assemble_pack
-from change_audit.review.schema import FileMeta, ReviewStatus
-from change_audit.validation import assert_valid_audit
+from evidentloop.audit.adapter import SEVERITY_WEIGHTS, build_audit_graph
+from evidentloop.review.ingest import run_ingest
+from evidentloop.review.pack import assemble_pack
+from evidentloop.review.schema import FileMeta, ReviewStatus
+from evidentloop.validation import assert_valid_audit
 
 
 DIFF = """\
@@ -120,7 +120,7 @@ def test_category_family_mapping(source_category: str, expected: str) -> None:
     )
     finding = next(item for item in audit["nodes"] if item["type"] == "finding")
     assert finding["category"] == expected
-    assert finding["extensions"]["change_audit"]["original_category"] == source_category
+    assert finding["extensions"]["evidentloop"]["original_category"] == source_category
     assert_valid_audit(audit)
 
 
@@ -138,6 +138,9 @@ def test_exact_bug_uses_only_trusted_hunk_and_stable_fingerprint() -> None:
     assert finding["hunk"] == HUNK
     assert finding["highlight_lines"] == [1]
     assert finding["line_side"] == "new"
+    evidence = next(item for item in audit["nodes"] if item["type"] == "evidence")
+    assert evidence["source"] == "host_llm"
+    assert evidence["summary"].startswith("宿主语义审查结论：")
     assert not any(node["type"] == "fix" for node in audit["nodes"])
 
 
@@ -165,7 +168,7 @@ def test_context_line_is_not_promoted_to_a_changed_line_anchor() -> None:
     finding = next(item for item in audit["nodes"] if item["type"] == "finding")
     assert finding["category"] == "risk"
     assert "hunk" not in finding
-    assert finding["extensions"]["change_audit"]["downgrade_reason"] == (
+    assert finding["extensions"]["evidentloop"]["downgrade_reason"] == (
         "line_outside_trusted_hunk"
     )
     assert audit["summary"]["unscored_finding_count"] == 1
@@ -216,7 +219,7 @@ def test_embedded_line_range_resolves_to_trusted_hunk() -> None:
     assert finding["file_path"] == "app.py"
     assert finding["hunk_id"] == "hunk:app:1:1"
     assert finding["start_line"] == 1
-    assert "downgraded_from" not in finding["extensions"]["change_audit"]
+    assert "downgraded_from" not in finding["extensions"]["evidentloop"]
     assert finding["fingerprint"].startswith("sha256:")
     assert audit["summary"]["risk_score"] == 40
     assert audit["summary"]["verdict"] == "concerns"
@@ -240,7 +243,7 @@ def test_same_file_multi_range_uses_first_segment_for_trusted_anchor() -> None:
     assert finding["file_path"] == "app.py"
     assert finding["start_line"] == 1
     assert finding["hunk_id"] == "hunk:app:1:1"
-    assert "downgraded_from" not in finding["extensions"]["change_audit"]
+    assert "downgraded_from" not in finding["extensions"]["evidentloop"]
 
 
 @pytest.mark.parametrize(
@@ -278,7 +281,7 @@ def test_forged_header_or_line_downgrades_bug_without_copying_text() -> None:
         hunk_index=hunk_index,
     )
     finding = next(item for item in audit["nodes"] if item["type"] == "finding")
-    extension = finding["extensions"]["change_audit"]
+    extension = finding["extensions"]["evidentloop"]
     assert finding["category"] == "risk"
     assert finding["severity"] == "medium"
     assert "hunk" not in finding
@@ -306,7 +309,7 @@ def test_unsafe_path_is_never_promoted_to_a_file_or_hunk_anchor() -> None:
     assert finding["category"] == "risk"
     assert "file_path" not in finding
     assert "hunk" not in finding
-    assert finding["extensions"]["change_audit"]["downgrade_reason"] == "unsafe_file_path"
+    assert finding["extensions"]["evidentloop"]["downgrade_reason"] == "unsafe_file_path"
     assert not any(edge["type"] == "finding_in_file" for edge in audit["edges"])
     assert_valid_audit(audit)
 

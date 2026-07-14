@@ -1,0 +1,6 @@
+{
+  "fixture_id": "synthetic-off-by-one-v1",
+  "baseline": "def calculate_total(items):\n    return sum(items)\n",
+  "changed": "def calculate_total(items):\n    return sum(items) + 1\n",
+  "review_response": "## Section 1: Findings\n\n**f-001**\n- **Where**: `app.py`, line 2\n- **What**: 合计结果被无条件增加了 1。\n- **Why**: 输入项的真实总和没有额外偏移，当前实现会让每次计算结果都产生可复现的偏差。\n- **Severity estimate**: HIGH\n- **Category**: logic_error\n\n## Section 2: Observations\n\n这是随 wheel 分发的固定 reviewer replay，不是实时模型输出。\n\n## Section 3: Overall Assessment\n\n合成变更包含一个可精确定位的 off-by-one 缺陷；本报告只演示确定性审计链路，不代表实时 AI 审查。"
+}

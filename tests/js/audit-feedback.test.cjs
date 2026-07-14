@@ -1,7 +1,9 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const feedback = require("../../change_audit/renderers/static/audit.js");
+const feedback = require("../../evidentloop/renderers/static/audit.js");
+
+assert.equal(feedback.PREFIX, "evidentloop.feedback.v1");
 
 const identity = {
   graph_id: "audit:graph/一",

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from change_audit.adapters.gitdiff import GitDiffCollectionError, collect_git_diff
-from change_audit.renderers.hunk import parse_hunk
+from evidentloop.adapters.gitdiff import GitDiffCollectionError, collect_git_diff
+from evidentloop.renderers.hunk import parse_hunk
 from tests.git_helpers import git, initialized_repo, stage_simple_change
 
 

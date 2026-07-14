@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from change_audit.renderers.hunk import HunkParseError, parse_hunk
+from evidentloop.renderers.hunk import HunkParseError, parse_hunk
 
 
 def test_parse_hunk_tracks_old_and_new_numbers() -> None:

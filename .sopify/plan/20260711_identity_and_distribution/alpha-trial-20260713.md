@@ -142,7 +142,7 @@
 
 - 候选 provenance：commit `e6f33811721dcf4710a3b812413923a4a586aae4`；source archive SHA-256 `6dd06b4b991ee93e7112dab56046f92f9381aa0bff3b61a7192e8f6c9ea78226`；wheel SHA-256 `f878c30b91b7fa152fa4fb6d15c855df08e42da58fd63af9040a3566090dce97`；sdist SHA-256 `dc1be864f2ca55b50e7caf3ebfc3d615538ebe6997d76812a872c5c378c3ebe9`。
 - 完整门禁：Python `328 passed`、Ruff、feedback JavaScript、Markdown shell 语法、Skill 规范、SVG/XML 与 diff check 全部通过。
-- 安装验证：macOS `15.6.1` / arm64 / Python `3.11.15` / uv `0.11.28` 下，wheel 与 sdist 均在仓库外隔离安装；doctor、module CLI、依赖、6 项 package resources、demo、package `0.1.0a0` / schema `0.3` / prompt `v0.5` 全部通过。archive 内三项 Skill 文件与候选 commit 一致。
+- 安装验证：macOS `15.6.1` / arm64 / Python `3.11.15` 下，wheel 通过 uv `0.11.28`、sdist 通过 pipx `1.15.0` 在仓库外隔离安装；doctor、module CLI、依赖、6 项 package resources、demo、package `0.1.0a0` / schema `0.3` / prompt `v0.5` 全部通过。archive 内三项 Skill 文件与候选 commit 一致。
 - Codex 隔离增强：Codex CLI `0.144.3` 使用全新 HOME、临时 CODEX_HOME、空工作目录、只读 sandbox 和关闭全部工具的 reviewer。验收采用第二轮持久化 JSONL；reviewer thread 与 orchestrator 不同，只有一个最终 `agent_message` 和一个 `turn.completed`，无工具、命令、文件修改或协作事件。WebSocket 超时后回退 HTTPS，最终响应完整；空工作目录未变化，临时目录在 finalize 前清理。
 - 正式报告：`complete / concerns`，风险分 `40`，`billing.py:7` 精确锚定 1 条 high finding；run identity、schema、计数、自包含 HTML、`.run/` 清理和独立重渲染通过，重渲染结果字节一致。
 - 结论：4.4 完成。未修改 runtime、Skill、prompt 或 schema，未新增宿主模式、adapter 或隔离证明字段。

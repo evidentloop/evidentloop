@@ -1,8 +1,8 @@
 # Wave 4.3 外部 Alpha 试跑证据
 
-日期：2026-07-13
+日期：2026-07-13 至 2026-07-14
 
-状态：首次试跑走通核心链路但 provenance 不一致；`74c7d16` 固定候选随后暴露安装和 runtime discovery 缺口并退役。`7d0bef6` 修复这两个产品问题后，固定 provenance、安装与 discovery 通过；用户认可的无维护历史 AI 外部试用者两次 strict 尝试又分别暴露 post-doctor 解释器、hidden-sibling 语义和 pre-finalize thread 比较问题。`2cb03af` 仅明确这三个已有 Skill gate 并增加静态契约测试，Python runtime、schema 和 prompt 未改；新固定产物等待用户复跑。4.3 保持待办，4.4 未开始。
+状态：首次试跑走通核心链路但 provenance 不一致；`74c7d16` 固定候选随后暴露安装和 runtime discovery 缺口并退役。`7d0bef6` 修复这两个产品问题后，固定 provenance、安装与 discovery 通过；用户认可的无维护历史 AI 外部试用者两次 strict 尝试又分别暴露 post-doctor 解释器、hidden-sibling 语义和 pre-finalize thread 比较问题。`2cb03af` 的 Qoder 试跑只证明安装与机械链路，独立 reviewer 隔离未验证。`fc875c9` 已完成宿主无关边界纠偏并冻结固定产物，等待用户复跑。4.3 保持待办，4.4 未开始。
 
 ## 首次试跑：核心链路通过但 provenance 不一致
 
@@ -87,13 +87,24 @@
 - Skill 必须从该 source archive 复制，其 SHA-256 为 `708f7001f7cfc77416f3ccc6779c429008b70b6192f3bb476be8350ef0e8d723`。外部试用者必须安装上述固定 wheel 原件，不得现场重建或静默替换 SHA。
 - 新 wheel 的 `37` 个 ZIP entry 与 `7d0bef6` 原冻结 wheel 内容完全一致；变化仅在 source archive 内的 Skill 和静态契约测试，不把本次修复扩张成 runtime 变更。
 - 独立 `codex exec` 只是一种宿主证据映射，不是产品通用协议。其他宿主使用自身原生能力满足通用隔离契约；Python 包不连接模型，也不包含模型 SDK 或 API key。
-- 4.3 已取得独立 AI 试用反馈但 strict gate 未通过。当前纠偏修改 source 与 wheel，以上固定值只保留为历史 provenance；冻结新候选前不得继续执行公开复跑清单。4.4 未开始。
+- 4.3 已取得独立 AI 试用反馈但 strict gate 未通过。以上固定值只保留为历史 provenance，不得继续用于公开复跑。4.4 未开始。
+
+## `fc875c9` 当前固定候选
+
+- source commit：`fc875c95eb8a2afdb8a6246a694b277d034c7d29`
+- source archive：`source-fc875c9.tar`
+- source archive SHA-256：`3f2e02ffac57941155d1a870d34061dd73cc552d7e7dcb78b7f28a92306e3744`
+- wheel：`evidentloop-0.1.0a0-py3-none-any.whl`
+- 固定 wheel SHA-256：`a192c7d626d7b639126d184b723df063f0f5d1023529754f1c8c97e798bd4161`
+- 构建来源：archive 内 commit ID 与 source commit 一致；wheel 从该 archive 的原样解包目录构建。tar 内 `SKILL.md`、`agents/openai.yaml` 与 `references/codex-cli-isolation.md` 齐全，Skill 目录与候选提交逐文件一致。
+- 本地验证：固定 wheel 原件在 Python 3.11 隔离环境安装成功；doctor、module CLI、依赖完整性与 package `0.1.0a0` / schema `0.3` / prompt `v0.4` 均通过；安装后 wheel SHA-256 未变。
+- 验证基线：Python `328 passed`、Ruff、feedback JavaScript、Skill 规范校验与 diff check 通过。4.3 等待用户按公开清单复跑，4.4 未开始。
 
 ## Wave 4.4 前置证据（尚未进入 4.4）
 
 - 既有基线：Python `327 passed`、Ruff、feedback JavaScript、Markdown shell 语法、diff check、本地隔离 wheel build 与维护者真实宿主 smoke 曾通过；这些结果只作为进入 4.4 前的参考，不能在 4.3 strict failure 后冒充 4.4 验收。
 - 当前纠偏：明确通用宿主契约与 Codex 证据映射，移除 Python runtime 对 reviewer 已隔离的默认假设和报告文案；不修改 prompt `v0.4`、schema `0.3`、normalizer 或模型执行边界。
-- 当前验证：Python `328 passed`、Ruff、feedback JavaScript 和 diff check 通过；未生成或冒充新的固定候选。
+- 当前验证：Python `328 passed`、Ruff、feedback JavaScript、Skill 规范校验和 diff check 通过；`fc875c9` 固定候选已生成并完成本地 provenance 与 wheel 安装验证。
 - 4.4 状态：未开始。只有 4.3 通过并完成相应 CLI/Skill/文档收口后，才重跑 clean candidate、完整测试和修改后的真实宿主 smoke。
 
 ## 已退役的最小复跑候选
@@ -106,7 +117,7 @@
 - 本地预检：archive commit ID、Skill、prompt、wheel 完整性、隔离安装、兼容探针、doctor、module CLI 与 demo 均通过。
 - 外部状态：已执行但未通过；固定 provenance 正确，安装与 discovery 阻塞，4.3 保持待办。
 
-`74c7d16` 与 `7d0bef6` 只保留为退役证据；当前固定候选以 `2cb03af` 四值为准。后续若修改 runtime 或 Skill，必须废弃该候选并重新冻结，不得把 dirty tree 构建物冒充当前固定产物。
+`74c7d16`、`7d0bef6` 与 `2cb03af` 只保留为退役证据；当前固定候选以 `fc875c9` 四值为准。后续若修改 runtime 或 Skill，必须废弃该候选并重新冻结，不得把 dirty tree 构建物冒充当前固定产物。
 
 ## 隐私边界
 

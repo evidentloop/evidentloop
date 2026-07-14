@@ -10,7 +10,7 @@ EvidentLoop v0 code-diff 一期已经完成并归档。产品身份、本地 cle
 
 ## 当前焦点
 
-当前焦点是[产品身份与分发方案](../plan/20260711_identity_and_distribution/background.md)的 Wave 4。Qoder 外部试跑已验证固定安装与机械链路，但独立 reviewer 隔离未验证；通用宿主契约与真实报告表述已收口，待提交并冻结新候选复跑 4.3。4.4 未开始。
+当前焦点是[产品身份与分发方案](../plan/20260711_identity_and_distribution/background.md)的 Wave 4。Qoder 外部试跑已验证固定安装与机械链路，但独立 reviewer 隔离未验证；通用宿主契约与真实报告表述已收口，`fc875c9` 固定候选等待复跑 4.3。4.4 未开始。
 
 ## 维护方式
 

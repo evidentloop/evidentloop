@@ -4,19 +4,19 @@
 
 这是 Codex 验证 profile，不是 EvidentLoop 的通用宿主契约。其他宿主按 [AI host 集成](./ai-host-integration.md)中的能力契约使用自身原生隔离能力，不执行这里的 `codex exec` 命令，也不模拟 Codex 事件名。Python 包不连接模型，也不包含模型 SDK 或 API key。
 
-当前没有可执行候选。`2cb03afe5d8269b16a2a61541470fe5755974347` 固定候选已完成 Qoder 受限试跑；本轮纠偏会修改 source 与 wheel，旧产物不得继续作为当前候选。新 commit、archive 和 wheel 完成后再填入以下值：
+当前固定候选为：
 
-- source commit：`<NEW_SOURCE_COMMIT>`
-- source archive：`source-<NEW_SOURCE_SHORT_SHA>.tar`
-- source archive SHA-256：`<NEW_SOURCE_ARCHIVE_SHA256>`
+- source commit：`fc875c95eb8a2afdb8a6246a694b277d034c7d29`
+- source archive：`source-fc875c9.tar`
+- source archive SHA-256：`3f2e02ffac57941155d1a870d34061dd73cc552d7e7dcb78b7f28a92306e3744`
 - wheel：`evidentloop-0.1.0a0-py3-none-any.whl`
-- wheel SHA-256：`<NEW_WHEEL_SHA256>`
+- wheel SHA-256：`a192c7d626d7b639126d184b723df063f0f5d1023529754f1c8c97e798bd4161`
 
 source archive 由上述 commit 直接执行 `git archive` 生成，wheel 从该 archive 的原样解包目录构建。不创建 tag，不使用 PyPI、移动分支或远程 Skill 安装。试用者必须安装维护者提供的固定 wheel 原件；即使现场重建 wheel 的内部文件内容相同，只要 SHA-256 不同，也不能替代上述固定产物。
 
-Skill 中的 Codex 隔离段是宿主专属证据映射，正文门禁不精确比较 CLI 版本。本轮继续在 `0.144.3` 上执行相同能力探针。
+`references/codex-cli-isolation.md` 是 Codex CLI 已验证路径的按需说明，主 `SKILL.md` 仍为宿主无关流程。正文门禁不精确比较 CLI 版本；本轮继续在 `0.144.3` 上执行相同能力探针。
 
-截至 2026-07-14，外部 AI 执行者的多次试跑已经验证安装和机械链路，也暴露了 post-doctor 解释器、hidden-sibling 语义、pre-finalize thread 比较和跨宿主隔离边界问题；尚无一次满足全部门禁的外部 E2E。详细记录保存在当前方案证据中。新候选冻结前，本清单不可执行。
+截至 2026-07-14，外部 AI 执行者的多次试跑已经验证安装和机械链路，也暴露了 post-doctor 解释器、hidden-sibling 语义、pre-finalize thread 比较和跨宿主隔离边界问题；尚无一次满足全部门禁的外部 E2E。详细记录保存在当前方案证据中。本清单现等待固定候选复跑。
 
 ## 试用者执行
 
@@ -39,16 +39,13 @@ npx skills@1.5.16 --version
 ```bash
 set -euo pipefail
 
-SOURCE_COMMIT="<NEW_SOURCE_COMMIT>"
-SOURCE_TAR="/path/to/source-<NEW_SOURCE_SHORT_SHA>.tar"
-SOURCE_TAR_SHA256="<NEW_SOURCE_ARCHIVE_SHA256>"
+SOURCE_COMMIT="fc875c95eb8a2afdb8a6246a694b277d034c7d29"
+SOURCE_TAR="/path/to/source-fc875c9.tar"
+SOURCE_TAR_SHA256="3f2e02ffac57941155d1a870d34061dd73cc552d7e7dcb78b7f28a92306e3744"
 WHEEL_PATH="/path/to/evidentloop-0.1.0a0-py3-none-any.whl"
-WHEEL_SHA256="<NEW_WHEEL_SHA256>"
+WHEEL_SHA256="a192c7d626d7b639126d184b723df063f0f5d1023529754f1c8c97e798bd4161"
 PYTHON_PATH="$(command -v python3.11)"
 
-test "$SOURCE_COMMIT" != "<NEW_SOURCE_COMMIT>"
-test "$SOURCE_TAR_SHA256" != "<NEW_SOURCE_ARCHIVE_SHA256>"
-test "$WHEEL_SHA256" != "<NEW_WHEEL_SHA256>"
 test -n "$PYTHON_PATH"
 test "$(git get-tar-commit-id < "$SOURCE_TAR")" = "$SOURCE_COMMIT"
 test "$(shasum -a 256 "$SOURCE_TAR" | awk '{print $1}')" = "$SOURCE_TAR_SHA256"

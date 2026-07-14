@@ -4,11 +4,11 @@
 
 当前固定候选为：
 
-- source commit：`00bfac7a4cbf1acdb1d637ef833feed165a77c04`
-- source archive：`source-00bfac7a.tar`
-- source archive SHA-256：`7f8df8a71aa4c806b902a024daa7dc3537a6b1cf9d0d3c3f9b64184636368fe7`
+- source commit：`e6f33811721dcf4710a3b812413923a4a586aae4`
+- source archive：`source-e6f3381.tar`
+- source archive SHA-256：`6dd06b4b991ee93e7112dab56046f92f9381aa0bff3b61a7192e8f6c9ea78226`
 - wheel：`evidentloop-0.1.0a0-py3-none-any.whl`
-- wheel SHA-256：`d0bdc57f0b065791bb7a4998c191bf7f5b3e338317f7851f8362ca7904ef8fd1`
+- wheel SHA-256：`f878c30b91b7fa152fa4fb6d15c855df08e42da58fd63af9040a3566090dce97`
 
 source archive 由上述 commit 直接执行 `git archive` 生成，wheel 从该 archive 的原样解包目录构建。不创建 tag，不使用 PyPI、移动分支或远程 Skill 安装。试用者必须安装维护者提供的固定 wheel 原件。
 
@@ -23,11 +23,11 @@ source archive 由上述 commit 直接执行 `git archive` 生成，wheel 从该
 ```bash
 set -euo pipefail
 
-SOURCE_COMMIT="00bfac7a4cbf1acdb1d637ef833feed165a77c04"
-SOURCE_TAR="/path/to/source-00bfac7a.tar"
-SOURCE_TAR_SHA256="7f8df8a71aa4c806b902a024daa7dc3537a6b1cf9d0d3c3f9b64184636368fe7"
+SOURCE_COMMIT="e6f33811721dcf4710a3b812413923a4a586aae4"
+SOURCE_TAR="/path/to/source-e6f3381.tar"
+SOURCE_TAR_SHA256="6dd06b4b991ee93e7112dab56046f92f9381aa0bff3b61a7192e8f6c9ea78226"
 WHEEL_PATH="/path/to/evidentloop-0.1.0a0-py3-none-any.whl"
-WHEEL_SHA256="d0bdc57f0b065791bb7a4998c191bf7f5b3e338317f7851f8362ca7904ef8fd1"
+WHEEL_SHA256="f878c30b91b7fa152fa4fb6d15c855df08e42da58fd63af9040a3566090dce97"
 
 test "$(git get-tar-commit-id < "$SOURCE_TAR")" = "$SOURCE_COMMIT"
 test "$(shasum -a 256 "$SOURCE_TAR" | awk '{print $1}')" = "$SOURCE_TAR_SHA256"

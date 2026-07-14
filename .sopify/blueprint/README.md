@@ -10,7 +10,7 @@ EvidentLoop v0 code-diff 一期已经完成并归档。产品身份、本地 cle
 
 ## 当前焦点
 
-当前焦点是[产品身份与分发方案](../plan/20260711_identity_and_distribution/background.md)的 Wave 4。宿主契约只保留一条主链，隔离作为条件增强。`00bfac7a` 固定候选已在 Trae 完成手工集成 E2E，原生 Skill discovery 保持未验证；4.3 已完成，4.4 尚未开始，后者将包含 Codex 隔离增强回归。
+当前焦点是[产品身份与分发方案](../plan/20260711_identity_and_distribution/background.md)。Wave 4 已完成：Trae 手工集成 E2E 与 Codex 隔离增强回归均通过，`e6f3381` 为当前 clean candidate。Wave 5 尚未开始。
 
 ## 维护方式
 

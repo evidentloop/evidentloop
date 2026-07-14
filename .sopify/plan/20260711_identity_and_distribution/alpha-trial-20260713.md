@@ -2,7 +2,7 @@
 
 日期：2026-07-13 至 2026-07-14
 
-状态：首次试跑走通核心链路但 provenance 不一致；`74c7d16` 固定候选随后暴露安装和 runtime discovery 缺口并退役。`7d0bef6` 修复这两个产品问题后，固定 provenance、安装与 discovery 通过；用户认可的无维护历史 AI 外部试用者两次 strict 尝试又分别暴露 post-doctor 解释器、hidden-sibling 语义和 pre-finalize thread 比较问题。`2cb03af` 的 Qoder 试跑只证明安装与机械链路，独立 reviewer 隔离未验证。`fc875c9` 已完成宿主无关边界纠偏并冻结固定产物，等待用户复跑。4.3 保持待办，4.4 未开始。
+状态：首次试跑走通核心链路但 provenance 不一致；`74c7d16` 固定候选随后暴露安装和 runtime discovery 缺口并退役。`7d0bef6` 修复这两个产品问题后，固定 provenance、安装与 discovery 通过；用户认可的无维护历史 AI 外部试用者两次 strict 尝试又分别暴露 post-doctor 解释器、hidden-sibling 语义和 pre-finalize thread 比较问题。`2cb03af` 的 Qoder 试跑只证明安装与机械链路，独立 reviewer 隔离未验证。`fc875c9` 已完成宿主无关边界纠偏并冻结固定产物；Qoder 复跑进一步验证 provenance、Skill 安装完整性和机械链路，但仍未证明宿主 discovery 或满足独立 reviewer 门禁。4.3 保持待办，4.4 未开始。
 
 ## 首次试跑：核心链路通过但 provenance 不一致
 
@@ -73,8 +73,8 @@
 - 环境：macOS `15.6.1`（`24G90`）/ arm64 / Python `3.11.15` / uv `0.11.28` / Codex CLI `0.144.3` / skills CLI `1.5.16`；实际执行宿主为 Qoder。
 - provenance：source commit、archive SHA-256 与固定 wheel SHA-256 全部匹配；首次安装 `3` 秒，一句话到诊断产物 `86` 秒。
 - 已验证：doctor 返回仓库外绝对解释器；package `0.1.0a0`、schema `0.3`、prompt `v0.4`；prepare locator、hidden sibling、run identity、finalize 机械链路、正式目录和 `.run/` 清理均符合预期。
-- 阻塞：Qoder 未提供可验证的独立 reviewer identity、单一最终响应事件、禁止工具事件与临时 reviewer 环境。执行者已识别该限制，却仍写入 raw analysis 并调用 `finalize`，违反现有 Skill 的 pre-finalize fail-closed 规则。
-- 诊断产物：`partial / inconclusive`，不能作为真实审计 E2E。执行者把 `raw_findings_count=0` 归因于 `**f-001**`，但候选 parser 与测试明确支持独立行加粗编号；`pack_completeness=0.65` 由 ReviewPack 内容计算，只影响 advisory verdict，不决定 `review_status`。未保留可复核 raw output，因此实际解析缺口未知。
+- 阻塞：Qoder 当前未提供可确认独立 reviewer 上下文及禁止能力的原生方法；`codex exec`、thread ID、JSONL 和临时 HOME 不是 Qoder 必须复制的门禁。执行者已识别宿主能力限制，却仍写入 raw analysis 并调用 `finalize`，违反现有 Skill 的 pre-finalize fail-closed 规则。
+- 诊断产物：`partial / inconclusive`，不能作为真实审计 E2E。`review_status=partial` 表示输出未满足 completion contract；`raw_findings_count=0` 且 `pack_completeness=0.65` 使内部 `advisory_verdict=inconclusive`，而正式 `verdict` 在 review status 非 complete 时直接保持 `inconclusive`。隔离状态不参与这些判定；原先将结果归因于 `**f-001**` 格式敏感是未经验证的错误判断。未保留可复核 raw output，因此无法进一步确定缺失的输出元素。
 - 结论：本次作为 Qoder 受限兼容性证据，4.3 保持待办。后续纠偏不新增宿主 adapter、模型 SDK 或隔离证明协议；产品只分清通用能力契约、宿主证据映射和 Python runtime 责任。
 
 ## `2cb03af` 已退役候选
@@ -99,6 +99,15 @@
 - 构建来源：archive 内 commit ID 与 source commit 一致；wheel 从该 archive 的原样解包目录构建。tar 内 `SKILL.md`、`agents/openai.yaml` 与 `references/codex-cli-isolation.md` 齐全，Skill 目录与候选提交逐文件一致。
 - 本地验证：固定 wheel 原件在 Python 3.11 隔离环境安装成功；doctor、module CLI、依赖完整性与 package `0.1.0a0` / schema `0.3` / prompt `v0.4` 均通过；安装后 wheel SHA-256 未变。
 - 验证基线：Python `328 passed`、Ruff、feedback JavaScript、Skill 规范校验与 diff check 通过。4.3 等待用户按公开清单复跑，4.4 未开始。
+
+## `fc875c9` Qoder 外部复跑：固定候选机械链路通过
+
+- 环境：macOS `15.6.1`（`24G90`）/ arm64 / Python `3.11.15` / uv `0.11.28` / skills CLI `1.5.16`；实际执行宿主为 Qoder，首次安装 `2` 秒。
+- provenance 与 Skill 安装：source commit、source archive SHA-256、固定 wheel SHA-256 全部匹配；CLI 与 doctor 返回的解释器均位于被审计仓库外。skills CLI 在隔离 HOME 中完整安装 `SKILL.md`、`agents/openai.yaml` 和 `references/codex-cli-isolation.md`，三项与 source archive 逐文件一致；本项不证明 Qoder 已识别或触发该 Skill。
+- 已验证机械链路：doctor、兼容版本、prepare locator、hidden sibling、prompt provenance、run identity、finalize 原子发布、schema `0.3`、自包含 HTML 和 `.run/` 清理均符合预期。
+- reviewer 门禁：Qoder 当前未提供可确认独立 reviewer 上下文及禁止能力的原生方法。阻塞源于宿主当前能力无法满足通用契约，并非产品要求 `codex exec`、thread ID、JSONL 或临时 HOME 等 Codex 专属信号。
+- 诊断产物：执行者在 reviewer 门禁不满足后注入模拟 raw analysis 并调用 `finalize`，违反现有 Skill 的 pre-finalize fail-closed 规则，因此不构成真实审计 E2E。`review_status=partial` 源于输出未满足 prompt `v0.4` completion contract；`raw_findings_count=0` 且 `pack_completeness=0.65` 使内部 `advisory_verdict=inconclusive`，正式 `verdict` 则因 review status 非 complete 保持 `inconclusive`；隔离状态不参与这些判定。
+- 结论：本次只作为 Qoder 受限兼容性证据。`fc875c9` 继续作为当前固定候选，4.3 保持待办，4.4 未开始。
 
 ## Wave 4.4 前置证据（尚未进入 4.4）
 

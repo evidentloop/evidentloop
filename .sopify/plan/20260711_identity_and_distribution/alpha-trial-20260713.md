@@ -2,7 +2,7 @@
 
 日期：2026-07-13 至 2026-07-14
 
-状态：多轮外部试跑已验证安装、discovery 与机械链路，并暴露 provenance、post-doctor 解释器、hidden-sibling 和宿主边界问题。`fc875c9` 的 Qoder 复跑使用模拟 raw analysis，只作为机械链路证据。2026-07-14 产品契约收口为一条宿主无关主链，隔离改为条件增强；prompt 升为 `v0.5`，`fc875c9` 退役，`00bfac7a` 已冻结为新候选。4.3 保持待办，4.4 未开始。
+状态：多轮外部试跑已验证安装、discovery 与机械链路，并暴露 provenance、post-doctor 解释器、hidden-sibling 和宿主边界问题。`fc875c9` 的 Qoder 复跑使用模拟 raw analysis，只作为机械链路证据。2026-07-14 产品契约收口为一条宿主无关主链，隔离改为条件增强；prompt 升为 `v0.5`，`00bfac7a` 已冻结为新候选。Trae 手工集成 E2E 通过后，用户确认 4.3 收口；4.4 未开始。
 
 ## 首次试跑：核心链路通过但 provenance 不一致
 
@@ -115,7 +115,7 @@
 - 宿主把完整 prompt 交给模型审查；模拟、回放或占位输出不构成端到端审计。
 - 宿主能建立并确认独立 reviewer 上下文时使用隔离增强。隔离不是正式报告的前置条件，不进入产物，也不影响 `review_status` 或 `verdict`。
 - prompt 升为 `v0.5`，public schema 保持 `0.3`。不新增 attestation、receipt、adapter、SDK、宿主注册表或 verdict 降级规则。
-- 新候选冻结后，先由 Qoder 或 Trae 复跑主链，再由 Codex 回归隔离增强。4.3 在此前保持待办。
+- 新候选冻结后，先由 Qoder 或 Trae 复跑主链，再由 Codex 回归隔离增强。Trae 主链结果已满足 4.3，Codex 回归转入 4.4。
 
 ## `00bfac7a` 当前固定候选
 
@@ -127,14 +127,23 @@
 - 构建来源：archive 内 commit ID 与 source commit 一致；wheel 从该 archive 的原样解包目录构建。
 - 本地验证：Python `328 passed`、Ruff、feedback JavaScript、Skill 规范、SVG/XML 与 diff check 通过。固定 wheel 在 Python `3.11.15` 隔离环境安装成功；doctor、module CLI、demo、依赖完整性与 package `0.1.0a0` / schema `0.3` / prompt `v0.5` 全部通过；安装后 wheel SHA-256 未变。
 - Skill 验证：标准 skills CLI `1.5.16` 在隔离 HOME 完整复制 `SKILL.md`、`agents/openai.yaml` 和 `references/codex-cli-isolation.md`，安装目录与 archive 逐文件一致。
-- 状态：4.3 等待 Qoder 或 Trae 主链复跑和 Codex 隔离增强回归；4.4 未开始。
+- 状态：Trae 手工集成 E2E 通过，4.3 已完成；4.4 未开始。
+
+## `00bfac7a` Trae 外部复跑：手工集成 E2E 通过
+
+- 环境：macOS arm64 / Python `3.11.15` / pip / Trae CLI（GLM-5.2）；固定 wheel 安装约 `30` 秒，一句话到报告约 `2` 分钟。
+- provenance：source commit、source archive SHA-256 和 wheel SHA-256 与当前固定候选一致；隔离 venv 的安装记录包含精确 wheel SHA-256。
+- 主链：`prepare → host review → finalize` 通过，审查结果由 Trae 模型生成，未使用模拟、回放或占位输出。执行者确认未因受审载荷执行命令、访问网络或凭据、修改业务文件。
+- 正式产物：schema `0.3`，`complete / inconclusive`，`risk_score=null`，finding/open/unscored/fix 计数均为 `0`；`pack_completeness=0.65` 与 advisory rationale 一致。run identity、节点与边计数、`.run/` 清理、自包含 HTML 和独立重渲染均已复核，重渲染结果字节一致。
+- 宿主状态：本次手工读取候选 `SKILL.md` 编排，Trae 原生 Skill discovery 保持未验证；隔离增强为当前不支持或未验证。正式产物不声称隔离。
+- 结论：用户确认手工集成已满足本轮外部宿主试跑目标，4.3 完成。Skill discovery 作为支持矩阵独立状态保留，不新增产品模式或证明字段。
 
 ## Wave 4.4 前置证据（尚未进入 4.4）
 
 - 既有基线：Python `327 passed`、Ruff、feedback JavaScript、Markdown shell 语法、diff check、本地隔离 wheel build 与维护者真实宿主 smoke 曾通过；这些结果只作为进入 4.4 前的参考，不能在 4.3 strict failure 后冒充 4.4 验收。
 - 当前收口：通用宿主主链与 Codex 隔离增强已分开，prompt 升为 `v0.5`，schema `0.3` 不变；不改 normalizer 或模型执行面。
 - 当前验证：Python `328 passed`、Ruff、feedback JavaScript、Skill 规范、SVG/XML、diff check、candidate provenance、wheel 安装与 Skill 完整复制通过。
-- 4.4 状态：未开始。只有 4.3 通过并完成相应 CLI/Skill/文档收口后，才重跑 clean candidate、完整测试和修改后的真实宿主 smoke。
+- 4.4 状态：未开始。4.3 已通过；下一阶段再重跑 clean candidate、完整测试、宿主 smoke 和 Codex 隔离增强回归。
 
 ## 已退役的最小复跑候选
 

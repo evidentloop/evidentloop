@@ -17,7 +17,7 @@
 
 ## 明确延后
 
-- [-] Qoder 的已退役候选试跑只验证安装与 prepare/finalize 机械链路；因使用模拟审查输出，不声明端到端支持。新候选需要由 Qoder 或 Trae 重新验证。
+- [-] Qoder 的已退役候选试跑只验证安装与 prepare/finalize 机械链路；因使用模拟审查输出，不声明端到端支持。`00bfac7a` 已由 Trae 完成手工集成 E2E；Qoder E2E 与 Trae 原生 Skill discovery 仍未验证，按支持矩阵独立记录。
 - [-] 自动修复代码或把审计结果升级为强制策略门禁。
 - [-] 在 Python 包集成模型 SDK、provider/API key 配置或 standalone reviewer；模型执行只由 AI host 承担。
 - [-] 在用户再次授权前归档、删除 CrossReview 仓库或中断旧包可用性。

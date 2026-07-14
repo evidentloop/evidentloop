@@ -2,13 +2,13 @@
 
 本轮只验证固定候选的首次安装、Skill discovery 和一句话审计。主链是 `prepare → host review → finalize`；宿主能建立并确认独立 reviewer 上下文时，另记录隔离增强证据。Python 包不连接模型，也不包含模型 SDK 或 API key。
 
-当前候选正在重冻结。下列占位符全部替换前不得执行试跑：
+当前固定候选为：
 
-- source commit：`<NEW_SOURCE_COMMIT>`
-- source archive：`source-<NEW_SHORT_COMMIT>.tar`
-- source archive SHA-256：`<NEW_SOURCE_SHA256>`
+- source commit：`00bfac7a4cbf1acdb1d637ef833feed165a77c04`
+- source archive：`source-00bfac7a.tar`
+- source archive SHA-256：`7f8df8a71aa4c806b902a024daa7dc3537a6b1cf9d0d3c3f9b64184636368fe7`
 - wheel：`evidentloop-0.1.0a0-py3-none-any.whl`
-- wheel SHA-256：`<NEW_WHEEL_SHA256>`
+- wheel SHA-256：`d0bdc57f0b065791bb7a4998c191bf7f5b3e338317f7851f8362ca7904ef8fd1`
 
 source archive 由上述 commit 直接执行 `git archive` 生成，wheel 从该 archive 的原样解包目录构建。不创建 tag，不使用 PyPI、移动分支或远程 Skill 安装。试用者必须安装维护者提供的固定 wheel 原件。
 
@@ -23,13 +23,12 @@ source archive 由上述 commit 直接执行 `git archive` 生成，wheel 从该
 ```bash
 set -euo pipefail
 
-SOURCE_COMMIT="<NEW_SOURCE_COMMIT>"
-SOURCE_TAR="/path/to/source-<NEW_SHORT_COMMIT>.tar"
-SOURCE_TAR_SHA256="<NEW_SOURCE_SHA256>"
+SOURCE_COMMIT="00bfac7a4cbf1acdb1d637ef833feed165a77c04"
+SOURCE_TAR="/path/to/source-00bfac7a.tar"
+SOURCE_TAR_SHA256="7f8df8a71aa4c806b902a024daa7dc3537a6b1cf9d0d3c3f9b64184636368fe7"
 WHEEL_PATH="/path/to/evidentloop-0.1.0a0-py3-none-any.whl"
-WHEEL_SHA256="<NEW_WHEEL_SHA256>"
+WHEEL_SHA256="d0bdc57f0b065791bb7a4998c191bf7f5b3e338317f7851f8362ca7904ef8fd1"
 
-test "$SOURCE_COMMIT" != "<NEW_SOURCE_COMMIT>"
 test "$(git get-tar-commit-id < "$SOURCE_TAR")" = "$SOURCE_COMMIT"
 test "$(shasum -a 256 "$SOURCE_TAR" | awk '{print $1}')" = "$SOURCE_TAR_SHA256"
 test "$(shasum -a 256 "$WHEEL_PATH" | awk '{print $1}')" = "$WHEEL_SHA256"

@@ -2,7 +2,7 @@
 
 目录：`.sopify/plan/20260711_identity_and_distribution/`
 
-> Wave 0 至 Wave 3 的本地实现与门禁、Wave 4.1 clean 本地产物安装和 Wave 4.2 Codex 端到端审计已完成。宿主契约现收口为 `prepare -> host review -> finalize` 一条主链，隔离作为条件增强；不新增产品模式、宿主 adapter、模型 SDK 或隔离证明。`fc875c9` 已退役，prompt 升为 `v0.5`，schema 保持 `0.3`；新候选需要由 Qoder 或 Trae 验证主链，再由 Codex 回归隔离增强。4.3 保持未完成，4.4 未开始。Wave 6 发布 checkpoint 通过前不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
+> Wave 0 至 Wave 3 的本地实现与门禁、Wave 4.1 clean 本地产物安装和 Wave 4.2 Codex 端到端审计已完成。宿主契约现收口为 `prepare -> host review -> finalize` 一条主链，隔离作为条件增强；不新增产品模式、宿主 adapter、模型 SDK 或隔离证明。`fc875c9` 已退役，prompt 升为 `v0.5`，schema 保持 `0.3`，`00bfac7a` 已冻结为新候选。下一步由 Qoder 或 Trae 验证主链，再由 Codex 回归隔离增强。4.3 保持未完成，4.4 未开始。Wave 6 发布 checkpoint 通过前不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
 
 ## Wave 0：身份与注册风险门禁（最高优先级）
 
@@ -43,7 +43,7 @@
 
 - [x] 4.1 已从 `e05db14` 的 clean source archive 构建 sdist/wheel；macOS arm64、Python 3.11.15 下 wheel × uv 0.11.28 与 sdist × pipx 1.15.0 均隔离安装成功。安装后在先证明拒绝网络连接的 macOS sandbox 中完成 CLI、module entry、兼容探针、doctor、demo、6 类 package resources 与 demo provenance 验证；wheel SHA-256 为 `e01b4cda…d650b`，sdist SHA-256 为 `b07a61a7…824a`。
 - [x] 4.2 macOS arm64、Python 3.11.15、Codex CLI `0.144.1` 的全新 HOME 已用本地 wheel 与复制安装的 Skill 完成一句话真实审计。独立 reviewer thread 与 orchestrator thread 不同；除 thread/turn 生命周期事件外，JSONL 仅有一个最终 `agent_message`，无工具、命令、文件修改或协作事件。最终报告为 `complete / concerns`，风险分 40，`billing.py:3` 精确锚定 1 条 high finding，`.run/` 已清理。canonical `Where` 与精确 section heading 已冻结在 prompt `v0.4`，未修改 demo fixture；文档收口后的 clean 候选 wheel SHA-256 为 `3c108b40…1370a`，sdist 为 `4623350b…dded8`，其 wheel runtime 文件与 E2E 实测 wheel 完全一致。
-- [ ] 4.3 由外部执行者使用新的固定 source archive、wheel 与同 archive Skill，在 Qoder 或 Trae 走通首次安装、Skill discovery 和一句话审计，并记录环境、耗时、阻塞、误解与脱敏反馈。审查结果必须由宿主模型生成，不得使用模拟、回放或占位输出。通过后再在 Codex 回归隔离增强；两者使用同一主链和正式产物，不定义两种 E2E。旧 `fc875c9` Qoder 试跑只作为机械链路证据。不收集源码，不要求 evidence worktree 或公开发布。
+- [ ] 4.3 由外部执行者使用固定 `00bfac7a` source archive、`d0bdc57f…8fd1` wheel 与同 archive Skill，在 Qoder 或 Trae 走通首次安装、Skill discovery 和一句话审计，并记录环境、耗时、阻塞、误解与脱敏反馈。审查结果必须由宿主模型生成，不得使用模拟、回放或占位输出。通过后再在 Codex 回归隔离增强；两者使用同一主链和正式产物，不定义两种 E2E。旧 `fc875c9` Qoder 试跑只作为机械链路证据。不收集源码，不要求 evidence worktree 或公开发布。
 - [ ] 4.4 仅在 4.3 通过后，根据 4.2-4.3 收口 CLI、Skill 与文档，并重跑 clean candidate、完整测试和修改后的真实宿主 smoke。既有 Python `328 passed`、Ruff、feedback JavaScript、Markdown shell 语法、diff check、本地隔离 wheel build 和维护者宿主 smoke 只作为前置基线，不能替代本项验收。当前未开始。
 
 ## Wave 5：evidence worktree 与 Pages

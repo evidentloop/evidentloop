@@ -2,7 +2,7 @@
 
 日期：2026-07-13 至 2026-07-14
 
-状态：多轮外部试跑已验证安装、discovery 与机械链路，并暴露 provenance、post-doctor 解释器、hidden-sibling 和宿主边界问题。`fc875c9` 的 Qoder 复跑使用模拟 raw analysis，只作为机械链路证据。2026-07-14 产品契约收口为一条宿主无关主链，隔离改为条件增强；prompt 升为 `v0.5`，`fc875c9` 退役。新候选待冻结，4.3 保持待办，4.4 未开始。
+状态：多轮外部试跑已验证安装、discovery 与机械链路，并暴露 provenance、post-doctor 解释器、hidden-sibling 和宿主边界问题。`fc875c9` 的 Qoder 复跑使用模拟 raw analysis，只作为机械链路证据。2026-07-14 产品契约收口为一条宿主无关主链，隔离改为条件增强；prompt 升为 `v0.5`，`fc875c9` 退役，`00bfac7a` 已冻结为新候选。4.3 保持待办，4.4 未开始。
 
 ## 首次试跑：核心链路通过但 provenance 不一致
 
@@ -117,11 +117,23 @@
 - prompt 升为 `v0.5`，public schema 保持 `0.3`。不新增 attestation、receipt、adapter、SDK、宿主注册表或 verdict 降级规则。
 - 新候选冻结后，先由 Qoder 或 Trae 复跑主链，再由 Codex 回归隔离增强。4.3 在此前保持待办。
 
+## `00bfac7a` 当前固定候选
+
+- source commit：`00bfac7a4cbf1acdb1d637ef833feed165a77c04`
+- source archive：`source-00bfac7a.tar`
+- source archive SHA-256：`7f8df8a71aa4c806b902a024daa7dc3537a6b1cf9d0d3c3f9b64184636368fe7`
+- wheel：`evidentloop-0.1.0a0-py3-none-any.whl`
+- 固定 wheel SHA-256：`d0bdc57f0b065791bb7a4998c191bf7f5b3e338317f7851f8362ca7904ef8fd1`
+- 构建来源：archive 内 commit ID 与 source commit 一致；wheel 从该 archive 的原样解包目录构建。
+- 本地验证：Python `328 passed`、Ruff、feedback JavaScript、Skill 规范、SVG/XML 与 diff check 通过。固定 wheel 在 Python `3.11.15` 隔离环境安装成功；doctor、module CLI、demo、依赖完整性与 package `0.1.0a0` / schema `0.3` / prompt `v0.5` 全部通过；安装后 wheel SHA-256 未变。
+- Skill 验证：标准 skills CLI `1.5.16` 在隔离 HOME 完整复制 `SKILL.md`、`agents/openai.yaml` 和 `references/codex-cli-isolation.md`，安装目录与 archive 逐文件一致。
+- 状态：4.3 等待 Qoder 或 Trae 主链复跑和 Codex 隔离增强回归；4.4 未开始。
+
 ## Wave 4.4 前置证据（尚未进入 4.4）
 
 - 既有基线：Python `327 passed`、Ruff、feedback JavaScript、Markdown shell 语法、diff check、本地隔离 wheel build 与维护者真实宿主 smoke 曾通过；这些结果只作为进入 4.4 前的参考，不能在 4.3 strict failure 后冒充 4.4 验收。
 - 当前收口：通用宿主主链与 Codex 隔离增强已分开，prompt 升为 `v0.5`，schema `0.3` 不变；不改 normalizer 或模型执行面。
-- 当前验证：完整测试、Skill 规范校验、候选 provenance 与 wheel 安装验证待新候选冻结时补充。
+- 当前验证：Python `328 passed`、Ruff、feedback JavaScript、Skill 规范、SVG/XML、diff check、candidate provenance、wheel 安装与 Skill 完整复制通过。
 - 4.4 状态：未开始。只有 4.3 通过并完成相应 CLI/Skill/文档收口后，才重跑 clean candidate、完整测试和修改后的真实宿主 smoke。
 
 ## 已退役的最小复跑候选
@@ -134,7 +146,7 @@
 - 本地预检：archive commit ID、Skill、prompt、wheel 完整性、隔离安装、兼容探针、doctor、module CLI 与 demo 均通过。
 - 外部状态：已执行但未通过；固定 provenance 正确，安装与 discovery 阻塞，4.3 保持待办。
 
-`74c7d16`、`7d0bef6`、`2cb03af` 与 `fc875c9` 只保留为退役证据。新候选必须从 clean source commit 重新冻结，不得把 dirty tree 构建物冒充固定产物。
+`74c7d16`、`7d0bef6`、`2cb03af` 与 `fc875c9` 只保留为退役证据；当前固定候选以 `00bfac7a` 四值为准。后续若修改 runtime 或 Skill，必须重新冻结，不得把 dirty tree 构建物冒充固定产物。
 
 ## 隐私边界
 

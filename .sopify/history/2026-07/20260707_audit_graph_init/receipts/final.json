@@ -19,7 +19,7 @@
     "plan_id": "20260707_audit_graph_init",
     "receipt_id": "final",
     "source": "user_authorized_finalize",
-    "workspace": "/Users/weixin.li/code/github/change-audit"
+    "workspace": "<REPOSITORY_ROOT>"
   },
   "timestamp": "2026-07-10T05:28:18+00:00",
   "verdict": "finalized"

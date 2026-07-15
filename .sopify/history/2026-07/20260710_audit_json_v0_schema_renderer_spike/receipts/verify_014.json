@@ -2,7 +2,7 @@
   "evidence": {
     "browser_result": {
       "evidence": "The selected tab URL and title were readable, but DOM inspection was rejected by the Browser file URL security policy and alternate browser mechanisms were explicitly prohibited.",
-      "observed_url": "file:///Users/weixin.li/code/github/change-audit/docs/examples/hunk-context-demo/audit.html",
+      "observed_url": "file://<REPOSITORY_ROOT>/docs/examples/hunk-context-demo/audit.html",
       "result": "replan_required",
       "root_cause": "human_action_required"
     },

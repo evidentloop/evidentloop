@@ -1,8 +1,8 @@
-# 任务清单：EvidentLoop 身份迁移、零摩擦分发与审计证据隔离
+# 任务清单：EvidentLoop 身份迁移、零摩擦分发与发布证据收口
 
 目录：`.sopify/plan/20260711_identity_and_distribution/`
 
-> Wave 0 至 Wave 4 已完成。宿主契约只保留 `prepare -> host review -> finalize` 一条主链，隔离作为条件增强；不新增产品模式、宿主 adapter、模型 SDK 或隔离证明。Trae 已完成手工集成 E2E，Codex 已完成隔离增强回归；原生 Skill discovery 与隔离能力继续按宿主独立记录。`e6f3381` 是当前 clean candidate。Wave 5 未开始。Wave 6 发布 checkpoint 通过前不得改名远端 repository、购买域名、配置 PyPI、push tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
+> Wave 0 至 Wave 4 已完成并合入 main；`e6f3381` 保留为 Wave 4 验证候选。Wave 5 保留 `.sopify/` 在 main，并以安装产物门禁、脱敏 Pages 和 GitHub Release evidence 收口。repository 已改名为 `evidentloop/evidentloop`；Wave 6 checkpoint 前不创建 tag、Release，不发布 PyPI 或启用 Pages。分支 commit/push 不等同于发布授权。
 
 ## Wave 0：身份与注册风险门禁（最高优先级）
 
@@ -46,29 +46,29 @@
 - [x] 4.3 外部执行者已在 macOS arm64 / Python `3.11.15` / Trae CLI（GLM-5.2）中，使用固定 `00bfac7a` source archive、`d0bdc57f…8fd1` wheel 与同 archive Skill 完成首次安装和一句话审计。主链生成 schema `0.3` 正式产物，结果为 `complete / inconclusive`；run identity、计数、自包含 HTML、独立重渲染和 `.run/` 清理已复核。Trae 手工读取候选 Skill 编排，原生 Skill discovery 保持未验证，隔离增强为当前不支持或未验证。用户确认该限制不阻塞 4.3 收口。
 - [x] 4.4 已以 `e6f3381` 重建 clean candidate。Python `328 passed`、Ruff、feedback JavaScript、Markdown shell 语法、Skill 规范、SVG/XML 与 diff check 通过；wheel 通过 uv `0.11.28`、sdist 通过 pipx `1.15.0` 在仓库外 Python `3.11.15` 环境安装。Codex CLI `0.144.3` 隔离 reviewer 的 thread、JSONL、工具禁用、空工作目录和 pre-finalize 清理断言通过，正式报告为 `complete / concerns`，风险分 `40`，1 条 high finding 精确锚定；独立重渲染与原 HTML 字节一致。未修改 runtime、Skill、prompt 或 schema。
 
-## Wave 5：evidence worktree 与 Pages
+## Wave 5：Pages 与发布证据收口
 
-- [ ] 5.1 在本地准备 orphan `audit-evidence` branch 与固定 worktree，写全新机器可复制的 fetch、worktree、symlink、验证、恢复与移除命令，不硬编码绝对路径。
-- [ ] 5.2 把整个 `.sopify`、现有 dogfood/生成证据及其引用的旧架构/时序快照一起复制到 evidence worktree；保留旧报告原身份，确认历史链接全部可解析，并确认 state/user、raw output、密钥和本地绝对路径不进入分支，再从 main 移除并加入 ignore。旧快照不得在引用它们的 history 之前单独移走。
-- [ ] 5.3 在 `audit-evidence` 建立 `docs/` Pages 入口和 `evidence/releases/<tag>/<source-sha>/` bundle；manifest 必须记录产品身份与版本，永久证据只含脱敏 audit、测试摘要与 checksums。
-- [ ] 5.4 验证 main checkout 在没有 evidence worktree 时仍可完整测试、build、安装和运行；验证维护环境通过 symlink 可恢复 Sopify，main 不再跟踪 `.sopify` 或生成型证据。
+- [x] 5.1 用户确认 `.sopify` 保留在 main；中英文 README 说明其为 [Sopify](https://github.com/evidentloop/sopify) 开发记录，不属于 EvidentLoop runtime。调整 ADR-003，取消 `audit-evidence` branch、固定 worktree、symlink 和双 commit 发布协议。
+- [x] 5.2 已增加单一发布边界检查器，并由 CI 在实际构建 wheel、sdist 和复制安装 Skill 后调用；门禁检查 `.sopify/state`、`.sopify/user`、`raw-analysis.md`、常见私钥文件/标记和用户主目录绝对路径。现有 4 处历史 receipt 本地路径已脱敏。clean build、安装后 doctor/demo 与边界检查通过。
+- [ ] 5.3 在 main 的 `docs/` 准备最小 Pages 入口和一份绑定准确 source commit 的脱敏自身审计报告；把共用 SVG 加入双语 README。图中 sample/demo 为可选入口，正式主链到反馈导出为实线，计划中的反馈消费与报告重建为虚线。不增加图片变体、前端框架或 dogfood 专用协议。
+- [ ] 5.4 生成 release evidence bundle 草案并校验 manifest、audit、测试摘要和 checksums；正式发布时把它作为 GitHub Release 资产，不写入第二个分支。
 
 ## Wave 6：发布候选与用户 checkpoint
 
 - [ ] 6.1 新增并本地检查 tag-triggered Trusted Publishing workflow：只授予 `contents: read` 与 `id-token: write`，绑定目标 repository 与受保护 environment，复用 clean build/test 门禁。
 - [ ] 6.2 从 clean candidate 生成 README/PyPI/Pages 预览、构建物摘要、完整测试、真实宿主 smoke、身份扫描、脱敏结果与 evidence manifest 草案。
-- [ ] 6.3 发布 checkpoint：向用户提交 main/evidence 双侧 diff、准确版本、目标 GitHub 改名、域名动作、PyPI/Trusted Publisher、tag、push、Pages 与 Release 清单；获得明确授权前停止。
+- [ ] 6.3 发布 checkpoint：向用户提交 main diff、准确版本、repository 状态、域名动作、PyPI/Trusted Publisher、tag、push、Pages、Release 与 evidence 清单；获得明确授权前停止。
 
 ## Wave 7：经授权发布
 
-- [ ] 7.1 经授权将 GitHub repository 从 `evidentloop/change-audit` 改名为 `evidentloop/evidentloop`，验证重定向与权限，并更新本地 remote；失败时停止后续发布。
+- [x] 7.1 GitHub repository 已于发布 checkpoint 前改名为 `evidentloop/evidentloop`；旧地址重定向、新仓库读取、main CI 与本地 canonical remote 已验证。该事实不授权后续 tag、PyPI、Release 或 Pages 操作。
 - [ ] 7.2 创建 main release commit，并针对该准确 commit 重跑确定性测试与真实审计；source 有任何变化则废弃候选并重跑。
-- [ ] 7.3 在 evidence worktree 生成绑定 7.2 `source_commit` 的 release bundle，验证身份、manifest、audit status、脱敏与 checksums 后创建 evidence commit。
-- [ ] 7.4 推送 main 与 `audit-evidence`，验证远端两个 commit、main 内容边界和 manifest 的 `source_commit` 一致；Release 链接确切 evidence commit/path。
-- [ ] 7.5 建立 PyPI `evidentloop` 项目所有权并配置 Trusted Publisher；创建与 package version 相同、指向 7.2 main commit 的不可变 tag，由 workflow 发布 Alpha。
-- [ ] 7.6 从 `audit-evidence/docs` 启用或刷新 Pages，并从公开入口验证 PyPI README、`uvx evidentloop demo`、`uv tool install evidentloop`、pipx、远程 Skill 安装和确切 evidence commit 链路。
+- [ ] 7.3 生成绑定 7.2 `source_commit` 的 release evidence bundle，验证身份、manifest、audit status、脱敏与 checksums。
+- [ ] 7.4 推送并验证准确 main release commit，确认远端 SHA 与 evidence manifest 一致。
+- [ ] 7.5 建立 PyPI `evidentloop` 项目所有权并配置 Trusted Publisher；创建与 package version 相同、指向 7.2 main commit 的不可变 tag，以独立授权动作创建 GitHub Release 并上传 7.3 bundle。验证 tag、资产与 `source_commit` 一致后，再批准受保护的 workflow 发布 Alpha。
+- [ ] 7.6 从 main 的 `docs/` 启用 Pages，并从公开入口验证 PyPI README、`uvx evidentloop demo`、`uv tool install evidentloop`、pipx、远程 Skill 安装和准确 tag/evidence 链路。
 
 ## Wave 8：收口
 
-- [ ] 8.1 在 `audit-evidence/.sopify` 同步 blueprint、project、preferences、history 与最终 receipt；长期蓝图只保留已生效的 EvidentLoop 身份和真实交付状态。
+- [ ] 8.1 在 main 的 `.sopify` 同步 blueprint、project、history 与最终 receipt；长期蓝图只保留已生效的 EvidentLoop 身份和真实交付状态，不提交运行态或用户数据。
 - [ ] 8.2 显式确认后归档当前方案；除方案归档和已授权的 Wave 7 操作外，不额外创建实现或发布 commit，不创建额外 tag 或发布。

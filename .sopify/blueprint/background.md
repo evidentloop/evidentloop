@@ -24,7 +24,7 @@ AI coding 会生成代码变更，也会生成 plan、design、analysis、review
 
 ## 用户入口
 
-用户链路按四步递进：先在 GitHub Pages 在线查看真实报告；再用 `uvx evidentloop demo` 运行冻结 reviewer replay；正式使用时通过 `uv tool install evidentloop`（或 pipx）安装 CLI，并通过标准 skills CLI 安装同仓库 Skill；最后在满足能力契约的 AI host 中说“用 EvidentLoop 审计本地改动”。Skill 负责选择 diff 范围、编排宿主 LLM、运行确定性阶段并展示报告路径。用户项目无需复制集成说明或中间契约。
+GitHub Pages 样例报告和 `uvx evidentloop demo` 是可跳过的体验入口。正式主链是安装 CLI 与同仓库 Skill，在满足能力契约的 AI host 中说“用 EvidentLoop 审计本地改动”，再打开 `audit.html` 查看 finding 并按需导出反馈；`audit.json` 同步生成，供追溯和集成使用。Skill 负责选择 diff 范围、编排宿主 LLM、运行确定性阶段并展示报告路径。用户项目无需复制集成说明或中间契约。
 
 无 AI host 时，`demo` 用冻结输入和 reviewer replay 走通完整机械链并生成明确标记的演示报告。高级集成者也可以手工执行 `prepare -> external review -> finalize`，但产品不提供本地 LLM、provider SDK 或自动模型调用。底层命令是稳定、可调试的集成入口；`review` 仍是 Skill 表达的用户动作，不伪装成脱离宿主即可完成的单命令。
 

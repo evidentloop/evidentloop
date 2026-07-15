@@ -1,4 +1,4 @@
-# 变更提案：EvidentLoop 身份迁移、零摩擦分发与审计证据隔离
+# 变更提案：EvidentLoop 身份迁移、零摩擦分发与发布证据收口
 
 ## 需求背景
 
@@ -11,12 +11,12 @@
 评分：
 
 - 方案质量：9/10
-- 落地就绪：7/10
+- 落地就绪：8/10
 
 评分理由：
 
-- 方案质量扣 1 分：main/evidence 双 commit 无法原子更新，仍需依靠 `source_commit` 校验与 fail-closed 发布门禁。
-- 落地就绪扣 3 分：身份与版本契约已经冻结，但本地 clean break、CLI/Skill 安装、evidence 隔离与真实宿主 E2E 仍待完成。
+- 方案质量扣 1 分：Pages、Trusted Publishing 与 GitHub Release evidence 仍需在真实发布链路中验证。
+- 落地就绪扣 2 分：身份迁移、CLI/Skill 和宿主 E2E 已完成，Pages、dogfood evidence 与正式发布尚待完成。
 
 ## 决策状态
 
@@ -24,12 +24,12 @@
 - `change-audit` 是历史代码与证据基线；[ADR-002](adr/002-change-audit-current-baseline.md) 已由 ADR-004 取代。
 - [ADR-004](adr/004-adopt-evidentloop-identity.md) 已采纳 `EvidentLoop` 单一身份与 clean break。
 - Wave 0 身份 checkpoint 已通过；用户明确停止继续审计名称风险并直接采用 `EvidentLoop`。接受决定与冻结契约见 [ADR-004](adr/004-adopt-evidentloop-identity.md)。
-- main/evidence 边界、首次 Alpha 前隔离和 fail-closed 发布遵循[ADR-003](adr/003-main-and-audit-evidence-placement.md)。
+- `.sopify`、Pages 与 release evidence 的边界遵循 2026-07-15 调整后的 [ADR-003](adr/003-main-and-audit-evidence-placement.md)：`.sopify` 保留在 main，安装产物排除它，脱敏 evidence 通过 Pages 与 GitHub Release 发布。
 
 方案包含两个必须停车的 checkpoint：
 
 1. Wave 0 身份 checkpoint：提交官方商标初筛、注册风险、相邻品牌、目标身份矩阵和迁移契约；确认前不改源码身份。
-2. Wave 6 发布 checkpoint：提交准确 commit、版本、构建物、测试、真实宿主 smoke、证据与外部操作清单；确认前不改名远端 repository，不注册域名或 PyPI，不创建 tag、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
+2. Wave 6 发布 checkpoint：提交准确 commit、版本、构建物、测试、真实宿主 smoke、证据与外部操作清单；确认前不注册域名或 PyPI，不创建 tag、Release、发布或启用 Pages。分支实现的 commit/push 由用户单独授权，不等同于发布授权。
 
 ## 用户成功标准
 
@@ -37,16 +37,16 @@
 2. 无需 clone 或 editable install，即可查看在线报告或运行 replay demo。
 3. 正式安装使用 `uv tool install evidentloop` 与标准 skills CLI；pipx 作为 fallback。
 4. 用户说“用 EvidentLoop 审计 staged changes”后，得到正式 `audit.json + audit.html`。
-5. main checkout 不依赖 `audit-evidence` 即可构建、测试、安装和运行。
-6. README/Pages 提供稳定证据入口；每个 PyPI 版本绑定不可变 main tag、`source_commit` 和已发布 evidence bundle。
+5. `.sopify` 保留在 main 供维护者与贡献者查阅，但不进入 wheel、sdist 或安装后的 Skill。
+6. README/Pages 提供稳定证据入口；每个 PyPI 版本绑定不可变 main tag、`source_commit` 和 GitHub Release evidence bundle。
 
 ## 影响范围
 
 - 身份契约：产品、repository、PyPI、CLI、import、Skill、Pages、schema namespace、prompt provenance、运行标识与反馈存储键。
 - Python package：console script、demo、doctor、resources 与 PyPI metadata。
 - Skill：迁移到 `skills/evidentloop/`，保持静态薄编排。
-- 仓库：main 产品面、固定 evidence worktree、Pages 与 evidence bundle。
-- 发布：远端 repository 改名、main/evidence 双 commit 校验、Trusted Publishing 与真实宿主 smoke。
+- 仓库：main 同时保存产品源码、公开 `.sopify` 记录和 Pages 源文件，不建立 evidence worktree。
+- 发布：准确 main tag、GitHub Release evidence、Trusted Publishing 与真实宿主 smoke。
 
 ## 非目标
 
@@ -63,7 +63,7 @@
 - 名称风险：用户已接受现有筛查结果与 WIPO 未验证缺口，要求停止继续审计；后续不再把名称检索设为实现门禁。
 - 身份漂移：迁移必须由单一矩阵驱动，并用旧标识 allowlist 与全仓扫描阻断半迁移状态。
 - 历史证据断链：旧 dogfood 不重写；新证据通过 manifest 显式记录旧/新身份与来源 commit。
-- 双分支漂移：manifest 绑定准确 `source_commit`；不一致即阻断发布。
+- 证据漂移：Release evidence manifest 绑定准确 tag 与 `source_commit`；不一致即阻断发布。
 - 公开证据泄露本地信息：push 前执行路径、密钥、raw output 与个人信息扫描。
-- evidence branch 不减少 Git 对象总量：当前目标是默认树和认知隔离，不宣称解决 clone 体积。
+- 安装边界漂移：发布前检查 wheel、sdist 与安装后的 Skill 文件清单，禁止 `.sopify` 或运行态资料进入安装产物。
 - 宿主边界漂移：产品按能力接入 AI host，通用契约、Codex 验证信号和外部试跑口径曾存在混写。收口后只保留一条 `prepare -> host review -> finalize` 主链；宿主能建立并确认独立 reviewer 时使用隔离增强，Python runtime 只校验审查结果与正式产物。不新增宿主 adapter、模型 SDK、隔离证明协议或两种产品模式。

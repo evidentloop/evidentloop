@@ -11,7 +11,7 @@
       "commit": "99fbe47655b5b4bd8c2c72f4ea6ea92532233705",
       "distribution": "crossreview==0.1.0a4",
       "python_requires": ">=3.10",
-      "repository": "/Users/weixin.li/code/github/cross-review",
+      "repository": "<RELATED_REPOSITORY>",
       "tag": "v0.1.0a4",
       "worktree": "clean"
     },

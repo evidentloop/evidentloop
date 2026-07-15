@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EvidentLoop Alpha</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #172033; background: #f7f8fb; }
+    body { margin: 0; }
+    main { max-width: 960px; margin: 0 auto; padding: 64px 24px 80px; }
+    h1 { margin: 0 0 12px; font-size: clamp(2.4rem, 7vw, 4.8rem); letter-spacing: -0.04em; }
+    p { max-width: 720px; color: #536077; line-height: 1.7; }
+    nav { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 44px; }
+    a { color: #1d4ed8; }
+    nav a { padding: 10px 16px; border: 1px solid #b9c4d8; border-radius: 999px; background: #fff; text-decoration: none; font-weight: 650; }
+    figure { margin: 0; padding: 18px; border: 1px solid #d9dfeb; border-radius: 18px; background: #fff; }
+    img { display: block; width: 100%; height: auto; }
+    code { padding: 2px 6px; border-radius: 5px; background: #e9edf5; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>EvidentLoop</h1>
+    <p>Evidence-grounded review for local Git diffs. EvidentLoop produces a validated <code>audit.json</code> and a self-contained <code>audit.html</code>.</p>
+    <nav aria-label="Primary">
+      <a href="./examples/evidentloop-alpha/audit.html">Open the dogfood report</a>
+      <a href="https://github.com/evidentloop/evidentloop">View source</a>
+      <a href="https://github.com/evidentloop/evidentloop/blob/main/README.zh-CN.md">简体中文</a>
+    </nav>
+    <figure>
+      <img src="./assets/evidentloop-user-flow.svg" alt="EvidentLoop user flow from installation to report and feedback export">
+    </figure>
+    <p>The sample report and <code>uvx evidentloop demo</code> are optional previews. For actual use, install the CLI and Skill, ask your AI host to audit a Git diff, then open the generated HTML report.</p>
+  </main>
+</body>
+</html>

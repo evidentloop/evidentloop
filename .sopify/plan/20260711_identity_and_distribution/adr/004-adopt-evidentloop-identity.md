@@ -45,6 +45,10 @@ Wave 0 的 USPTO 精确检索没有发现 `EVIDENTLOOP` 或 `EVIDENT LOOP`。`Ev
 
 本 ADR 授权 Wave 1 的本地身份 clean break，但不授权外部注册、远端改名或发布。分支实现的 commit/push 由用户单独授权；迁移期间 `change-audit` 只作为来源身份和历史 provenance 保留，不创建技术 alias。
 
+## 后续状态
+
+GitHub repository 已于 2026-07-14 改名为 `evidentloop/evidentloop`。这是本 ADR 之后发生的外部事实，不扩展域名、PyPI、tag、Release 或 Pages 的授权边界。
+
 ## 理由
 
 - 覆盖结构化产物审计与反馈闭环，不把长期产品限制在 change/revision。
@@ -62,6 +66,6 @@ Wave 0 的 USPTO 精确检索没有发现 `EVIDENTLOOP` 或 `EVIDENT LOOP`。`Ev
 ## 影响
 
 - 本地迁移涉及 package/import、schema、prompt、runtime identity、Skill、tests、docs 与生成入口。
-- GitHub repository 改名、域名取得、PyPI ownership、Trusted Publisher、tag 和 Pages 均属于后续需授权的外部操作。
+- repository 改名已经完成；域名取得、PyPI ownership、Trusted Publisher、tag、Release 和 Pages 仍属于后续需授权的外部操作。
 - schema 与 prompt 版本必须随实际契约变化升级，建议目标为 schema `0.3` 与 prompt `v0.4`，最终由身份 checkpoint 确认。
 - ADR-004 生效后，ADR-002 标为已废弃；ADR-001 与 ADR-003 的分发和 evidence 决策继续有效。

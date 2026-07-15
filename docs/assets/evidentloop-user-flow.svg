@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 700" width="1280" height="700" role="img" aria-labelledby="title desc">
+  <title id="title">EvidentLoop user flow</title>
+  <desc id="desc">Optional previews sit beside the setup path. The audit path runs from a host request through prepare, host review, finalize, the report pair, and browser-local feedback export. Feedback re-adjudication is planned.</desc>
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .title { fill: #111827; font-size: 24px; font-weight: 700; }
+    .subtitle { fill: #6b7280; font-size: 13px; }
+    .lane-title { fill: #374151; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; }
+    .group-title { fill: #6b7280; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; }
+    .node-title { fill: #111827; font-size: 14px; font-weight: 650; }
+    .node-sub { fill: #6b7280; font-size: 12px; }
+    .badge { fill: #ffffff; font-size: 10px; font-weight: 700; }
+    .legend { fill: #4b5563; font-size: 12px; }
+  </style>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#7c3aed"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="700" fill="#ffffff"/>
+  <text x="40" y="40" class="title">From local change to auditable report</text>
+  <text x="40" y="64" class="subtitle">Optional previews are separate from the installed audit path</text>
+
+  <rect x="40" y="90" width="1200" height="180" rx="12" fill="#eff6ff" fill-opacity="0.62" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text x="60" y="117" class="lane-title">01  EXPLORE AND SET UP</text>
+  <text x="70" y="145" class="group-title">OPTIONAL PREVIEW</text>
+  <text x="650" y="145" class="group-title">REQUIRED FOR AN AUDIT</text>
+  <line x1="590" y1="132" x2="590" y2="248" stroke="#d1d5db" stroke-width="1"/>
+
+  <path d="M 870 202 L 920 202" fill="none" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
+  <path d="M 1030 243 L 1030 282 L 24 282 L 24 415 L 60 415" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
+
+  <g>
+    <rect x="70" y="160" width="220" height="82" rx="9" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.5"/>
+    <rect x="86" y="181" width="40" height="40" rx="8" fill="#7c3aed"/>
+    <text x="106" y="205" text-anchor="middle" class="badge">WEB</text>
+    <text x="142" y="193" class="node-title">View sample report</text>
+    <text x="142" y="214" class="node-sub">No installation</text>
+  </g>
+  <g>
+    <rect x="320" y="160" width="220" height="82" rx="9" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.5"/>
+    <rect x="336" y="181" width="40" height="40" rx="8" fill="#7c3aed"/>
+    <text x="356" y="205" text-anchor="middle" class="badge">DEMO</text>
+    <text x="392" y="193" class="node-title">Try offline demo</text>
+    <text x="392" y="214" class="node-sub">uvx evidentloop demo</text>
+  </g>
+  <g>
+    <rect x="650" y="160" width="220" height="82" rx="9" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/>
+    <circle cx="686" cy="201" r="20" fill="#2563eb"/>
+    <text x="686" y="205" text-anchor="middle" class="badge">CLI</text>
+    <text x="722" y="193" class="node-title">Install CLI</text>
+    <text x="722" y="214" class="node-sub">uv tool install evidentloop</text>
+  </g>
+  <g>
+    <rect x="920" y="160" width="220" height="82" rx="9" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/>
+    <circle cx="956" cy="201" r="20" fill="#ea580c"/>
+    <text x="956" y="205" text-anchor="middle" class="badge">SK</text>
+    <text x="992" y="193" class="node-title">Install Skill</text>
+    <text x="992" y="214" class="node-sub">Standard skills CLI</text>
+  </g>
+
+  <rect x="40" y="300" width="1200" height="210" rx="12" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5"/>
+  <text x="60" y="327" class="lane-title">02  AUDIT A LOCAL GIT DIFF</text>
+
+  <path d="M 220 415 L 250 415" fill="none" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
+  <path d="M 410 415 L 440 415" fill="none" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
+  <path d="M 600 415 L 630 415" fill="none" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
+  <path d="M 790 415 L 820 415" fill="none" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
+  <path d="M 990 415 L 1020 415" fill="none" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
+
+  <g>
+    <rect x="60" y="365" width="160" height="100" rx="10" fill="#ffffff" stroke="#5eead4" stroke-width="1.6"/>
+    <circle cx="90" cy="396" r="13" fill="#0d9488"/>
+    <text x="90" y="400" text-anchor="middle" class="badge">1</text>
+    <text x="110" y="400" class="node-title">Ask your host</text>
+    <text x="80" y="432" class="node-sub">Audit staged changes</text>
+  </g>
+  <g>
+    <rect x="250" y="365" width="160" height="100" rx="10" fill="#ffffff" stroke="#93c5fd" stroke-width="1.6"/>
+    <circle cx="280" cy="396" r="13" fill="#2563eb"/>
+    <text x="280" y="400" text-anchor="middle" class="badge">2</text>
+    <text x="300" y="400" class="node-title">prepare</text>
+    <text x="270" y="432" class="node-sub">Freeze diff + prompt</text>
+  </g>
+  <g>
+    <rect x="440" y="365" width="160" height="100" rx="10" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.6"/>
+    <circle cx="470" cy="396" r="13" fill="#7c3aed"/>
+    <text x="470" y="400" text-anchor="middle" class="badge">3</text>
+    <text x="490" y="400" class="node-title">Host review</text>
+    <text x="460" y="432" class="node-sub">Review the prompt</text>
+  </g>
+  <g>
+    <rect x="630" y="365" width="160" height="100" rx="10" fill="#ffffff" stroke="#86efac" stroke-width="1.6"/>
+    <circle cx="660" cy="396" r="13" fill="#16a34a"/>
+    <text x="660" y="400" text-anchor="middle" class="badge">4</text>
+    <text x="680" y="400" class="node-title">finalize</text>
+    <text x="650" y="432" class="node-sub">Validate + normalize</text>
+  </g>
+  <g>
+    <rect x="820" y="365" width="170" height="100" rx="10" fill="#ffffff" stroke="#86efac" stroke-width="1.6"/>
+    <circle cx="850" cy="396" r="13" fill="#16a34a"/>
+    <text x="850" y="400" text-anchor="middle" class="badge">5</text>
+    <text x="870" y="400" class="node-title">Report pair</text>
+    <text x="840" y="432" class="node-sub">audit.json + audit.html</text>
+  </g>
+  <g>
+    <rect x="1020" y="365" width="200" height="100" rx="10" fill="#ffffff" stroke="#fdba74" stroke-width="1.6"/>
+    <circle cx="1050" cy="396" r="13" fill="#ea580c"/>
+    <text x="1050" y="400" text-anchor="middle" class="badge">6</text>
+    <text x="1070" y="400" class="node-title">Review and export</text>
+    <text x="1040" y="432" class="node-sub">Browser-local feedback</text>
+  </g>
+
+  <rect x="40" y="545" width="1200" height="105" rx="12" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.4" stroke-dasharray="7 5"/>
+  <text x="60" y="572" class="lane-title" fill="#6d28d9">PLANNED FEEDBACK LOOP</text>
+  <path d="M 1120 465 L 1120 528 L 370 528 L 370 585" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#arrow-purple)"/>
+  <path d="M 500 612 L 540 612" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#arrow-purple)"/>
+  <path d="M 760 612 L 800 612" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#arrow-purple)"/>
+  <rect x="240" y="585" width="260" height="54" rx="8" fill="#ffffff" stroke="#c4b5fd"/>
+  <text x="370" y="617" text-anchor="middle" class="node-title">audit-feedback.jsonl</text>
+  <rect x="540" y="585" width="220" height="54" rx="8" fill="#ffffff" stroke="#c4b5fd"/>
+  <text x="650" y="617" text-anchor="middle" class="node-title">Re-adjudicate</text>
+  <rect x="800" y="585" width="240" height="54" rx="8" fill="#ffffff" stroke="#c4b5fd"/>
+  <text x="920" y="617" text-anchor="middle" class="node-title">New report pair</text>
+
+  <line x1="40" y1="678" x2="70" y2="678" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
+  <text x="82" y="682" class="legend">Available now</text>
+  <line x1="200" y1="678" x2="230" y2="678" stroke="#7c3aed" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#arrow-purple)"/>
+  <text x="242" y="682" class="legend">Planned</text>
+</svg>

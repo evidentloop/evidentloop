@@ -1,48 +1,44 @@
-# ADR-003：main 与 audit-evidence 内容边界
+# ADR-003：main 与发布证据内容边界
 
 ## 状态
 
-已采纳
+已调整
 
 ## 日期
 
-2026-07-11
+2026-07-11；2026-07-15 调整
 
 ## 上下文
 
-产品面向一键安装和直接使用。用户不需要在默认分支理解 Sopify 蓝图、执行 receipts、dogfood 原始证据或丰富测试输出；需要验证产品可信度的人仍应能公开访问这些材料。本 ADR 的分支边界不依赖最终产品名。
+产品通过 PyPI CLI、标准 Skill 和 Pages 交付，普通用户无需 clone 仓库。`.sopify/` 是公开的开发蓝图、方案和决策记录，不属于 EvidentLoop runtime；它是否位于 `main` 不影响安装链路。
 
-同时，release tag 必须包含可执行测试、schema 和构建门禁，否则 main 无法独立复现产品质量。测试源码和生成型测试产物不能混为一类。
+原方案拟用 orphan `audit-evidence` 分支、固定 worktree 和本地 symlink 隔离 `.sopify` 与生成证据。复核后确认，该结构不能减少 Git 对象体积或提高已经公开内容的保密性，却会引入双分支一致性、恢复和发布成本。2026-07-15，用户确认首个 Alpha 保留 `.sopify/` 在 `main`，并以安装产物门禁、脱敏 Pages 和 GitHub Release evidence 收口。
 
 ## 决策
 
-1. `main` 只保留产品源码、schema、package 配置、标准 Skill、测试源码与必要 fixture、CI/publish workflow、README 和用户/集成文档。
-2. 固定 orphan 分支 `audit-evidence` 保存整个 `.sopify`、公开 dogfood、精选测试摘要、release evidence bundles 与 Pages `docs/`。
-3. `.sopify/state`、`.sopify/user`、raw model output、完整日志、coverage、未脱敏截图和 build/dist 不提交到任何长期分支。
-4. 维护机使用固定 evidence worktree；main checkout 通过被忽略的本地 `.sopify` symlink 恢复 Sopify。worktree 路径不进入仓库。
-5. evidence branch 不含产品源码、不合并回 main，不维护第二个产品版本。
-6. `evidence/releases/` 按 tag 和 `source_commit` 追加，不重写；`.sopify` 可以正常演进。
-7. README 链接稳定 Pages/分支入口；Release 在 evidence push 后链接确切 evidence commit/path，避免修改 README 导致 `source_commit` 循环失效。
-8. 首次 Alpha 发布前完成 `.sopify` 与生成证据的隔离，不把迁移债务带入首个公开 tag。
-9. evidence bundle 生成、校验或 push 失败时，阻断 tag 与 PyPI 发布；不提供 best-effort 降级。
+1. `main` 保留产品源码、schema、package 配置、标准 Skill、测试、README、用户文档以及公开的 `.sopify/`。
+2. `.sopify/` 只记录开发过程，不进入 wheel、sdist 或安装后的 Skill；发布前以文件清单门禁验证。
+3. `.sopify/state`、`.sopify/user`、raw model output、完整日志、coverage、未脱敏截图和 build/dist 不提交到长期分支。
+4. `docs/` 承载 Pages 内容和精选、脱敏的 dogfood 报告。`.sopify/` 不作为 Pages 内容发布。
+5. 每个公开版本从准确 tag 和 `source_commit` 生成 release evidence bundle，校验后作为 GitHub Release 资产发布；bundle 保存 manifest、审计报告、测试摘要和 checksums。
+6. 不建立 `audit-evidence` 分支、固定 evidence worktree、`.sopify` symlink 或 main/evidence 双 commit 协议。
+7. evidence bundle 生成、校验或上传失败时，阻断 PyPI 发布；不提供 best-effort 降级。
 
 ## 理由
 
-- 默认分支直接服务安装、阅读和贡献，避免维护过程淹没产品入口。
-- 整个 `.sopify` 仍公开可查，符合产品的可信与可追溯方向。
-- 测试源码留在 main，使任意 release tag 都能独立运行 CI，不依赖跨分支拉取。
-- source/evidence commit 显式绑定，比把生成证据混入产品 commit 更清楚。
+- 安装用户只消费 Python 分发包和 Skill，`.sopify/` 留在 `main` 不扩大运行时。
+- 维护者与贡献者可以直接查阅蓝图和决策，不需要恢复专用 worktree。
+- 单一 main tag 是源码真相；GitHub Release 资产可绑定同一 tag，避免双分支漂移。
+- Pages 只发布精选报告，开发记录与公开产品入口保持清楚边界。
 
 ## 替代方案
 
-- 所有内容留在 main：拒绝。用户面持续混入蓝图、receipts 和生成证据。
-- 测试源码也移到 evidence branch：拒绝。破坏 release tag 的独立可复现性。
-- 使用同一长期分支保存产品源码副本和证据：拒绝。会形成双真相源和 merge 漂移。
-- 立即建立独立 evidence repository：暂缓。只有同仓库分支出现明显体积、权限或隐私问题时再评估。
+- orphan `audit-evidence` 分支与 worktree：首个 Alpha 不采用。只有后续出现真实的体积、权限或维护问题时再评估。
+- 把所有运行态和原始输出留在 main：拒绝。只保留公开、安全的方案与历史记录。
+- 建立独立 evidence repository：不采用。当前没有独立权限或生命周期需求。
 
 ## 影响
 
-- 发布增加 main/evidence 两个 commit 及其一致性校验，Git 无法原子更新两者，失败时必须停止 tag/publish。
-- 普通 clone 仍可能获取 evidence branch 可达对象；该方案解决默认树和认知隔离，不解决 Git 对象体积。
-- 首次迁移必须先在 evidence worktree 完整保全 `.sopify` 与公开证据，再从 main 移除。
-- evidence push 前必须执行脱敏和 `source_commit`/checksums 校验。
+- `.sopify/` 随 GitHub source archive 公开，但不得进入 Python 分发包或安装后的 Skill。
+- 发布门禁新增 wheel、sdist 和 Skill 文件清单检查。
+- Pages dogfood 与 Release evidence 发布前都必须执行脱敏和 `source_commit`/checksums 校验。

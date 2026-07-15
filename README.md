@@ -50,16 +50,21 @@ Requirements: Git, Python 3.10 or newer, and an AI host that can discover the Sk
 
 ### Public Alpha path
 
-The public release will use one short path: view the report at `https://evidentloop.github.io/evidentloop/`, try the offline replay, install the CLI and Skill, run diagnostics, then ask for an audit.
+The sample report and offline demo are optional previews. For actual use, install the CLI and Skill, ask the host to audit a Git diff, open `audit.html`, then review findings and export feedback. `audit.json` is generated alongside for traceability and integrations.
+
+![EvidentLoop user flow](./docs/assets/evidentloop-user-flow.svg)
 
 ```bash
+# Optional preview
 uvx evidentloop demo
+
+# Install for an audit
 uv tool install evidentloop
 npx skills@latest add evidentloop/evidentloop --skill evidentloop -g
 evidentloop doctor
 ```
 
-These commands are the release target, not a claim of current availability. PyPI, the renamed repository, remote Skill installation, and Pages remain unavailable until the release checkpoint is complete. Use `pipx install evidentloop` only as the published CLI fallback.
+These commands are the release target, not a claim of current availability. PyPI, remote Skill installation, and Pages remain unavailable until the release checkpoint is complete. Use `pipx install evidentloop` only as the published CLI fallback.
 
 After release, update or remove the installation with:
 
@@ -77,7 +82,7 @@ For pipx, use `pipx upgrade evidentloop` or `pipx uninstall evidentloop`.
 Until the public release, install from this checkout:
 
 ```bash
-git clone https://github.com/evidentloop/change-audit.git evidentloop
+git clone https://github.com/evidentloop/evidentloop.git
 cd evidentloop
 python3.11 --version       # any installed Python >=3.10
 python3.11 -m venv .venv
@@ -173,6 +178,8 @@ See [AI host integration](./docs/ai-host-integration.md) for the locator contrac
 The current public audit target is a Git diff. Additional artifact profiles require their own adapter, trusted anchors, evaluation baseline, and renderer contract before they can become supported review targets.
 
 ## Development
+
+This repository uses [Sopify](https://github.com/evidentloop/sopify) to maintain its product blueprint, plans, and decision records, so `.sopify/` remains available to maintainers and contributors. It is not part of the EvidentLoop runtime; release checks keep it out of Python distributions and the installed Skill. EvidentLoop audits of its own changes will be published separately as sanitized dogfood evidence.
 
 ```bash
 python -m pip install -e '.[dev]'

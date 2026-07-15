@@ -16,14 +16,14 @@
 
 - Python package/CLI 是唯一 runtime 与产品版本真相源，通过 PyPI 发布，uv tool 为推荐安装方式，pipx 为 fallback。
 - Agent Skill 是同仓库 `skills/<active-identity>/` 下的静态薄编排层，通过通用 `skills` CLI 安装；ADR-004 激活后的目标目录为 `skills/evidentloop/`。
-- GitHub Pages 从 `audit-evidence/docs` 提供真实报告和 replay demo 的零安装入口。
+- GitHub Pages 从 main 的 `docs/` 提供真实报告和 replay demo 的零安装入口；准确版本的脱敏 evidence bundle 作为 GitHub Release 资产发布。
 - 每个公开 PyPI 版本必须对应不可变 main Git tag 与绑定该 source commit 的 evidence bundle。
 
 ## 理由
 
 - 复用成熟包管理器，安装动作透明、可升级、可卸载。
 - 不复制 Python 业务逻辑，不维护 npm、二进制或宿主目录适配。
-- main 保持可独立构建；证据分支不成为第二个 runtime 或版本源。
+- main 保持可独立构建；release tag 是唯一源码版本真相。
 - 维护者只维护 Python package、薄 Skill、静态 Pages 与明确边界的 evidence bundle。
 
 ## 替代方案
@@ -35,4 +35,4 @@
 
 ## 影响
 
-项目需要新增正式 console script、doctor、replay demo、标准 Skill、最小权限 publish workflow、Pages 入口和 PyPI Trusted Publishing。身份门禁完成前以 ADR-002 记录当前代码基线；ADR-004 激活后以其目标身份执行 clean break。main/evidence 内容边界遵循 ADR-003。
+项目需要新增正式 console script、doctor、replay demo、标准 Skill、最小权限 publish workflow、Pages 入口和 PyPI Trusted Publishing。身份门禁完成前以 ADR-002 记录当前代码基线；ADR-004 激活后以其目标身份执行 clean break。main 与发布证据的内容边界遵循调整后的 ADR-003。

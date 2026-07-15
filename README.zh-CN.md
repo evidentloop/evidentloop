@@ -50,16 +50,21 @@ EvidentLoop 把本地 Git diff 的审查结果整理成经过校验的 `audit.js
 
 ### 公开 Alpha 路径
 
-正式发布后，用户路径保持为四步：在 `https://evidentloop.github.io/evidentloop/` 查看报告，运行离线 replay，安装 CLI 与 Skill，执行诊断后发起审计。
+样例报告和离线 demo 是可跳过的体验入口。正式使用时，安装 CLI 与 Skill，让宿主审计 Git diff，再打开 `audit.html` 查看问题并导出反馈。`audit.json` 会同步生成，供追溯和集成使用。
+
+![EvidentLoop 用户路径](./docs/assets/evidentloop-user-flow.svg)
 
 ```bash
+# 可选体验
 uvx evidentloop demo
+
+# 正式审计
 uv tool install evidentloop
 npx skills@latest add evidentloop/evidentloop --skill evidentloop -g
 evidentloop doctor
 ```
 
-这些命令是发布目标，不代表当前已经可用。PyPI、改名后的 repository、远程 Skill 安装和 Pages 要等发布 checkpoint 完成后才开放。正式发布后，`pipx install evidentloop` 作为 CLI 安装 fallback。
+这些命令是发布目标，不代表当前已经可用。PyPI、远程 Skill 安装和 Pages 要等发布 checkpoint 完成后才开放。正式发布后，`pipx install evidentloop` 作为 CLI 安装 fallback。
 
 正式发布后的更新与卸载命令：
 
@@ -77,7 +82,7 @@ npx skills@latest remove evidentloop -g -y
 正式发布前，从当前 checkout 安装：
 
 ```bash
-git clone https://github.com/evidentloop/change-audit.git evidentloop
+git clone https://github.com/evidentloop/evidentloop.git
 cd evidentloop
 python3.11 --version       # 可替换为任意已安装的 Python >=3.10
 python3.11 -m venv .venv
@@ -173,6 +178,8 @@ Locator 契约、失败处理、prompt 数据边界与安装授权规则见 [AI 
 当前公开审查目标只有 Git diff。其他 artifact profile 必须具备独立 adapter、可信 anchor、评测基线和 renderer 契约后，才能成为正式能力。
 
 ## 开发验证
+
+本仓库使用 [Sopify](https://github.com/evidentloop/sopify) 管理产品蓝图、方案和决策记录，因此保留 `.sopify/` 供维护者与贡献者查阅。该目录不是 EvidentLoop 运行时的一部分；发布门禁确保它不会进入 Python 分发包或安装后的 Skill。EvidentLoop 对自身变更的审计报告将单独发布为脱敏的 dogfood 证据。
 
 ```bash
 python -m pip install -e '.[dev]'

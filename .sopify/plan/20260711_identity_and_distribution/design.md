@@ -1,11 +1,11 @@
-# 技术设计：EvidentLoop 身份迁移、零摩擦分发与审计证据隔离
+# 技术设计：EvidentLoop 身份迁移、零摩擦分发与发布证据收口
 
 ## 权威决策
 
 - [ADR-001](adr/001-pypi-cli-standard-skill.md)：PyPI CLI 是 runtime 与版本真相源，Skill 是静态薄编排层。
 - [ADR-002](adr/002-change-audit-current-baseline.md)：已废弃；仅记录 `change-audit` 来源身份基线。
 - [ADR-004](adr/004-adopt-evidentloop-identity.md)：已采纳 `EvidentLoop` 单一身份与 clean break。
-- [ADR-003](adr/003-main-and-audit-evidence-placement.md)：main 是产品面，`audit-evidence` 是维护与证据面；首次 Alpha 前完成隔离，evidence 失败即阻断发布。
+- [ADR-003](adr/003-main-and-audit-evidence-placement.md)：`.sopify` 保留在 main 作为公开开发记录，但不得进入安装产物；Pages 与 GitHub Release 只发布脱敏 evidence。
 - [ADR-004](adr/004-adopt-evidentloop-identity.md) 同时记录 Wave 0 的名称接受决定；用户已停止继续审计名称风险。
 
 ## 身份状态机
@@ -17,8 +17,9 @@ change-audit 来源基线（历史）
   -> ADR-004 生效，采用 EvidentLoop
   -> Wave 1 本地 clean-break 迁移
   -> clean wheel / Skill / 宿主验证
+  -> 2026-07-14 repository 改名为 evidentloop/evidentloop
   -> 发布 checkpoint
-  -> 经授权改名远端 repository 并发布 EvidentLoop Alpha
+  -> 经授权发布 EvidentLoop Alpha
 ```
 
 以下矩阵是 checkpoint 已冻结的唯一活动目标态；`change-audit` 只在迁移说明与历史 provenance 中保留。
@@ -44,8 +45,8 @@ change-audit 来源基线（历史）
 2. schema `$id`、extension namespace 和 prompt provenance 属于契约迁移；public audit schema 从 `0.2` 升为 `0.3`，product reviewer prompt 从 `v0.3` 升为 `v0.4`。
 3. package version 保持 `0.1.0a0`，不因内部重命名自动创建公开版本。
 4. 历史 `.sopify/history`、旧 dogfood 和既有审计报告不重写，只在迁移说明与 release manifest 中标注来源身份。
-5. 活动源码、测试、fixture、prompt-lab、Skill、用户文档与视觉资产不得残留未 allowlist 的旧产品标识。allowlist 只允许 `.sopify/history/**`、ADR-002、当前迁移说明、既有自包含报告及其同目录 provenance 说明、历史视觉快照，以及 Wave 7 前仍真实存在的精确远端 URL `evidentloop/change-audit`；不允许其他活动文案继续使用裸旧品牌。`audit.json`、`audit.html`、`audit-feedback.jsonl`、`AuditGraph`、`change_type`、`changed_files` 与默认 `audit/` 是稳定领域契约，不因品牌迁移改名。
-6. GitHub repository 改名属于外部操作，延后到发布 checkpoint 后执行；本地代码迁移与验证不依赖远端先改名。
+5. 活动源码、测试、fixture、prompt-lab、Skill、用户文档与视觉资产不得残留未 allowlist 的旧产品标识。allowlist 只允许 `.sopify/history/**`、ADR-002、当前迁移与 repository 重定向记录、既有自包含报告及其同目录 provenance 说明和历史视觉快照；不允许其他活动文案继续使用裸旧品牌。`audit.json`、`audit.html`、`audit-feedback.jsonl`、`AuditGraph`、`change_type`、`changed_files` 与默认 `audit/` 是稳定领域契约，不因品牌迁移改名。
+6. GitHub repository 已于 2026-07-14 改名为 `evidentloop/evidentloop`；该已发生事实不扩展域名、PyPI、tag、Release 或 Pages 的发布授权。
 7. 既有 `audit.json` / `audit.html` 是历史证据，迁移前冻结 hash，迁移后复核字节不变；不为 schema `0.2` 建旧 renderer 或迁移器。
 
 ## Wave 依赖
@@ -57,30 +58,34 @@ change-audit 来源基线（历史）
 | 2 | CLI / demo / doctor 产品化 | Wave 1 | clean wheel 本地入口通过 |
 | 3 | 标准 Skill 与用户文档 | Wave 2 | 隔离 HOME 安装和 discovery 通过 |
 | 4 | 本地集成与外部试跑 | Wave 3 | 至少一个真实宿主 E2E 与一次外部试跑 |
-| 5 | evidence worktree 与 Pages | Wave 4 | main 独立、evidence 脱敏且可恢复 |
+| 5 | Pages 与发布证据收口 | Wave 4 | 安装产物边界、脱敏 dogfood 与 Release evidence 通过验证 |
 | 6 | 发布候选与用户 checkpoint | Wave 5 | 用户明确授权外部操作 |
-| 7 | 经授权发布 | Wave 6 | repository、tag、PyPI、Pages 与 evidence 一致 |
+| 7 | 经授权发布 | Wave 6 | tag、PyPI、Pages 与 Release evidence 一致 |
 | 8 | 蓝图同步与归档 | Wave 7 | 方案归档并留下最终 receipt |
 
 ## 目标仓库结构
 
 ```text
-main                                      audit-evidence (orphan branch)
-├── evidentloop/                          ├── .sopify/
-├── skills/evidentloop/                   ├── evidence/releases/
-├── tests/                                └── docs/              # Pages
-├── docs/              # 用户/集成文档
+main
+├── evidentloop/
+├── skills/evidentloop/
+├── tests/
+├── docs/                  # 用户文档、Pages 与脱敏 dogfood
+├── .sopify/               # 公开开发记录，不进入安装产物
 ├── README.md
 ├── pyproject.toml
 └── .github/workflows/
+
+GitHub Release
+└── evidentloop-evidence-<version>.tar.gz
 ```
 
-evidence branch 不包含产品源码、不合并回 main，也不维护第二个产品版本。main checkout 的 `.sopify` 是被忽略的本地 symlink，指向固定 evidence worktree；普通产品用户和 main CI 不依赖该 worktree。
+main tag 是唯一源码版本真相。`.sopify/` 供维护者与贡献者查阅，release gate 必须证明 wheel、sdist 和安装后的 Skill 不包含该目录。Pages 与 Release evidence 只使用精选、脱敏的正式产物。
 
 ## Release evidence bundle
 
 ```text
-evidence/releases/v0.1.0a0/<source-sha>/
+evidentloop-evidence-<version>/
 ├── manifest.json
 ├── audit.json
 ├── audit.html
@@ -88,16 +93,19 @@ evidence/releases/v0.1.0a0/<source-sha>/
 └── checksums.sha256
 ```
 
-manifest 记录 repository、产品身份、`source_commit`、release tag、package/schema/prompt version、audit status、脱敏结果和文件 hashes。旧证据保留原始 `change-audit` 身份；新 release bundle 只使用已经通过验证的 EvidentLoop 身份。
+bundle 从准确 release tag 生成并作为 GitHub Release 资产发布。manifest 记录 repository、产品身份、`source_commit`、release tag、package/schema/prompt version、audit status、自动脱敏检查结果和文件 hashes。旧证据保留原始 `change-audit` 身份；新 bundle 只使用已经通过验证的 EvidentLoop 身份。
 
 ## 用户链路
 
-![EvidentLoop 候选用户路径与证据闭环](diagrams/distribution-user-flow.svg)
+![EvidentLoop 用户路径与反馈边界](../../../docs/assets/evidentloop-user-flow.svg)
 
-1. GitHub Pages 提供零安装预览。
-2. `uvx evidentloop demo` 运行离线合成 replay，并显著标记 provenance。
-3. `uv tool install evidentloop` 安装 CLI；标准 skills CLI 从 `evidentloop/evidentloop` 安装 `evidentloop` Skill。
-4. Skill 编排 `prepare -> host review -> finalize`，返回正式报告；宿主支持时使用隔离增强，不另建第二条产品路径。
+该图是中英文 README 共用的唯一源文件，不维护语言或格式变体。
+
+Pages 样例报告与 `uvx evidentloop demo` 是可跳过的体验入口。实际主链为 `Install CLI + Skill -> Ask host -> Open audit.html -> Review findings and export feedback`；`audit.json` 同步生成，供追溯和集成使用。
+
+图中实线只表示当前可用链路，并在导出 `audit-feedback.jsonl` 后结束。未来反馈闭环以虚线标记 `planned`：消费反馈后重新裁决，生成新的 `audit.json` 并据此重建 `audit.html`；不得直接修改 HTML。
+
+Release evidence 不属于普通用户步骤，继续由本设计的独立发布章节说明。
 
 ## Runtime 契约
 
@@ -115,19 +123,19 @@ manifest 记录 repository、产品身份、`source_commit`、release tag、pack
 
 ## 发布不变量
 
-1. main 候选 commit 必须在无 evidence worktree 时独立通过 build/test/install。
+1. main 候选 commit 必须独立通过 build/test/install；wheel、sdist 与安装后的 Skill 不得包含 `.sopify`。
 2. active source、wheel、CLI、import、Skill、schema、prompt、HTML 和文档必须符合同一身份矩阵。
 3. evidence bundle 必须针对该候选 commit 重新生成，并通过身份、脱敏、status 与 checksums 校验。
-4. main/evidence 远端 SHA 与 manifest 一致后，才允许创建 tag 和发布 PyPI；任一步失败都 fail closed。
-5. Pages 从 `audit-evidence/docs` 发布；Release 链接确切 evidence commit。
+4. release tag、远端 main SHA 与 manifest 的 `source_commit` 一致后，才允许发布 PyPI；任一步失败都 fail closed。
+5. Pages 从 main 的 `docs/` 发布；GitHub Release 附带绑定准确 tag 的 evidence bundle。
 
-publish workflow 只授予 `contents: read` 与 `id-token: write`，绑定准确 repository、workflow 与受保护 environment。具体执行顺序只在 `tasks.md` 维护。
+publish workflow 只授予 `contents: read` 与 `id-token: write`，绑定准确 repository、workflow 与受保护 environment。GitHub Release 创建和 evidence 上传使用 checkpoint 后单独授权的维护者动作；验证 tag、资产与 `source_commit` 一致后，才批准 PyPI environment。具体执行顺序只在 `tasks.md` 维护。
 
 ## 安全边界
 
-- 安装、repository 改名、域名取得和发布步骤都必须透明并逐项授权。
+- 安装、域名取得和发布步骤都必须透明并逐项授权；已完成的 repository 改名不视为后续发布授权。
 - Skill 不自动安装/升级 CLI，也不修改被审计代码。
 - diff、文件名、源码和 LLM 输出始终视为不可信数据。
 - 隔离增强只在宿主能用原生信号确认时声称；Python runtime 不增加确认开关、receipt 或宿主适配层。
-- evidence push 前必须脱敏；本地绝对路径、密钥、raw model output 与用户状态不得进入公开分支。
+- Pages commit 与 Release evidence 上传前必须脱敏；本地绝对路径、密钥、raw model output 与用户状态不得进入公开内容。
 - demo、人工集成与真实宿主审查必须在 provenance 和用户文案中可区分。

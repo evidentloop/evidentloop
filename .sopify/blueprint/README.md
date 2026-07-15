@@ -6,11 +6,11 @@ EvidentLoop v0 code-diff 一期已经完成并归档。产品身份、本地 cle
 
 ## 当前目标
 
-公开交付物收敛为 PyPI CLI、同仓库标准薄 Skill 和 GitHub Pages。用户可以先在线看报告、再用 `uvx` 运行 replay demo，正式使用时安装 CLI 与 Skill 后用一句自然语言生成 `audit.json + audit.html`。Schema `0.3` 当前只支持 Git diff；机械审计契约不因分发方式变化而弱化。
+公开交付物收敛为 PyPI CLI、同仓库标准薄 Skill 和 GitHub Pages。在线样例与 `uvx` replay demo 是可选体验入口；正式使用时安装 CLI 与 Skill，用一句自然语言生成 `audit.json + audit.html`。Schema `0.3` 当前只支持 Git diff。
 
 ## 当前焦点
 
-当前焦点是[产品身份与分发方案](../plan/20260711_identity_and_distribution/background.md)。Wave 4 已完成：Trae 手工集成 E2E 与 Codex 隔离增强回归均通过，`e6f3381` 为当前 clean candidate。Wave 5 尚未开始。
+当前焦点是[产品身份与分发方案](../plan/20260711_identity_and_distribution/background.md)。Wave 5 已完成：`.sopify` 保留在 main，安装产物边界、Pages dogfood 与 GitHub Release evidence 草案均已验证。下一步是 Wave 6 发布候选与用户 checkpoint；未经确认不创建 tag、Release，不发布 PyPI 或启用 Pages。
 
 ## 维护方式
 

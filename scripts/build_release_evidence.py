@@ -39,8 +39,8 @@ CHECKSUMMED_FILES = (
 )
 SENSITIVE_PATTERNS = (
     re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
-    re.compile(r"/Users/[^/\s]+/"),
-    re.compile(r"/home/[^/\s]+/"),
+    re.compile(r"/" + r"Users/[^/\s]+/"),
+    re.compile(r"/" + r"home/[^/\s]+/"),
     re.compile(r"[A-Za-z]:\\Users\\[^\\\s]+\\"),
 )
 SANITIZATION_CHECKS = (

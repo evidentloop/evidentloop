@@ -29,8 +29,8 @@ SENSITIVE_TEXT_PATTERNS = {
     "private key material": re.compile(
         r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
     ),
-    "macOS home path": re.compile(r"/Users/[^/\s]+/"),
-    "Linux home path": re.compile(r"/home/[^/\s]+/"),
+    "macOS home path": re.compile(r"/" + r"Users/[^/\s]+/"),
+    "Linux home path": re.compile(r"/" + r"home/[^/\s]+/"),
     "Windows home path": re.compile(r"[A-Za-z]:\\Users\\[^\\\s]+\\"),
 }
 

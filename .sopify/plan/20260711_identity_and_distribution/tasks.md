@@ -2,7 +2,7 @@
 
 目录：`.sopify/plan/20260711_identity_and_distribution/`
 
-> Wave 0 至 Wave 4 已完成并合入 main；`e6f3381` 保留为 Wave 4 验证候选。Wave 5 保留 `.sopify/` 在 main，并以安装产物门禁、脱敏 Pages 和 GitHub Release evidence 收口。repository 已改名为 `evidentloop/evidentloop`；Wave 6 checkpoint 前不创建 tag、Release，不发布 PyPI 或启用 Pages。分支 commit/push 不等同于发布授权。
+> Wave 0 至 Wave 5 已完成；`e6f3381` 保留为 Wave 4 验证候选，Wave 5 dogfood 绑定 `81e7b1f`。repository 已改名为 `evidentloop/evidentloop`；Wave 6 checkpoint 前不创建 tag、Release，不发布 PyPI 或启用 Pages。分支 commit/push 不等同于发布授权。
 
 ## Wave 0：身份与注册风险门禁（最高优先级）
 
@@ -50,8 +50,8 @@
 
 - [x] 5.1 用户确认 `.sopify` 保留在 main；中英文 README 说明其为 [Sopify](https://github.com/evidentloop/sopify) 开发记录，不属于 EvidentLoop runtime。调整 ADR-003，取消 `audit-evidence` branch、固定 worktree、symlink 和双 commit 发布协议。
 - [x] 5.2 已增加单一发布边界检查器，并由 CI 在实际构建 wheel、sdist 和复制安装 Skill 后调用；门禁检查 `.sopify/state`、`.sopify/user`、`raw-analysis.md`、常见私钥文件/标记和用户主目录绝对路径。现有 4 处历史 receipt 本地路径已脱敏。clean build、安装后 doctor/demo 与边界检查通过。
-- [ ] 5.3 在 main 的 `docs/` 准备最小 Pages 入口和一份绑定准确 source commit 的脱敏自身审计报告；把共用 SVG 加入双语 README。图中 sample/demo 为可选入口，正式主链到反馈导出为实线，计划中的反馈消费与报告重建为虚线。不增加图片变体、前端框架或 dogfood 专用协议。
-- [ ] 5.4 生成 release evidence bundle 草案并校验 manifest、audit、测试摘要和 checksums；正式发布时把它作为 GitHub Release 资产，不写入第二个分支。
+- [x] 5.3 main 的 `docs/` 已提供最小 Pages 入口、双语 README 共用的单一用户路径 SVG，以及绑定 `d6776ca..81e7b1f` 的脱敏自身审计报告。最终报告为 `complete / inconclusive`，0 findings；未声称隔离增强。图中 sample/demo 为可选入口，当前主链为实线，计划中的反馈消费与报告重建为虚线。
+- [x] 5.4 已生成并校验 release evidence bundle 草案；manifest 绑定 `81e7b1f`、package `0.1.0a0`、schema `0.3`、prompt `v0.5`，包含 audit pair、测试摘要和 checksums。bundle SHA-256 为 `93ce586dd05c3a2c10c880a25f9a0cb11e5408e359b0d9ed374eb442dbfe3794`，仅保留为待发布的 GitHub Release 资产，不写入 main。
 
 ## Wave 6：发布候选与用户 checkpoint
 

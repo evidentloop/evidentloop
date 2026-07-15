@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="zh-CN" data-renderer-version="0.2">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Change Audit 代码变更审计 · EvidentLoop</title>
+  <style>:root {
+  color-scheme: light;
+  --bg: #f3f5f8;
+  --panel: #ffffff;
+  --text: #172033;
+  --muted: #667085;
+  --line: #d7dee8;
+  --line-strong: #b7c2d1;
+  --green: #17753b;
+  --green-soft: #e7f6ec;
+  --red: #bd2f35;
+  --red-soft: #fff0f1;
+  --amber: #a66c12;
+  --amber-soft: #fff6df;
+  --blue: #245f91;
+  --blue-soft: #edf6ff;
+  --code-bg: #fbfcfe;
+  --code-add-bg: #e6ffed;
+  --code-del-bg: #ffebe9;
+  --code-add-text: #116329;
+  --code-del-text: #82071e;
+  --focus: #0e7490;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, #e7ebf1 0, var(--bg) 230px);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.55;
+}
+
+a { color: var(--blue); }
+h1, h2, h3, p { margin-top: 0; }
+h1 { margin-bottom: 6px; font-size: clamp(1.65rem, 4vw, 2rem); line-height: 1.2; }
+h2 { margin-bottom: 0; font-size: 1.18rem; }
+h3 { margin-bottom: 8px; font-size: 1rem; }
+code { padding: 1px 5px; border-radius: 5px; background: #eef2f7; }
+
+.report-shell {
+  display: grid;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 28px 20px 52px;
+  gap: 16px;
+}
+
+.panel,
+.hero {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgba(23, 32, 51, .04);
+}
+
+.hero {
+  padding: 22px;
+  border-left: 6px solid var(--blue);
+  box-shadow: 0 10px 28px rgba(23, 32, 51, .08);
+}
+
+.hero.concerns { border-left-color: var(--red); }
+.hero.pass_candidate { border-left-color: var(--green); }
+.hero.needs_human_triage { border-left-color: var(--amber); }
+.hero.inconclusive { border-left-color: var(--blue); }
+
+.hero-top,
+.section-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hero-copy { min-width: 0; overflow-wrap: anywhere; }
+
+.kicker {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.muted,
+.ref { color: var(--muted); }
+.ref { font-size: .8rem; overflow-wrap: anywhere; }
+
+.verdict-box {
+  flex: 0 0 240px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--blue-soft);
+  text-align: right;
+}
+
+.verdict-box strong { display: block; font-size: 1.08rem; overflow-wrap: anywhere; }
+.hero.concerns .verdict-box { border-color: #f0b5b7; background: var(--red-soft); }
+.hero.pass_candidate .verdict-box { border-color: #acd8bb; background: var(--green-soft); }
+.hero.needs_human_triage .verdict-box { border-color: #ead09f; background: var(--amber-soft); }
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.metric {
+  min-width: 0;
+  min-height: 88px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+
+.metric > span:first-child { display: block; color: var(--muted); font-size: .75rem; font-weight: 750; }
+.metric strong { display: block; margin: 4px 0 6px; font-size: 1.45rem; line-height: 1.15; overflow-wrap: anywhere; }
+
+.panel { padding: 20px; }
+.section-title { align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.badge.ok { background: var(--green); }
+.badge.risk { background: var(--red); }
+.badge.warn { background: var(--amber); }
+.badge.info { background: var(--blue); }
+.badge.soft { color: var(--text); background: #eef2f7; }
+
+.status-callout,
+.claim,
+.finding-note,
+.fix-inline,
+.feedback-placeholder {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.status-callout { margin-top: 14px; }
+.status-callout.clean { border-color: #acd8bb; background: var(--green-soft); }
+.status-callout.warning { border-color: #ead09f; background: var(--amber-soft); }
+.status-callout.failure { border-color: #f0b5b7; background: var(--red-soft); }
+
+.overall-summary { margin-bottom: 16px; font-size: .96rem; }
+.summary-grid { display: grid; grid-template-columns: 1.2fr .8fr; align-items: start; gap: 16px; }
+.summary-grid p,
+.summary-grid strong { overflow-wrap: anywhere; }
+.change-files { margin-top: 12px; }
+.change-files > summary { cursor: pointer; color: var(--blue); font-size: .84rem; font-weight: 800; }
+.change-files[open] > summary { margin-bottom: 10px; }
+.change-list { display: grid; gap: 10px; margin-top: 12px; }
+.file-change { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfe; }
+.file-path { color: var(--blue); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .82rem; overflow-wrap: anywhere; }
+.diff-stat { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .8rem; white-space: nowrap; }
+.add { color: var(--green); }
+.del { color: var(--red); }
+.claim-list { display: grid; align-self: start; align-content: start; gap: 10px; }
+.claim-empty { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; }
+.claim-empty .muted { font-size: .78rem; }
+.claim[data-status="challenged"] { border-left: 5px solid var(--red); background: var(--red-soft); }
+.claim[data-status="supported"] { border-left: 5px solid var(--green); background: var(--green-soft); }
+.claim[data-status="partial"] { border-left: 5px solid var(--amber); background: var(--amber-soft); }
+
+.finding-stack { display: grid; gap: 14px; }
+.finding-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+.finding-card.high { border-left: 6px solid var(--red); }
+.finding-card.medium { border-left: 6px solid var(--amber); }
+.finding-card.low,
+.finding-card.note { border-left: 6px solid var(--blue); }
+
+.finding-header { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: start; gap: 9px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
+.finding-title { display: block; font-weight: 800; overflow-wrap: anywhere; }
+.location { display: block; margin-top: 3px; color: var(--blue); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .78rem; overflow-wrap: anywhere; }
+.finding-body { padding: 16px; }
+.finding-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 14px; }
+.finding-note { margin-bottom: 12px; }
+.unanchored { border-color: #ead09f; background: var(--amber-soft); }
+
+.hunk { min-width: 0; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--code-bg); }
+.hunk-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: #eef2f7; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .72rem; }
+.hunk-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+.hunk-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; }
+.hunk-table th { padding: 5px 8px; background: #f6f8fb; color: var(--muted); font-size: .68rem; text-align: right; }
+.hunk-table th:first-child { width: 5px; padding: 0; }
+.hunk-table th:nth-child(2),
+.hunk-table th:nth-child(3) { width: 54px; }
+.hunk-table th:last-child { text-align: left; }
+.hunk-table td { border: 0; padding: 0; vertical-align: top; }
+.hunk-stripe { width: 5px; background: transparent; }
+.hunk-line-active .hunk-stripe { background: #f59e0b; }
+.hunk-line-active .hunk-num { color: #7a4b00; background: #fff3cd; font-weight: 800; }
+.hunk-line-active .hunk-code { box-shadow: inset 4px 0 0 #f59e0b; font-weight: 700; }
+.hunk-num { width: 54px; padding: 2px 8px !important; border-right: 1px solid var(--line) !important; color: #7a8699; background: #f7f9fc; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .75rem; text-align: right; user-select: none; }
+.hunk-code { padding: 2px 10px !important; color: #1f2937; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+.hunk-add .hunk-code { color: var(--code-add-text); background: var(--code-add-bg); }
+.hunk-delete .hunk-code { color: var(--code-del-text); background: var(--code-del-bg); }
+.hunk-meta .hunk-code { color: var(--muted); background: #f7f9fc; font-style: italic; }
+.hunk-omitted-cell { padding: 5px 10px !important; color: var(--muted); background: #eef2f7; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .72rem; text-align: center; }
+.hunk-hit-key { color: #7a4b00; font-weight: 800; }
+.hunk-hit-key::before { content: "● "; color: #f59e0b; }
+
+.chain { display: grid; align-content: start; gap: 8px; }
+.chain-row { padding: 9px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafc; overflow-wrap: anywhere; }
+.chain-label { display: block; margin-bottom: 3px; color: var(--muted); font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.fix-inline { margin-top: 12px; border-color: #b8d5ef; background: var(--blue-soft); }
+.feedback-placeholder { display: block; margin-top: 12px; }
+.feedback-heading,
+.feedback-toolbar,
+.feedback-comment-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.feedback-toolbar { align-items: flex-start; }
+.feedback-toolbar p:last-child { margin-bottom: 0; }
+.feedback-export-actions { display: grid; justify-items: end; gap: 6px; flex: 0 0 auto; }
+.feedback-controls { display: grid; gap: 10px; margin-top: 10px; }
+.feedback-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.feedback-more,
+.evidence-details { margin-top: 10px; }
+.feedback-more > summary,
+.evidence-details > summary { cursor: pointer; color: var(--blue); font-size: .82rem; font-weight: 800; }
+.feedback-controls label { display: grid; gap: 5px; color: var(--muted); font-size: .78rem; font-weight: 750; }
+.feedback-controls select,
+.feedback-controls textarea { width: 100%; border: 1px solid var(--line-strong); border-radius: 7px; background: #fff; color: var(--text); font: inherit; }
+.feedback-controls select { min-height: 36px; padding: 6px 9px; }
+.feedback-controls textarea { min-height: 78px; padding: 9px; resize: vertical; }
+.button { min-height: 34px; padding: 6px 11px; border: 1px solid var(--line-strong); border-radius: 7px; background: #fff; color: var(--text); font: inherit; font-size: .82rem; font-weight: 750; cursor: pointer; }
+.button:hover { border-color: var(--blue); background: var(--blue-soft); }
+.button:focus-visible,
+.feedback-controls select:focus-visible,
+.feedback-controls textarea:focus-visible { outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent); outline-offset: 2px; }
+.button[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: #fff; }
+.button.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+.button.primary:hover { background: #194d77; }
+
+.data-table-wrap { max-width: 100%; overflow-x: auto; }
+.data-table { width: 100%; min-width: 620px; border-collapse: collapse; }
+.data-table th,
+.data-table td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.data-table th { color: var(--muted); font-size: .74rem; text-transform: uppercase; }
+
+@media (max-width: 780px) {
+  .report-shell { padding: 16px 12px 36px; }
+  .hero-top,
+  .section-title,
+  .feedback-toolbar,
+  .feedback-heading,
+  .feedback-comment-actions { flex-direction: column; align-items: flex-start; }
+  .section-title { align-items: flex-start; }
+  .feedback-export-actions { width: 100%; justify-items: start; }
+  .verdict-box { width: 100%; flex-basis: auto; text-align: left; }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .summary-grid,
+  .finding-layout { grid-template-columns: minmax(0, 1fr); }
+  .finding-header { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .finding-header .category-badge { display: none; }
+  .file-change { grid-template-columns: minmax(0, 1fr); }
+  .diff-stat { white-space: normal; }
+}
+
+@media (max-width: 330px) {
+  .metric-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 420px) {
+  .panel,
+  .hero { padding: 15px; }
+  .finding-body { padding: 12px; }
+  .claim-empty { align-items: flex-start; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+  <main class="report-shell" data-graph-id="audit:run-32b83c1fc4144559a1cef0c3019b4ebf" data-run-id="run-32b83c1fc4144559a1cef0c3019b4ebf">
+    <header class="hero inconclusive" data-node-id="run-32b83c1fc4144559a1cef0c3019b4ebf" data-node-type="run">
+      <div class="hero-top">
+        <div class="hero-copy">
+          <div class="kicker">EvidentLoop · 代码变更</div>
+          <h1>Change Audit 代码变更审计</h1>
+          <div class="muted">
+运行：run-32b83c1fc4144559a1cef0c3019b4ebf ·             来源：d6776ca5..81e7b1fb · schema：0.3 · 审查状态：输出完整
+          </div>
+        </div>
+        <div class="verdict-box">
+          <span class="muted">当前结论</span>
+          <strong>结论不充分</strong>
+          <div class="ref">机器结论：结论不充分</div>
+        </div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric">
+          <span>已计分风险分</span>
+          <strong>无法可靠评分</strong>
+          <span class="badge warn">不适用</span>
+        </div>
+        <div class="metric">
+          <span>待处理问题</span>
+          <strong>0</strong>
+          <span class="badge ok">已清空</span>
+        </div>
+        <div class="metric">
+          <span>未计分问题</span>
+          <strong>0</strong>
+          <span class="badge soft">无</span>
+        </div>
+        <div class="metric">
+          <span>影响文件</span>
+          <strong>23</strong>
+          <span class="badge soft">已采集</span>
+        </div>
+      </div>
+
+      <div class="status-callout warning">
+        <strong>审查输出已完整接收</strong>
+        <div>这只表示审查者输出满足结构契约，不代表上下文覆盖充分；请结合结论、问题与未计分项人工判断。</div>
+      </div>
+    </header>
+
+    <section class="panel" data-node-id="change-001" data-node-type="change">
+      <div class="section-title">
+        <h2>1. 变更摘要与审计结论</h2>
+        <span class="badge soft">变更目标：未审计</span>
+      </div>
+<p class="overall-summary">未发现可验证问题。分发边界、Pages 与 release evidence 的职责划分清楚，归档内容扫描及其回归测试补齐了首轮 dogfood 发现的门禁缺口。</p>      <div class="summary-grid summary-grid-empty-claim">
+        <div>
+            <article data-node-id="change-001" data-node-type="change" data-edge-id="edge-001">
+              <h3>Change Audit 变更</h3>
+              <p>共 23 个文件发生变更（+801/-250）。</p>
+            </article>
+          <details class="change-files">
+            <summary>影响文件（23）· 查看全部</summary>
+          <div class="change-list">
+            <div class="file-change" data-node-id="file-001" data-node-type="file" data-edge-id="edge-002">
+              <span class="file-path">.github/workflows/ci.yml</span>
+              <span class="diff-stat">
+                <span class="add">+7</span>
+                <span class="del">-2</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-002" data-node-type="file" data-edge-id="edge-003">
+              <span class="file-path">.sopify/blueprint/README.md</span>
+              <span class="diff-stat">
+                <span class="add">+2</span>
+                <span class="del">-2</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-003" data-node-type="file" data-edge-id="edge-004">
+              <span class="file-path">.sopify/blueprint/background.md</span>
+              <span class="diff-stat">
+                <span class="add">+1</span>
+                <span class="del">-1</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-004" data-node-type="file" data-edge-id="edge-005">
+              <span class="file-path">.sopify/blueprint/design.md</span>
+              <span class="diff-stat">
+                <span class="add">+1</span>
+                <span class="del">-1</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-005" data-node-type="file" data-edge-id="edge-006">
+              <span class="file-path">.sopify/blueprint/tasks.md</span>
+              <span class="diff-stat">
+                <span class="add">+1</span>
+                <span class="del">-1</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-006" data-node-type="file" data-edge-id="edge-007">
+              <span class="file-path">.sopify/history/2026-07/20260707_audit_graph_init/receipts/final.json</span>
+              <span class="diff-stat">
+                <span class="add">+1</span>
+                <span class="del">-1</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-007" data-node-type="file" data-edge-id="edge-008">
+              <span class="file-path">.sopify/history/2026-07/20260710_audit_json_v0_schema_renderer_spike/receipts/verify_011.json</span>
+              <span class="diff-stat">
+                <span class="add">+1</span>
+                <span class="del">-1</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-008" data-node-type="file" data-edge-id="edge-009">
+              <span class="file-path">.sopify/history/2026-07/20260710_audit_json_v0_schema_renderer_spike/receipts/verify_014.json</span>
+              <span class="diff-stat">
+                <span class="add">+1</span>
+                <span class="del">-1</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-009" data-node-type="file" data-edge-id="edge-010">
+              <span class="file-path">.sopify/history/2026-07/20260710_change_audit_rename/receipts/final.json</span>
+              <span class="diff-stat">
+                <span class="add">+1</span>
+                <span class="del">-1</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-010" data-node-type="file" data-edge-id="edge-011">
+              <span class="file-path">.sopify/plan/20260711_identity_and_distribution/adr/001-pypi-cli-standard-skill.md</span>
+              <span class="diff-stat">
+                <span class="add">+3</span>
+                <span class="del">-3</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-011" data-node-type="file" data-edge-id="edge-012">
+              <span class="file-path">.sopify/plan/20260711_identity_and_distribution/adr/003-main-and-audit-evidence-placement.md</span>
+              <span class="diff-stat">
+                <span class="add">+22</span>
+                <span class="del">-26</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-012" data-node-type="file" data-edge-id="edge-013">
+              <span class="file-path">.sopify/plan/20260711_identity_and_distribution/adr/004-adopt-evidentloop-identity.md</span>
+              <span class="diff-stat">
+                <span class="add">+5</span>
+                <span class="del">-1</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-013" data-node-type="file" data-edge-id="edge-014">
+              <span class="file-path">.sopify/plan/20260711_identity_and_distribution/background.md</span>
+              <span class="diff-stat">
+                <span class="add">+12</span>
+                <span class="del">-12</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-014" data-node-type="file" data-edge-id="edge-015">
+              <span class="file-path">.sopify/plan/20260711_identity_and_distribution/design.md</span>
+              <span class="diff-stat">
+                <span class="add">+34</span>
+                <span class="del">-26</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-015" data-node-type="file" data-edge-id="edge-016">
+              <span class="file-path">.sopify/plan/20260711_identity_and_distribution/diagrams/distribution-user-flow.svg</span>
+              <span class="diff-stat">
+                <span class="add">+0</span>
+                <span class="del">-151</span>
+                · 删除              </span>
+            </div>
+            <div class="file-change" data-node-id="file-016" data-node-type="file" data-edge-id="edge-017">
+              <span class="file-path">.sopify/plan/20260711_identity_and_distribution/tasks.md</span>
+              <span class="diff-stat">
+                <span class="add">+14</span>
+                <span class="del">-14</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-017" data-node-type="file" data-edge-id="edge-018">
+              <span class="file-path">README.md</span>
+              <span class="diff-stat">
+                <span class="add">+10</span>
+                <span class="del">-3</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-018" data-node-type="file" data-edge-id="edge-019">
+              <span class="file-path">README.zh-CN.md</span>
+              <span class="diff-stat">
+                <span class="add">+10</span>
+                <span class="del">-3</span>
+                · 修改              </span>
+            </div>
+            <div class="file-change" data-node-id="file-019" data-node-type="file" data-edge-id="edge-020">
+              <span class="file-path">docs/assets/evidentloop-user-flow.svg</span>
+              <span class="diff-stat">
+                <span class="add">+134</span>
+                <span class="del">-0</span>
+                · 新增              </span>
+            </div>
+            <div class="file-change" data-node-id="file-020" data-node-type="file" data-edge-id="edge-021">
+              <span class="file-path">docs/index.html</span>
+              <span class="diff-stat">
+                <span class="add">+35</span>
+                <span class="del">-0</span>
+                · 新增              </span>
+            </div>
+            <div class="file-change" data-node-id="file-021" data-node-type="file" data-edge-id="edge-022">
+              <span class="file-path">scripts/build_release_evidence.py</span>
+              <span class="diff-stat">
+                <span class="add">+291</span>
+                <span class="del">-0</span>
+                · 新增              </span>
+            </div>
+            <div class="file-change" data-node-id="file-022" data-node-type="file" data-edge-id="edge-023">
+              <span class="file-path">scripts/check_release_boundaries.py</span>
+              <span class="diff-stat">
+                <span class="add">+197</span>
+                <span class="del">-0</span>
+                · 新增              </span>
+            </div>
+            <div class="file-change" data-node-id="file-023" data-node-type="file" data-edge-id="edge-024">
+              <span class="file-path">tests/test_release_boundaries.py</span>
+              <span class="diff-stat">
+                <span class="add">+18</span>
+                <span class="del">-0</span>
+                · 新增              </span>
+            </div>
+          </div>
+</details>        </div>
+        <div class="claim-list claim-list-empty">
+          <div class="claim claim-empty" data-status="unknown">
+            <strong>暂无摘要声明审计</strong>
+            <span class="muted">未生成结构化 claim</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+
+
+  </main>
+  <script>(function attachEvidentLoopFeedback(root, factory) {
+  "use strict";
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  }
+  if (root) {
+    root.EvidentLoopFeedback = api;
+    if (root.document) {
+      api.init(root.document, root);
+    }
+  }
+})(typeof window !== "undefined" ? window : null, function createEvidentLoopFeedback() {
+  "use strict";
+
+  const PREFIX = "evidentloop.feedback.v1";
+  const SEVERITIES = new Set(["high", "medium", "low", "note"]);
+
+  function storageKey(identity) {
+    return [PREFIX, identity.graph_id, identity.run_id, identity.fingerprint]
+      .map((value) => encodeURIComponent(String(value)))
+      .join(":");
+  }
+
+  function defaultState(identity) {
+    return {
+      graph_id: identity.graph_id,
+      run_id: identity.run_id,
+      target_type: "finding",
+      target_id: identity.target_id,
+      fingerprint: identity.fingerprint,
+      disposition: null,
+      comment: "",
+      severity_override: null,
+      timestamps: {},
+      updated_at: null,
+    };
+  }
+
+  function matchesIdentity(state, identity) {
+    return state
+      && state.graph_id === identity.graph_id
+      && state.run_id === identity.run_id
+      && state.target_id === identity.target_id
+      && state.fingerprint === identity.fingerprint;
+  }
+
+  function validState(state, identity) {
+    if (!matchesIdentity(state, identity) || state.target_type !== "finding") return false;
+    if (![null, "accept", "false_positive"].includes(state.disposition)) return false;
+    if (typeof state.comment !== "string") return false;
+    if (state.severity_override !== null && !SEVERITIES.has(state.severity_override)) return false;
+    if (!state.timestamps || typeof state.timestamps !== "object") return false;
+    if (state.disposition && typeof state.timestamps.disposition !== "string") return false;
+    if (state.comment && typeof state.timestamps.comment !== "string") return false;
+    if (state.severity_override && typeof state.timestamps.severity_override !== "string") return false;
+    return true;
+  }
+
+  function loadState(storage, identity) {
+    try {
+      const raw = storage.getItem(storageKey(identity));
+      if (!raw) return defaultState(identity);
+      const state = JSON.parse(raw);
+      return validState(state, identity) ? state : defaultState(identity);
+    } catch (_error) {
+      return defaultState(identity);
+    }
+  }
+
+  function saveState(storage, state) {
+    storage.setItem(storageKey(state), JSON.stringify(state));
+    return state;
+  }
+
+  function applyAction(state, action, value, now) {
+    const next = JSON.parse(JSON.stringify(state));
+    const timestamp = now || new Date().toISOString();
+    if (action === "accept" || action === "false_positive") {
+      next.disposition = action;
+      next.timestamps.disposition = timestamp;
+    } else if (action === "comment") {
+      next.comment = String(value || "").trim();
+      if (next.comment) next.timestamps.comment = timestamp;
+      else delete next.timestamps.comment;
+    } else if (action === "severity_override") {
+      const severity = String(value || "");
+      if (severity && !SEVERITIES.has(severity)) {
+        throw new Error("invalid severity override");
+      }
+      next.severity_override = severity || null;
+      if (next.severity_override) next.timestamps.severity_override = timestamp;
+      else delete next.timestamps.severity_override;
+    } else {
+      throw new Error("unknown feedback action");
+    }
+    next.updated_at = timestamp;
+    return next;
+  }
+
+  function baseEvent(state, action, createdAt) {
+    return {
+      target_type: "finding",
+      target_id: state.target_id,
+      action,
+      fingerprint: state.fingerprint,
+      graph_id: state.graph_id,
+      run_id: state.run_id,
+      created_at: createdAt,
+    };
+  }
+
+  function stateToEvents(state) {
+    const events = [];
+    if (state.disposition) {
+      events.push(baseEvent(state, state.disposition, state.timestamps.disposition));
+    }
+    if (state.comment) {
+      events.push({
+        ...baseEvent(state, "comment", state.timestamps.comment),
+        comment: state.comment,
+      });
+    }
+    if (state.severity_override) {
+      events.push({
+        ...baseEvent(state, "severity_override", state.timestamps.severity_override),
+        severity: state.severity_override,
+      });
+    }
+    return events;
+  }
+
+  function exportJsonl(states) {
+    const lines = states.flatMap(stateToEvents).map((event) => JSON.stringify(event));
+    return lines.length ? `${lines.join("\n")}\n` : "";
+  }
+
+  function memoryStorage() {
+    const values = new Map();
+    return {
+      getItem(key) { return values.has(key) ? values.get(key) : null; },
+      setItem(key, value) { values.set(key, String(value)); },
+    };
+  }
+
+  function renderState(panel, state, syncInputs) {
+    panel.querySelectorAll("[data-feedback-action='accept'], [data-feedback-action='false_positive']")
+      .forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.feedbackAction === state.disposition));
+      });
+    const badge = panel.querySelector("[data-feedback-state]");
+    const displayState = state.disposition
+      || (state.comment || state.severity_override ? "edited" : "pending");
+    badge.textContent = {
+      accept: "已接受",
+      false_positive: "已标记误报",
+      edited: "已编辑",
+      pending: "待决策",
+    }[displayState];
+    if (syncInputs) {
+      panel.querySelector("[data-feedback-comment]").value = state.comment || "";
+      panel.querySelector("[data-feedback-severity]").value = state.severity_override || "";
+    }
+  }
+
+  function init(documentObject, rootObject) {
+    const shell = documentObject.querySelector("[data-graph-id][data-run-id]");
+    if (!shell) return;
+    let storage;
+    try {
+      storage = rootObject.localStorage;
+      const probe = `${PREFIX}:probe`;
+      storage.setItem(probe, "1");
+      storage.removeItem(probe);
+    } catch (_error) {
+      storage = memoryStorage();
+    }
+
+    const panels = Array.from(documentObject.querySelectorAll("[data-feedback-for][data-fingerprint]"));
+    const entries = panels.map((panel) => {
+      const identity = {
+        graph_id: shell.dataset.graphId,
+        run_id: shell.dataset.runId,
+        target_id: panel.dataset.feedbackFor,
+        fingerprint: panel.dataset.fingerprint,
+      };
+      let state = loadState(storage, identity);
+      renderState(panel, state, true);
+      const message = panel.querySelector("[data-feedback-message]");
+
+      panel.querySelectorAll("[data-feedback-action]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.feedbackAction;
+          const value = action === "comment"
+            ? panel.querySelector("[data-feedback-comment]").value
+            : null;
+          state = applyAction(state, action, value);
+          try { saveState(storage, state); } catch (_error) { /* in-memory state remains usable */ }
+          renderState(panel, state, false);
+          message.textContent = action === "comment" && !state.comment ? "评论已移除" : "决策已保存在当前浏览器";
+        });
+      });
+      panel.querySelector("[data-feedback-severity]").addEventListener("change", (event) => {
+        state = applyAction(state, "severity_override", event.target.value);
+        try { saveState(storage, state); } catch (_error) { /* in-memory state remains usable */ }
+        renderState(panel, state, false);
+        message.textContent = state.severity_override ? "严重度调整已保存" : "已恢复原严重度";
+      });
+      return { getState: () => state };
+    });
+
+    const exportButton = documentObject.querySelector("[data-feedback-export]");
+    const exportStatus = documentObject.querySelector("[data-feedback-export-status]");
+    if (exportButton && exportStatus) {
+      exportButton.addEventListener("click", () => {
+        const jsonl = exportJsonl(entries.map((entry) => entry.getState()));
+        if (!jsonl) {
+          exportStatus.textContent = "暂无可导出的决策";
+          return;
+        }
+        const blob = new rootObject.Blob([jsonl], { type: "application/x-ndjson;charset=utf-8" });
+        const url = rootObject.URL.createObjectURL(blob);
+        const link = documentObject.createElement("a");
+        link.href = url;
+        link.download = "audit-feedback.jsonl";
+        documentObject.body.appendChild(link);
+        link.click();
+        link.remove();
+        rootObject.URL.revokeObjectURL(url);
+        exportStatus.textContent = `已导出 ${jsonl.trimEnd().split("\n").length} 条决策`;
+      });
+    }
+    documentObject.documentElement.dataset.evidentloopReady = "true";
+  }
+
+  return {
+    PREFIX,
+    applyAction,
+    defaultState,
+    exportJsonl,
+    init,
+    loadState,
+    memoryStorage,
+    saveState,
+    stateToEvents,
+    storageKey,
+    validState,
+  };
+});
+</script>
+</body>
+</html>

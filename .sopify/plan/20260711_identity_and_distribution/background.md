@@ -16,7 +16,7 @@
 评分理由：
 
 - 方案质量扣 1 分：Pages、Trusted Publishing 与 GitHub Release evidence 仍需在真实发布链路中验证。
-- 落地就绪扣 2 分：身份迁移、CLI/Skill 和宿主 E2E 已完成，Pages、dogfood evidence 与正式发布尚待完成。
+- 落地就绪扣 2 分：身份迁移、CLI/Skill、宿主 E2E 和 Wave 5 evidence 已完成，Pages 启用、Trusted Publishing 与正式发布尚待完成。
 
 ## 决策状态
 

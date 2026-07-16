@@ -85,6 +85,8 @@ python -m build
 
 参考：[Pages 与样例报告](https://evidentloop.github.io/evidentloop/) · [v0 范围](https://github.com/evidentloop/evidentloop/blob/main/docs/v0-scope.md) · [数据模型](https://github.com/evidentloop/evidentloop/blob/main/docs/data-model.md) · [AI host 集成](https://github.com/evidentloop/evidentloop/blob/main/docs/ai-host-integration.md)
 
+欢迎通过 [GitHub Issues](https://github.com/evidentloop/evidentloop/issues) 提交 Alpha 使用反馈与缺陷。
+
 ## License
 
 本项目采用 [MIT License](https://github.com/evidentloop/evidentloop/blob/main/LICENSE)。

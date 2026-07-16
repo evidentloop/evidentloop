@@ -87,6 +87,8 @@ python -m build
 
 References: [Pages and sample report](https://evidentloop.github.io/evidentloop/) · [V0 scope](https://github.com/evidentloop/evidentloop/blob/main/docs/v0-scope.md) · [Data model](https://github.com/evidentloop/evidentloop/blob/main/docs/data-model.md) · [AI host integration](https://github.com/evidentloop/evidentloop/blob/main/docs/ai-host-integration.md)
 
+Alpha feedback and bug reports are welcome in [GitHub Issues](https://github.com/evidentloop/evidentloop/issues).
+
 ## License
 
 Licensed under the [MIT License](https://github.com/evidentloop/evidentloop/blob/main/LICENSE).

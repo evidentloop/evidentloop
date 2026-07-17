@@ -8,7 +8,7 @@
   <style>{{ trusted_css | safe }}</style>
 </head>
 <body>
-  <main class="report-shell" data-graph-id="{{ audit.graph_id }}"{% if current_run %} data-run-id="{{ current_run.id }}"{% endif %}>
+  <main class="report-shell" data-graph-id="{{ audit.graph_id }}" data-audit-sha256="{{ source_audit_sha256 }}"{% if current_run %} data-run-id="{{ current_run.id }}"{% endif %}>
     <header class="hero {{ summary.verdict }}"{% if current_run %} data-node-id="{{ current_run.id }}" data-node-type="run"{% endif %}>
       <div class="hero-top">
         <div class="hero-copy">
@@ -22,7 +22,34 @@
         <div class="verdict-box">
           <span class="muted">当前结论</span>
           <strong>{{ verdict_label }}</strong>
-          <div class="ref">机器结论：{{ verdict_label }}</div>
+          {% if is_feedback_revision %}
+          <div class="human-notice">{{ summary.notice }}</div>
+          {% else %}
+          <div class="ref">来自模型审查</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="judgment-grid" aria-label="模型判断、人工裁定与当前状态">
+        <div class="judgment-card">
+          <span>模型原判断</span>
+          <strong>{{ model_verdict_label }}</strong>
+          <div class="ref">原风险分：{{ model_risk_score_label }}</div>
+        </div>
+        <div class="judgment-card">
+          <span>我的裁定</span>
+          {% if is_feedback_revision %}
+          <strong>{{ human_disposition_count }} 项结论裁定</strong>
+          <div class="ref">{{ human_severity_count }} 项严重度调整 · {{ human_comment_count }} 条评论</div>
+          {% else %}
+          <strong>尚未写入报告</strong>
+          <div class="ref">可在问题卡片中记录待更新裁定</div>
+          {% endif %}
+        </div>
+        <div class="judgment-card">
+          <span>当前剩余问题</span>
+          <strong>{{ summary.open_finding_count }} 项</strong>
+          <div class="ref">当前结论：{{ verdict_label }} · 风险分：{{ risk_score_label }}</div>
         </div>
       </div>
 
@@ -139,7 +166,7 @@
                 {% if finding.get('file_path') %}{{ finding.file_path }}{% if finding.get('start_line') %}:{{ finding.start_line }}{% if finding.end_line != finding.start_line %}-{{ finding.end_line }}{% endif %}{% endif %}{% else %}位置未确认{% endif %}
               </span>
             </div>
-            <span class="badge {{ 'ok' if finding.status == 'fixed' else 'warn' }}">{{ view.status_label }}</span>
+            <span class="badge {{ 'ok' if finding.status == 'fixed' else ('soft' if finding.status == 'dismissed' else 'warn') }}">{{ view.status_label }}</span>
           </div>
           <div class="finding-body">
             <div class="finding-layout">
@@ -205,13 +232,37 @@
             </div>
             {% endfor %}
 
-            <div class="feedback-placeholder" data-feedback-for="{{ finding.id }}" data-fingerprint="{{ finding.fingerprint }}">
+            <div class="finding-judgments" aria-label="该问题的人机判断">
+              <div>
+                <span>模型原判断</span>
+                <strong>{{ view.model_status_label }} · {{ view.model_severity_label }}</strong>
+              </div>
+              <div>
+                <span>我的裁定</span>
+                {% if view.human_adjudication %}
+                <strong>{{ view.human_disposition_label or '未改变问题结论' }}</strong>
+                <div class="ref">
+                  {% if view.human_severity_label %}严重度改为{{ view.human_severity_label }}{% endif %}
+                  {% if view.human_severity_label and view.human_adjudication.get('comment') %} · {% endif %}
+                  {% if view.human_adjudication.get('comment') %}评论：{{ view.human_adjudication.comment }}{% endif %}
+                </div>
+                {% else %}
+                <strong>无</strong>
+                {% endif %}
+              </div>
+              <div>
+                <span>当前状态</span>
+                <strong>{{ view.status_label }} · {{ view.severity_label }}</strong>
+              </div>
+            </div>
+
+            <div class="feedback-placeholder" data-feedback-for="{{ finding.id }}" data-fingerprint="{{ finding.fingerprint }}" data-applied-disposition="{{ view.human_adjudication.get('disposition', '') }}" data-applied-comment="{{ view.human_adjudication.get('comment', '') }}" data-applied-severity="{{ view.human_adjudication.get('severity_override', '') }}">
               <div class="feedback-heading">
-                <div><strong>人工决策</strong><div class="ref">接受问题、标记误报、补充评论或调整严重度。</div></div>
+                <div><strong>更新我的裁定</strong><div class="ref">只记录相对当前报告的新变化，不触发代码修改或模型复审。</div></div>
                 <span class="badge soft" data-feedback-state>待决策</span>
               </div>
               <div class="feedback-actions" role="group" aria-label="问题决策">
-                <button type="button" class="button" data-feedback-action="accept" aria-pressed="false">接受</button>
+                <button type="button" class="button" data-feedback-action="accept" aria-pressed="false">确认有效</button>
                 <button type="button" class="button" data-feedback-action="false_positive" aria-pressed="false">标记误报</button>
               </div>
               <details class="feedback-more">
@@ -220,7 +271,7 @@
                 <label>
                   严重度调整
                   <select data-feedback-severity>
-                    <option value="">保持原值</option>
+                    <option value="">恢复模型原严重度</option>
                     <option value="high">高</option>
                     <option value="medium">中</option>
                     <option value="low">低</option>
@@ -229,7 +280,7 @@
                 </label>
                 <label>
                   评论
-                  <textarea rows="3" maxlength="2000" placeholder="可选；清空后保存会移除已有评论" data-feedback-comment></textarea>
+                  <textarea rows="3" maxlength="4000" placeholder="可选；清空后保存会移除已有评论" data-feedback-comment></textarea>
                 </label>
                 <div class="feedback-comment-actions">
                   <button type="button" class="button" data-feedback-action="comment">保存评论</button>
@@ -248,13 +299,15 @@
     {% if feedback_target_count %}
     <section class="panel feedback-toolbar" aria-labelledby="feedback-export-title">
       <div>
-        <h2 id="feedback-export-title">人工决策</h2>
-        <p class="muted">决策仅保存在当前浏览器，并按 graph、run 与 finding fingerprint 隔离；不会写回 <code>audit.json</code>。</p>
-        <p class="ref">导出会下载 <code>audit-feedback.jsonl</code>；浏览器下载位置不保证等于本审计目录。</p>
+        <h2 id="feedback-export-title">把裁定交给 AI 更新报告</h2>
+        <p class="muted">待更新内容仅保存在当前浏览器，并按 graph、run 与 finding fingerprint 隔离；点击复制前不会离开本页。</p>
+        <p class="ref" data-feedback-summary>0 项决策 · 0 条评论 · 不自动上传</p>
+        <p class="ref" data-feedback-storage-status>本地保存可用</p>
       </div>
       <div class="feedback-export-actions">
-        <button type="button" class="button primary" data-feedback-export>导出 audit-feedback.jsonl</button>
-        <span class="ref" role="status" aria-live="polite" data-feedback-export-status>尚未导出</span>
+        <button type="button" class="button primary" data-feedback-copy>复制给 AI 更新报告</button>
+        <button type="button" class="button secondary" data-feedback-export>下载 JSONL</button>
+        <span class="ref" role="status" aria-live="polite" data-feedback-export-status>尚未复制</span>
       </div>
     </section>
     {% endif %}
@@ -293,8 +346,23 @@
         <table class="data-table">
           <thead><tr><th>运行</th><th>状态</th><th>摘要</th></tr></thead>
           <tbody>
-            {% for run in audit.runs %}
-            <tr data-node-id="{{ run.id }}" data-node-type="run"><td>{{ run.label }}</td><td>{{ run_status_labels.get(run.status, run.status) }}</td><td>{{ run.summary }}</td></tr>
+            {% for view in run_views %}
+            {% set run = view.run %}
+            <tr data-node-id="{{ run.id }}" data-node-type="run">
+              <td>{{ run.label }}<div class="ref">{{ view.kind_label }}</div></td>
+              <td>{{ run_status_labels.get(run.status, run.status) }}</td>
+              <td>
+                {{ run.summary }}
+                {% if view.source_run_id %}
+                <details class="revision-details">
+                  <summary>修订详情 · 本轮采用 {{ view.feedback_count }} 条反馈</summary>
+                  <div class="ref">source run：{{ view.source_run_id }}</div>
+                  <div class="ref">source audit：{{ view.source_audit_sha256 }}</div>
+                  <div class="ref">feedback：{{ view.feedback_sha256 }}</div>
+                </details>
+                {% endif %}
+              </td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>

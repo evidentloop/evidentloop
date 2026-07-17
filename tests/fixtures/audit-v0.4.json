@@ -1,0 +1,201 @@
+{
+  "schema_version": "0.4",
+  "graph_id": "audit:test-fixture:20260717",
+  "source": {
+    "type": "git_diff",
+    "ref": "HEAD~1",
+    "description": "auth token refresh 修复审计"
+  },
+  "runs": [
+    {
+      "id": "run-001",
+      "label": "token refresh 修复审计",
+      "status": "concerns",
+      "summary": "修复了 token 过期时返回旧 token 的问题，但缓存层和测试覆盖仍有缺口。",
+      "kind": "model_review",
+      "summary_audit": {
+        "status": "partial",
+        "claims": [
+          {
+            "id": "claim-001",
+            "text": "token refresh 已完全修复，过期 token 不再返回",
+            "status": "challenged"
+          }
+        ]
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "change-001",
+      "type": "change",
+      "title": "Fix auth token refresh",
+      "summary": "将 token 过期时的行为从返回旧 token 改为抛出 TokenExpiredError，并补充了过期处理路径。"
+    },
+    {
+      "id": "file-auth-service",
+      "type": "file",
+      "path": "src/auth_service.py",
+      "role": "implementation",
+      "additions": 6,
+      "deletions": 2,
+      "change_type": "modified"
+    },
+    {
+      "id": "file-auth-test",
+      "type": "file",
+      "path": "tests/test_auth.py",
+      "role": "test",
+      "additions": 11,
+      "deletions": 0,
+      "change_type": "modified"
+    },
+    {
+      "id": "finding-001",
+      "type": "finding",
+      "category": "bug",
+      "severity": "high",
+      "status": "open",
+      "title": "旧 token 仍可能被缓存层返回",
+      "detail": "refresh_token 已修复直接抛出异常，但 get_token 函数在调用 refresh 前会先查 Redis 缓存。如果缓存未过期，旧 token 仍会被返回给调用方。",
+      "file_path": "src/auth_service.py",
+      "hunk_id": "hunk:src/auth_service.py:38:1",
+      "start_line": 39,
+      "end_line": 41,
+      "line_side": "new",
+      "highlight_lines": [39, 40, 41],
+      "hunk": "@@ -38,9 +38,12 @@\n     def get_token(self, user_id: str) -> Token:\n         cached = self.cache.get(f\"token:{user_id}\")\n         if cached and not cached.expired:\n             return cached\n \n         token = self.fetch_token(user_id)\n-        if token.expired:\n-            return token\n+        if token.expired:\n+            raise TokenExpiredError(\n+                f\"Token for {user_id} expired at {token.expires_at}\"\n+            )\n+        self.cache.set(f\"token:{user_id}\", token, ttl=token.ttl)\n         return token",
+      "fingerprint": "sha256:8dff2181ef31abd0da2e48485f1809dbaf5379d69f89335c89ae1a09465ae681",
+      "model_judgment": {
+        "status": "open",
+        "severity": "high"
+      }
+    },
+    {
+      "id": "finding-002",
+      "type": "finding",
+      "category": "quality",
+      "severity": "medium",
+      "status": "open",
+      "title": "缺少 token 过期边界时间的测试",
+      "detail": "新增的测试覆盖了 token 已过期和未过期两种情况，但没有覆盖恰好处于过期边界（expires_at == now）的情况。这在时钟漂移场景下可能导致不确定行为。",
+      "file_path": "tests/test_auth.py",
+      "hunk_id": "hunk:tests/test_auth.py:67:1",
+      "start_line": 78,
+      "end_line": 82,
+      "line_side": "new",
+      "highlight_lines": [78, 79, 80, 81, 82],
+      "hunk": "@@ -67,6 +67,18 @@\n     def test_expired_token_raises():\n         service = AuthService(cache=FakeCache())\n         with pytest.raises(TokenExpiredError):\n             service.get_token(\"user-expired\")\n \n+    def test_valid_token_returned():\n+        service = AuthService(cache=FakeCache())\n+        token = service.get_token(\"user-valid\")\n+        assert token.value == \"valid-token-123\"\n+        assert not token.expired\n+\n+    # TODO: 缺少 expires_at == now 的边界测试\n+    # def test_boundary_expiry():\n+    #     service = AuthService(cache=FakeCache())\n+    #     token = service.get_token(\"user-boundary\")\n+    #     ???\n+\n     def test_cache_miss_fetches_new():",
+      "fingerprint": "sha256:8eb3f0b05ecd189b40e9ea87341cf6342f122ace30645f1e0802a5972687faff",
+      "model_judgment": {
+        "status": "open",
+        "severity": "medium"
+      }
+    },
+    {
+      "id": "evidence-001",
+      "type": "evidence",
+      "source": "pytest",
+      "status": "pass",
+      "summary": "pytest tests/test_auth.py — 4 passed, 0 failed"
+    },
+    {
+      "id": "evidence-002",
+      "type": "evidence",
+      "source": "host_llm",
+      "status": "fail",
+      "summary": "隔离宿主审查标记 get_token 缓存路径可能绕过 refresh_token 修复"
+    },
+    {
+      "id": "fix-001",
+      "type": "fix",
+      "status": "open",
+      "priority": "p0",
+      "title": "在 refresh 成功后立即更新缓存",
+      "detail": "在 get_token 的 refresh 路径中，fetch_token 返回新 token 后应先清除旧缓存再写入新 token。"
+    },
+    {
+      "id": "fix-002",
+      "type": "fix",
+      "status": "open",
+      "priority": "p1",
+      "title": "补充 expires_at == now 的边界测试用例",
+      "detail": "使用 freezegun 或 mock datetime 固定时间，测试 token 恰好处于过期边界时的行为。"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-001",
+      "type": "contains_change",
+      "from": "run-001",
+      "to": "change-001"
+    },
+    {
+      "id": "edge-002",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-auth-service"
+    },
+    {
+      "id": "edge-003",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-auth-test"
+    },
+    {
+      "id": "edge-004",
+      "type": "finding_in_file",
+      "from": "finding-001",
+      "to": "file-auth-service"
+    },
+    {
+      "id": "edge-005",
+      "type": "finding_in_file",
+      "from": "finding-002",
+      "to": "file-auth-test"
+    },
+    {
+      "id": "edge-006",
+      "type": "requires_fix",
+      "from": "finding-001",
+      "to": "fix-001"
+    },
+    {
+      "id": "edge-007",
+      "type": "requires_fix",
+      "from": "finding-002",
+      "to": "fix-002"
+    },
+    {
+      "id": "edge-008",
+      "type": "supported_by_evidence",
+      "from": "finding-001",
+      "to": "evidence-002"
+    },
+    {
+      "id": "edge-009",
+      "type": "supported_by_evidence",
+      "from": "finding-002",
+      "to": "evidence-002"
+    },
+    {
+      "id": "edge-010",
+      "type": "challenges_claim",
+      "from": "finding-001",
+      "to": "run-001",
+      "claim_id": "claim-001"
+    }
+  ],
+  "summary": {
+    "review_status": "complete",
+    "risk_score": 58,
+    "finding_count": 2,
+    "unscored_finding_count": 0,
+    "open_finding_count": 2,
+    "fix_count": 2,
+    "fix_done_count": 0,
+    "summary_audit_status": "partial",
+    "verdict": "concerns",
+    "basis": "model_review"
+  }
+}

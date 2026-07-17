@@ -12,7 +12,7 @@ from jsonschema import Draft202012Validator
 from .renderers.hunk import HunkParseError, parse_hunk
 
 
-SCHEMA_VERSION = "0.3"
+SCHEMA_VERSION = "0.4"
 
 
 @dataclass(frozen=True)
@@ -39,7 +39,8 @@ class AuditValidationError(ValueError):
     def __init__(self, issues: Iterable[ValidationIssue]) -> None:
         self.issues = tuple(issues)
         summary = "; ".join(
-            f"{issue.code} at {issue.path}: {issue.message}" for issue in self.issues[:5]
+            f"{issue.code} at {issue.path}: {issue.message}"
+            for issue in self.issues[:5]
         )
         if len(self.issues) > 5:
             summary += f"; and {len(self.issues) - 5} more"
@@ -48,7 +49,9 @@ class AuditValidationError(ValueError):
 
 def load_audit_schema() -> dict[str, Any]:
     """Load the packaged JSON Schema 2020-12 contract."""
-    resource = files("evidentloop.schemas").joinpath("audit-v0.3.schema.json")
+    resource = files("evidentloop.schemas").joinpath(
+        f"audit-v{SCHEMA_VERSION}.schema.json"
+    )
     return json.loads(resource.read_text(encoding="utf-8"))
 
 
@@ -61,7 +64,9 @@ def validate_structure(data: Any) -> list[ValidationIssue]:
     """Validate only the JSON Schema layer."""
     validator = Draft202012Validator(load_audit_schema())
     issues: list[ValidationIssue] = []
-    for error in sorted(validator.iter_errors(data), key=lambda item: list(item.absolute_path)):
+    for error in sorted(
+        validator.iter_errors(data), key=lambda item: list(item.absolute_path)
+    ):
         issues.append(
             ValidationIssue(
                 code=f"schema.{error.validator}",
@@ -169,7 +174,11 @@ def _validate_summary(
                 "concerns requires open findings and a numeric risk score",
             )
     elif verdict == "needs_human_triage":
-        if not open_findings or len(unscored) != len(open_findings) or score is not None:
+        if (
+            not open_findings
+            or len(unscored) != len(open_findings)
+            or score is not None
+        ):
             _issue(
                 issues,
                 "summary.invalid_human_triage",
@@ -184,6 +193,317 @@ def _validate_summary(
                 "/summary/risk_score",
                 "inconclusive verdict must not have a numeric risk score",
             )
+
+
+def _revision_event_state(
+    finding: Mapping[str, Any],
+) -> dict[str, Any]:
+    model = finding["model_judgment"]
+    return {
+        "status": model["status"],
+        "severity": model["severity"],
+        "human": {},
+    }
+
+
+def _apply_revision_event(
+    state: dict[str, Any], event: Mapping[str, Any], run_id: str
+) -> None:
+    action = event["action"]
+    human = state["human"]
+    human.pop("applied_run_id", None)
+    if action == "accept":
+        state["status"] = "open"
+        human["disposition"] = "accept"
+    elif action == "false_positive":
+        state["status"] = "dismissed"
+        human["disposition"] = "false_positive"
+    elif action == "comment":
+        if event.get("comment") is None:
+            human.pop("comment", None)
+        else:
+            human["comment"] = event["comment"]
+    elif action == "severity_override":
+        severity = event.get("severity")
+        if severity is None:
+            state["severity"] = state["model_severity"]
+            human.pop("severity_override", None)
+        else:
+            state["severity"] = severity
+            human["severity_override"] = severity
+    if human:
+        human["applied_run_id"] = run_id
+    else:
+        human.clear()
+
+
+def _validate_revisions(
+    data: Mapping[str, Any],
+    nodes: list[Mapping[str, Any]],
+    edges: list[Mapping[str, Any]],
+    issues: list[ValidationIssue],
+) -> None:
+    from .audit.feedback import FeedbackError, normalize_feedback
+    from .audit.summary import build_summary
+
+    runs = data["runs"]
+    revision_runs = [
+        (index, run)
+        for index, run in enumerate(runs)
+        if run.get("kind") == "feedback_revision"
+    ]
+    findings = {node["id"]: node for node in nodes if node["type"] == "finding"}
+    states = {
+        finding_id: _revision_event_state(finding)
+        for finding_id, finding in findings.items()
+    }
+    for state in states.values():
+        state["model_severity"] = state["severity"]
+
+    if not revision_runs:
+        summary = data["summary"]
+        if summary.get("basis") != "model_review":
+            _issue(
+                issues,
+                "revision.model_summary_basis",
+                "/summary/basis",
+                "a report without feedback revision runs must use model_review basis",
+            )
+        human_summary_fields = {
+            "risk_delta",
+            "model_verdict",
+            "model_risk_score",
+            "notice",
+        }
+        orphan_fields = sorted(human_summary_fields.intersection(summary))
+        if orphan_fields:
+            _issue(
+                issues,
+                "revision.orphan_human_summary",
+                "/summary",
+                "human adjudication summary fields require a feedback revision run: "
+                + ", ".join(orphan_fields),
+            )
+        for finding_id, finding in findings.items():
+            if "human_adjudication" in finding:
+                _issue(
+                    issues,
+                    "revision.orphan_human_adjudication",
+                    "/nodes",
+                    "human adjudication requires a feedback revision run",
+                    str(finding_id),
+                )
+            model = finding["model_judgment"]
+            if (
+                finding["status"] != model["status"]
+                or finding["severity"] != model["severity"]
+            ):
+                _issue(
+                    issues,
+                    "revision.model_judgment_mismatch",
+                    "/nodes",
+                    "model-only finding state must match model_judgment",
+                    str(finding_id),
+                )
+        return
+    first_revision_index = revision_runs[0][0]
+    if any(
+        run.get("kind") != "feedback_revision" for run in runs[first_revision_index:]
+    ):
+        _issue(
+            issues,
+            "revision.invalid_run_order",
+            "/runs",
+            "model review runs cannot follow feedback revision runs",
+        )
+    first_snapshot = revision_runs[0][1]["revision"]["source_summary"]
+    expected_source_summary = first_snapshot
+    empty_verdict = (
+        "pass_candidate"
+        if first_snapshot["review_status"] == "complete"
+        and first_snapshot["verdict"] in {"pass_candidate", "concerns"}
+        else "inconclusive"
+    )
+    fixes = [node for node in nodes if node["type"] == "fix"]
+    prior_effective = {
+        finding_id: (state["status"], state["severity"])
+        for finding_id, state in states.items()
+    }
+    for index, run in revision_runs:
+        revision = run["revision"]
+        try:
+            normalized_events, normalized_hash = normalize_feedback(revision["events"])
+        except FeedbackError as exc:
+            _issue(
+                issues,
+                "revision.invalid_events",
+                f"/runs/{index}/revision/events",
+                str(exc),
+                str(run["id"]),
+            )
+            normalized_events = []
+            normalized_hash = None
+        if normalized_events != revision["events"]:
+            _issue(
+                issues,
+                "revision.events_not_normalized",
+                f"/runs/{index}/revision/events",
+                "revision events must be deduplicated and in canonical order",
+                str(run["id"]),
+            )
+        if normalized_hash != revision["feedback_sha256"]:
+            _issue(
+                issues,
+                "revision.feedback_hash_mismatch",
+                f"/runs/{index}/revision/feedback_sha256",
+                "feedback_sha256 does not match the normalized adopted events",
+                str(run["id"]),
+            )
+        expected_source_run = runs[index - 1]["id"] if index else None
+        if index == 0 or revision["source_run_id"] != expected_source_run:
+            _issue(
+                issues,
+                "revision.source_run_mismatch",
+                f"/runs/{index}/revision/source_run_id",
+                "feedback revision must reference the immediately preceding run",
+                str(run["id"]),
+            )
+        matching_edges = [
+            edge
+            for edge in edges
+            if edge["type"] == "supersedes_run"
+            and edge["from"] == run["id"]
+            and edge["to"] == revision["source_run_id"]
+        ]
+        if len(matching_edges) != 1:
+            _issue(
+                issues,
+                "revision.lineage_mismatch",
+                f"/runs/{index}/revision",
+                "feedback revision requires exactly one supersedes_run edge",
+                str(run["id"]),
+            )
+        if revision["source_summary"] != expected_source_summary:
+            _issue(
+                issues,
+                "revision.source_summary_mismatch",
+                f"/runs/{index}/revision/source_summary",
+                "source_summary does not match the preceding revision state",
+                str(run["id"]),
+            )
+        for event in revision["events"]:
+            target_id = event["target_id"]
+            finding = findings.get(target_id)
+            if finding is None:
+                _issue(
+                    issues,
+                    "revision.unknown_finding",
+                    f"/runs/{index}/revision/events",
+                    "feedback target does not exist",
+                    str(target_id),
+                )
+                continue
+            if (
+                event["graph_id"] != data["graph_id"]
+                or event["run_id"] != revision["source_run_id"]
+                or event["fingerprint"] != finding["fingerprint"]
+                or event["source_audit_sha256"] != revision["source_audit_sha256"]
+            ):
+                _issue(
+                    issues,
+                    "revision.event_identity_mismatch",
+                    f"/runs/{index}/revision/events",
+                    "feedback event identity does not match its revision source",
+                    str(target_id),
+                )
+                continue
+            _apply_revision_event(states[target_id], event, str(run["id"]))
+
+        projected = []
+        for finding_id, finding in findings.items():
+            item = dict(finding)
+            item["status"] = states[finding_id]["status"]
+            item["severity"] = states[finding_id]["severity"]
+            projected.append(item)
+        current_effective = {
+            finding_id: (state["status"], state["severity"])
+            for finding_id, state in states.items()
+        }
+        if prior_effective == current_effective:
+            calculated = {
+                field: expected_source_summary[field]
+                for field in (
+                    "review_status",
+                    "verdict",
+                    "risk_score",
+                    "finding_count",
+                    "unscored_finding_count",
+                    "open_finding_count",
+                    "fix_count",
+                    "fix_done_count",
+                )
+                if field in expected_source_summary
+            }
+        else:
+            calculated = build_summary(
+                projected,
+                fixes,
+                review_status=first_snapshot["review_status"],
+                empty_verdict=empty_verdict,
+            )
+        calculated["summary_audit_status"] = first_snapshot.get(
+            "summary_audit_status", "not_audited"
+        )
+        calculated["risk_delta"] = (
+            calculated["risk_score"] - expected_source_summary["risk_score"]
+            if calculated["risk_score"] is not None
+            and expected_source_summary["risk_score"] is not None
+            else None
+        )
+        calculated.update(
+            {
+                "basis": "human_adjudication",
+                "model_verdict": first_snapshot["verdict"],
+                "model_risk_score": first_snapshot["risk_score"],
+                "notice": "基于人工裁定，未重新审查代码",
+            }
+        )
+        if "extensions" in first_snapshot:
+            calculated["extensions"] = first_snapshot["extensions"]
+        expected_source_summary = calculated
+        prior_effective = current_effective
+        if run["status"] != calculated["verdict"]:
+            _issue(
+                issues,
+                "revision.run_verdict_mismatch",
+                f"/runs/{index}/status",
+                "revision run status does not match replayed feedback",
+                str(run["id"]),
+            )
+
+    for finding_id, finding in findings.items():
+        state = states[finding_id]
+        expected_human = state["human"] or None
+        if (
+            finding["status"] != state["status"]
+            or finding["severity"] != state["severity"]
+            or finding.get("human_adjudication") != expected_human
+        ):
+            _issue(
+                issues,
+                "revision.finding_state_mismatch",
+                "/nodes",
+                "finding state does not match replayed feedback",
+                str(finding_id),
+            )
+    comparable = {key: data["summary"].get(key) for key in expected_source_summary}
+    if comparable != expected_source_summary:
+        _issue(
+            issues,
+            "revision.summary_mismatch",
+            "/summary",
+            "summary does not match replayed feedback",
+        )
 
 
 def _validate_finding_anchor(
@@ -258,7 +578,11 @@ def _validate_finding_anchor(
             str(node["id"]),
         )
     highlights = set(node["highlight_lines"])
-    if not highlights or not highlights.issubset(expected_range) or not highlights.issubset(available):
+    if (
+        not highlights
+        or not highlights.issubset(expected_range)
+        or not highlights.issubset(available)
+    ):
         _issue(
             issues,
             "anchor.invalid_highlight",
@@ -294,7 +618,9 @@ def validate_semantics(data: Mapping[str, Any]) -> list[ValidationIssue]:
                 all_ids[identifier] = path
             if kind != "edge":
                 entities[identifier] = record
-                entity_types[identifier] = "run" if kind == "run" else str(record["type"])
+                entity_types[identifier] = (
+                    "run" if kind == "run" else str(record["type"])
+                )
 
     claim_owners: dict[str, str] = {}
     for collection, records in (("runs", runs), ("nodes", nodes)):
@@ -411,9 +737,7 @@ def validate_semantics(data: Mapping[str, Any]) -> list[ValidationIssue]:
             finding_file_edges[source_id] = target_id
 
     file_paths = {
-        str(node["id"]): str(node["path"])
-        for node in nodes
-        if node["type"] == "file"
+        str(node["id"]): str(node["path"]) for node in nodes if node["type"] == "file"
     }
     fingerprints: dict[str, str] = {}
     for index, node in enumerate(nodes):
@@ -465,6 +789,7 @@ def validate_semantics(data: Mapping[str, Any]) -> list[ValidationIssue]:
             )
 
     _validate_summary(data, nodes, issues)
+    _validate_revisions(data, nodes, edges, issues)
     if runs and runs[-1]["status"] != data["summary"]["verdict"]:
         _issue(
             issues,

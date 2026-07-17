@@ -1,0 +1,31 @@
+{
+  "evidence": {
+    "commands": [
+      "pytest -p no:cacheprovider -q",
+      "ruff check .",
+      "node --check evidentloop/renderers/static/audit.js",
+      "node tests/js/audit-feedback.test.cjs",
+      "python -m build",
+      "python scripts/check_release_boundaries.py",
+      "clean-wheel doctor, module CLI, demo and in-place revision smoke",
+      "git diff --check"
+    ],
+    "result": "passed",
+    "retry_count": 0,
+    "review_result": {
+      "code_quality": "passed",
+      "spec_compliance": "passed",
+      "user_language": "passed"
+    },
+    "scope": "schema 0.4 feedback adjudication, in-place report revision, failure recovery, Skill and documentation closure",
+    "verification_source": "project_contract"
+  },
+  "provenance": {
+    "plan_id": "20260716_feedback_revision_loop",
+    "receipt_id": "final",
+    "source": "user_authorized_finalize",
+    "workspace": "<REPOSITORY_ROOT>"
+  },
+  "timestamp": "2026-07-17T09:21:08Z",
+  "verdict": "finalized"
+}

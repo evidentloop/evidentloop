@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from .audit.finalize import AuditWorkflowError, finalize_review, prepare_local_diff
+from .audit.revision import RevisionError, revise_audit
 from .demo import DemoError, run_demo
 from .doctor import collect_diagnostics, render_diagnostics
 from .renderers.html import AuditRenderError, render_audit_file
@@ -29,6 +30,12 @@ def _parser() -> argparse.ArgumentParser:
     render = commands.add_parser("render", help="render a validated audit.json")
     render.add_argument("input_json", type=Path)
     render.add_argument("--out", type=Path, required=True)
+    revise = commands.add_parser(
+        "revise", help="apply finding feedback to an audit report"
+    )
+    revise.add_argument("source_audit_json", type=Path)
+    revise.add_argument("--feedback", type=Path, required=True)
+    revise.add_argument("--out", type=Path)
     return parser
 
 
@@ -77,5 +84,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"evidentloop render: {exc}", file=sys.stderr)
             return 1
         print(result)
+        return 0
+    if args.command == "revise":
+        try:
+            result = revise_audit(args.source_audit_json, args.feedback, args.out)
+        except RevisionError as exc:
+            print(json.dumps(exc.to_dict(), ensure_ascii=False, sort_keys=True))
+            return 1
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 0
     return 2

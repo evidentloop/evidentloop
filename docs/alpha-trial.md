@@ -1,5 +1,7 @@
 # EvidentLoop Alpha 最小复跑清单
 
+> 冻结历史清单：本页绑定 `e6f3381` 候选及其 schema `0.3` wheel，只用于复验该候选，不代表当前 schema `0.4` 与反馈 revision 契约。
+
 本轮只验证固定候选的首次安装、Skill discovery 和一句话审计。主链是 `prepare → host review → finalize`；宿主能建立并确认独立 reviewer 上下文时，另记录隔离增强证据。Python 包不连接模型，也不包含模型 SDK 或 API key。
 
 当前固定候选为：

@@ -12,7 +12,7 @@ Design decisions:
     the normalizer at ingest time, not in the dataclass __post_init__.
 
 Note: SCHEMA_VERSION ("0.1-alpha") tracks the internal ReviewPack/ReviewResult
-schema. The public audit.json schema version ("0.3") is defined separately in
+schema. The current public audit.json schema version ("0.4") is defined separately in
 validation.py — they version different contracts.
 """
 

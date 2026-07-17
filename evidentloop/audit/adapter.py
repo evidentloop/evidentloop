@@ -7,17 +7,12 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import Any, Mapping
 
+from evidentloop.audit.summary import SEVERITY_WEIGHTS as SEVERITY_WEIGHTS
+from evidentloop.audit.summary import build_summary
 from evidentloop.renderers.hunk import parse_hunk
 from evidentloop.review.schema import Finding, ReviewResult, ReviewStatus
 from evidentloop.validation import SCHEMA_VERSION
 
-
-SEVERITY_WEIGHTS: dict[str, int] = {
-    "high": 40,
-    "medium": 20,
-    "low": 8,
-    "note": 2,
-}
 
 _BUG_CATEGORIES = {"bug", "logic_error", "semantic_equivalence", "correctness"}
 _RISK_CATEGORIES = {
@@ -261,6 +256,7 @@ def build_audit_graph(
             "title": review_finding.summary,
             "detail": review_finding.detail,
             "fingerprint": fingerprint,
+            "model_judgment": {"status": "open", "severity": severity},
             "extensions": {"evidentloop": extensions},
         }
         if trusted_file_path is not None:
@@ -317,25 +313,19 @@ def build_audit_graph(
     advisory_verdict = review_result.advisory_verdict.verdict.value
     if status != "complete":
         verdict = "inconclusive"
-        risk_score: int | None = None
     elif finding_count == 0:
         # A structurally complete reviewer response is not automatically a
         # clean result; preserve the core coverage/evidence adjudication.
         if advisory_verdict == "pass_candidate":
             verdict = "pass_candidate"
-            risk_score = 0
         else:
             verdict = "inconclusive"
-            risk_score = None
     elif advisory_verdict == "inconclusive":
         verdict = "inconclusive"
-        risk_score = None
     elif scored:
         verdict = "concerns"
-        risk_score = min(sum(SEVERITY_WEIGHTS[item["severity"]] for item in scored), 100)
     else:
         verdict = "needs_human_triage"
-        risk_score = None
 
     diagnostics = {
         "intent_coverage": review_result.intent_coverage.value,
@@ -354,6 +344,7 @@ def build_audit_graph(
     }
     run = dict(skeleton["run"])
     run["status"] = verdict
+    run["kind"] = "model_review"
     if status == "complete" and overall_assessment:
         run["summary"] = overall_assessment
     else:
@@ -362,16 +353,19 @@ def build_audit_graph(
             if status == "complete" and finding_count == 0
             else f"宿主审查生成 {finding_count} 条 finding，状态为 {status}。"
         )
+    calculated_summary = build_summary(
+        [node for node in nodes if node["type"] == "finding"],
+        [],
+        review_status=status,
+        empty_verdict="pass_candidate"
+        if verdict == "pass_candidate"
+        else "inconclusive",
+        force_inconclusive=verdict == "inconclusive" and finding_count > 0,
+    )
     summary = {
-        "review_status": status,
-        "verdict": verdict,
-        "risk_score": risk_score,
-        "finding_count": finding_count,
-        "unscored_finding_count": unscored,
-        "open_finding_count": finding_count,
-        "fix_count": 0,
-        "fix_done_count": 0,
+        **calculated_summary,
         "summary_audit_status": "not_audited",
+        "basis": "model_review",
         "extensions": {"evidentloop": {"review_diagnostics": diagnostics}},
     }
     audit = {

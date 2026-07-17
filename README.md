@@ -10,12 +10,12 @@
 <p align="center">
   <img alt="Status: Alpha" src="https://img.shields.io/badge/status-alpha-F59E0B">
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776AB">
-  <img alt="Code-diff schema 0.3" src="https://img.shields.io/badge/code--diff%20schema-0.3-0F766E">
+  <img alt="Code-diff schema 0.4" src="https://img.shields.io/badge/code--diff%20schema-0.4-0F766E">
 </p>
 
-![EvidentLoop product path from Git diff to human decisions](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a0/docs/assets/evidentloop-cover.png)
+![EvidentLoop product path from Git diff to human decisions](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a1/docs/assets/evidentloop-cover.png)
 
-EvidentLoop turns a local Git diff into a single HTML report. Any finding included in the risk score is tied to a real changed line, so you can verify it, mark false positives, add context, and export your decisions.
+EvidentLoop turns a local Git diff into a single HTML report. Any finding included in the risk score is tied to a real changed line, so you can verify it, record a decision, and ask your coding agent to update the same report without re-reviewing or changing code.
 
 The Alpha report UI and review text are Simplified Chinese.
 
@@ -47,19 +47,21 @@ Use EvidentLoop to audit my staged changes and generate the HTML report.
 |---|---|
 | `audit.json` | Validated audit record linking Git changes to findings. |
 | `audit.html` | Single-file report showing the relevant diff and browser-local decisions. |
-| `audit-feedback.jsonl` | Optional decision export. In this Alpha, exported feedback does not update the report or change code. |
+| `audit-feedback.jsonl` | Optional machine-readable decision export; the report's primary action copies the same payload for a coding agent. |
 
-| EvidentLoop self-audit overview | Offline demo: finding, changed line, and decision |
+| Schema 0.4 report overview | Human adjudication and copy-to-AI flow |
 |---|---|
-| [![EvidentLoop self-audit overview](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a0/docs/assets/evidentloop-report-overview.png)](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a0/docs/assets/evidentloop-report-overview.png) | [![Offline demo finding with changed-line evidence and browser-local decision](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a0/docs/assets/evidentloop-report-feedback.png)](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a0/docs/assets/evidentloop-report-feedback.png) |
+| [![Schema 0.4 report overview](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a1/docs/assets/evidentloop-report-overview.png)](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a1/docs/assets/evidentloop-report-overview.png) | [![Human adjudication and copy-to-AI flow](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a1/docs/assets/evidentloop-report-feedback.png)](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a1/docs/assets/evidentloop-report-feedback.png) |
 
-Open the HTML locally, or publish a redacted copy to static hosting. Feedback stays in each viewer's browser until exported; the report is shareable, but it is not a multi-user review service.
+Open the HTML locally, or publish a redacted copy to static hosting. Pending feedback stays in each viewer's browser until copied or downloaded; the report is shareable, but it is not a multi-user review service.
+
+After recording decisions, click **复制给 AI 更新报告** (“Copy for AI to update report”). In the workspace that contains the original `audit.json`, paste the block into an EvidentLoop-enabled coding agent. By default, `revise` updates only `audit.json` and `audit.html` in the same directory; other files stay untouched. Explicit `--out` creates a new copy. Stale, conflicting, or ambiguous feedback stops without guessing; report revision never modifies business code or invokes model review.
 
 EvidentLoop uses the model already available in your coding agent. It never executes commands found in the diff or model output.
 
 ## How it works
 
-[![EvidentLoop architecture from host review to validated artifact pair](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a0/docs/assets/evidentloop-architecture.png)](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a0/docs/assets/evidentloop-architecture.png)
+[![EvidentLoop architecture from host review to validated artifact pair](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a1/docs/assets/evidentloop-architecture.png)](https://raw.githubusercontent.com/evidentloop/evidentloop/v0.1.0a1/docs/assets/evidentloop-architecture.png)
 
 `complete` means the host returned a valid, complete result. What it finds still depends on the host model and the context it received.
 
@@ -69,7 +71,8 @@ EvidentLoop uses the model already available in your coding agent. It never exec
 |---|---|
 | Local Git staged, unstaged, ref, and range diffs | Folder diff, file-only review, or remote PR URLs |
 | Added, modified, deleted, renamed, and binary-file metadata | Automatic fixes or command execution |
-| Schema `0.3`, findings tied to exact changed lines, nearby Git context | Feedback ingestion or automatic report revision |
+| Schema `0.4`, report revision, exact changed-line evidence | Automatic fixes or model re-review from feedback |
+| In-place feedback revision with paired JSON/HTML rollback and explicit copy output | Automatic stale-feedback merging or cross-workspace report search |
 | Complete, partial, failed, and inconclusive states | Review targets other than Git diffs |
 
 ## Integration and development

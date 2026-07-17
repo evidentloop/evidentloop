@@ -1,0 +1,145 @@
+{
+  "schema_version": "0.4",
+  "graph_id": "audit:run-3b78eef878314d8b8f187fd128c925be",
+  "source": {
+    "type": "git_diff",
+    "ref": "staged",
+    "description": "Synthetic Repo 本地 Git diff 审计",
+    "extensions": {
+      "evidentloop": {
+        "execution_mode": "demo_replay",
+        "fixture_id": "synthetic-off-by-one-v1",
+        "reviewer": "frozen_replay",
+        "live_ai_review": false
+      }
+    }
+  },
+  "runs": [
+    {
+      "id": "run-3b78eef878314d8b8f187fd128c925be",
+      "label": "Synthetic Repo 代码变更审计",
+      "status": "concerns",
+      "summary": "合成变更包含一个可精确定位的 off-by-one 缺陷；本报告只演示确定性审计链路，不代表实时 AI 审查。",
+      "kind": "model_review"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "change-001",
+      "type": "change",
+      "title": "Synthetic Repo 变更",
+      "summary": "共 1 个文件发生变更（+1/-1）。"
+    },
+    {
+      "id": "file-001",
+      "type": "file",
+      "path": "app.py",
+      "change_type": "modified",
+      "additions": 1,
+      "deletions": 1
+    },
+    {
+      "id": "finding-001",
+      "type": "finding",
+      "category": "bug",
+      "severity": "high",
+      "status": "open",
+      "title": "合计结果被无条件增加了 1。",
+      "detail": "输入项的真实总和没有额外偏移，当前实现会让每次计算结果都产生可复现的偏差。",
+      "fingerprint": "sha256:0f3f195b19630678681ca6b9dac0d5e7c1580a7b9110aab04723e94e8dbfc3c2",
+      "model_judgment": {
+        "status": "open",
+        "severity": "high"
+      },
+      "extensions": {
+        "evidentloop": {
+          "review_finding_id": "f-001",
+          "original_category": "logic_error",
+          "confidence": "plausible"
+        }
+      },
+      "file_path": "app.py",
+      "hunk_id": "hunk:568470d013cd12e4:1:1",
+      "start_line": 2,
+      "end_line": 2,
+      "line_side": "new",
+      "highlight_lines": [
+        2
+      ],
+      "hunk": "@@ -1,2 +1,2 @@\n def calculate_total(items):\n-    return sum(items)\n+    return sum(items) + 1"
+    },
+    {
+      "id": "evidence-001",
+      "type": "evidence",
+      "source": "host_llm",
+      "status": "fail",
+      "summary": "宿主语义审查结论：合计结果被无条件增加了 1。",
+      "detail": "输入项的真实总和没有额外偏移，当前实现会让每次计算结果都产生可复现的偏差。"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-001",
+      "type": "contains_change",
+      "from": "run-3b78eef878314d8b8f187fd128c925be",
+      "to": "change-001"
+    },
+    {
+      "id": "edge-002",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-001"
+    },
+    {
+      "id": "edge-003",
+      "type": "finding_in_file",
+      "from": "finding-001",
+      "to": "file-001"
+    },
+    {
+      "id": "edge-004",
+      "type": "supported_by_evidence",
+      "from": "finding-001",
+      "to": "evidence-001"
+    }
+  ],
+  "summary": {
+    "review_status": "complete",
+    "verdict": "concerns",
+    "risk_score": 40,
+    "finding_count": 1,
+    "unscored_finding_count": 0,
+    "open_finding_count": 1,
+    "fix_count": 0,
+    "fix_done_count": 0,
+    "summary_audit_status": "not_audited",
+    "basis": "model_review",
+    "extensions": {
+      "evidentloop": {
+        "review_diagnostics": {
+          "intent_coverage": "covered",
+          "files_reviewed": 1,
+          "files_total": 1,
+          "pack_completeness": 0.65,
+          "raw_findings_count": 1,
+          "emitted_findings_count": 1,
+          "reviewer_failure_reason": null,
+          "advisory_verdict": "concerns",
+          "advisory_rationale": "review found medium/high-severity issues"
+        }
+      }
+    }
+  },
+  "extensions": {
+    "evidentloop": {
+      "profile": "code_diff",
+      "run_id": "run-3b78eef878314d8b8f187fd128c925be",
+      "adapter": "gitdiff/v0",
+      "reviewer_prompt": {
+        "source": "product",
+        "version": "v0.5",
+        "sha256": "sha256:64c05a79bbc9721428584ffcd9fd7bb54121ef769adb714aeda22c12a72f360a"
+      }
+    }
+  }
+}

@@ -13,7 +13,7 @@ from .review.core.prompt import (
     PRODUCT_REVIEWER_PROMPT_VERSION,
     get_default_reviewer_template,
 )
-from .validation import load_audit_schema
+from .validation import SCHEMA_VERSION, load_audit_schema
 
 
 def _check(name: str, status: str, detail: str, *, blocking: bool) -> dict[str, Any]:
@@ -42,8 +42,8 @@ def collect_diagnostics() -> dict[str, Any]:
         schema = load_audit_schema()
         schema_version = schema["properties"]["schema_version"]["const"]
         schema_id = schema["$id"]
-        valid_schema = schema_version == "0.3" and schema_id.endswith(
-            "/schemas/audit-v0.3.schema.json"
+        valid_schema = schema_version == SCHEMA_VERSION and schema_id.endswith(
+            f"/schemas/audit-v{SCHEMA_VERSION}.schema.json"
         )
         checks.append(
             _check(

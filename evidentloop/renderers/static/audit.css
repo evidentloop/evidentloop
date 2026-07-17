@@ -102,9 +102,39 @@ code { padding: 1px 5px; border-radius: 5px; background: #eef2f7; }
 }
 
 .verdict-box strong { display: block; font-size: 1.08rem; overflow-wrap: anywhere; }
+.human-notice { margin-top: 6px; color: var(--amber); font-size: .78rem; font-weight: 800; }
 .hero.concerns .verdict-box { border-color: #f0b5b7; background: var(--red-soft); }
 .hero.pass_candidate .verdict-box { border-color: #acd8bb; background: var(--green-soft); }
 .hero.needs_human_triage .verdict-box { border-color: #ead09f; background: var(--amber-soft); }
+
+.judgment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.judgment-card,
+.finding-judgments > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  overflow-wrap: anywhere;
+}
+
+.judgment-card > span,
+.finding-judgments > div > span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: .74rem;
+  font-weight: 800;
+}
+
+.judgment-card strong,
+.finding-judgments strong { display: block; }
 
 .metric-grid {
   display: grid;
@@ -225,6 +255,7 @@ code { padding: 1px 5px; border-radius: 5px; background: #eef2f7; }
 .chain-row { padding: 9px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafc; overflow-wrap: anywhere; }
 .chain-label { display: block; margin-bottom: 3px; color: var(--muted); font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .fix-inline { margin-top: 12px; border-color: #b8d5ef; background: var(--blue-soft); }
+.finding-judgments { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .feedback-placeholder { display: block; margin-top: 12px; }
 .feedback-heading,
 .feedback-toolbar,
@@ -235,9 +266,11 @@ code { padding: 1px 5px; border-radius: 5px; background: #eef2f7; }
 .feedback-controls { display: grid; gap: 10px; margin-top: 10px; }
 .feedback-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .feedback-more,
-.evidence-details { margin-top: 10px; }
+.evidence-details,
+.revision-details { margin-top: 10px; }
 .feedback-more > summary,
-.evidence-details > summary { cursor: pointer; color: var(--blue); font-size: .82rem; font-weight: 800; }
+.evidence-details > summary,
+.revision-details > summary { cursor: pointer; color: var(--blue); font-size: .82rem; font-weight: 800; }
 .feedback-controls label { display: grid; gap: 5px; color: var(--muted); font-size: .78rem; font-weight: 750; }
 .feedback-controls select,
 .feedback-controls textarea { width: 100%; border: 1px solid var(--line-strong); border-radius: 7px; background: #fff; color: var(--text); font: inherit; }
@@ -251,6 +284,7 @@ code { padding: 1px 5px; border-radius: 5px; background: #eef2f7; }
 .button[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: #fff; }
 .button.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
 .button.primary:hover { background: #194d77; }
+.button.secondary { min-height: 30px; padding: 4px 9px; color: var(--blue); font-size: .76rem; }
 
 .data-table-wrap { max-width: 100%; overflow-x: auto; }
 .data-table { width: 100%; min-width: 620px; border-collapse: collapse; }
@@ -269,6 +303,8 @@ code { padding: 1px 5px; border-radius: 5px; background: #eef2f7; }
   .feedback-export-actions { width: 100%; justify-items: start; }
   .verdict-box { width: 100%; flex-basis: auto; text-align: left; }
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .judgment-grid,
+  .finding-judgments,
   .summary-grid,
   .finding-layout { grid-template-columns: minmax(0, 1fr); }
   .finding-header { grid-template-columns: auto minmax(0, 1fr) auto; }

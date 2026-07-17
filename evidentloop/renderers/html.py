@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import os
 import re
@@ -19,7 +20,7 @@ from ..validation import AuditValidationError, assert_valid_audit
 from .hunk import ParsedHunk, parse_hunk
 
 
-RENDERER_VERSION = "0.2"
+RENDERER_VERSION = "0.3"
 FULL_HUNK_LINE_LIMIT = 40
 HUNK_EXCERPT_CONTEXT_LINES = 8
 
@@ -38,6 +39,7 @@ class _TraceParser(HTMLParser):
         self.hunks: list[str] = []
         self.graph_ids: list[str] = []
         self.run_ids: list[str] = []
+        self.audit_hashes: list[str] = []
         self.external_references: list[str] = []
         self.tags: list[str] = []
 
@@ -54,6 +56,7 @@ class _TraceParser(HTMLParser):
             ("data-hunk-id", self.hunks),
             ("data-graph-id", self.graph_ids),
             ("data-run-id", self.run_ids),
+            ("data-audit-sha256", self.audit_hashes),
         ):
             value = values.get(key)
             if value:
@@ -140,7 +143,9 @@ def _as_hunk_view(
     }
 
 
-def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
+def _build_context(
+    audit: Mapping[str, Any], *, source_audit_sha256: str
+) -> dict[str, Any]:
     data = copy.deepcopy(dict(audit))
     runs = data["runs"]
     nodes = data["nodes"]
@@ -166,6 +171,8 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
             changes.append(change)
     if not changes:
         changes = [copy.deepcopy(node) for node in nodes if node["type"] == "change"]
+        for change in changes:
+            change["_edge_id"] = None
 
     change_ids = {change["id"] for change in changes}
     files_view: list[dict[str, Any]] = []
@@ -181,7 +188,7 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
         seen_files.add(edge["to"])
 
     claims: list[dict[str, Any]] = []
-    for owner in ([current_run] if current_run else []) + changes:
+    for owner in runs + changes:
         summary_audit = owner.get("summary_audit")
         if not summary_audit:
             continue
@@ -193,6 +200,7 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
     finding_nodes = [node for node in nodes if node["type"] == "finding"]
     severity_labels = {"high": "高", "medium": "中", "low": "低", "note": "提示"}
     finding_status_labels = {"open": "待处理", "fixed": "已修复", "dismissed": "已忽略"}
+    disposition_labels = {"accept": "确认有效", "false_positive": "误报"}
     line_side_labels = {"old": "旧文件", "new": "新文件"}
     finding_views: list[dict[str, Any]] = []
     for finding in finding_nodes:
@@ -212,6 +220,11 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
             None,
         )
         extension = finding.get("extensions", {}).get("evidentloop", {})
+        model_judgment = finding.get(
+            "model_judgment",
+            {"status": finding["status"], "severity": finding["severity"]},
+        )
+        human_adjudication = finding.get("human_adjudication") or {}
         hunk_view = (
             _as_hunk_view(
                 parse_hunk(finding["hunk"]),
@@ -234,6 +247,15 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
                 ),
                 "severity_label": severity_labels[finding["severity"]],
                 "status_label": finding_status_labels[finding["status"]],
+                "model_severity_label": severity_labels[model_judgment["severity"]],
+                "model_status_label": finding_status_labels[model_judgment["status"]],
+                "human_adjudication": human_adjudication,
+                "human_disposition_label": disposition_labels.get(
+                    human_adjudication.get("disposition")
+                ),
+                "human_severity_label": severity_labels.get(
+                    human_adjudication.get("severity_override")
+                ),
                 "line_side_label": line_side_labels.get(finding.get("line_side"), ""),
             }
         )
@@ -335,6 +357,34 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
         "needs_human_triage": "需要人工分诊",
         "inconclusive": "结论不充分",
     }
+    is_feedback_revision = summary.get("basis") == "human_adjudication"
+    model_verdict = summary.get("model_verdict", summary["verdict"])
+    model_risk_score = summary.get("model_risk_score", summary["risk_score"])
+    human_findings = [
+        view for view in finding_views if view["human_adjudication"]
+    ]
+    revision = (
+        current_run.get("revision")
+        if current_run and current_run.get("kind") == "feedback_revision"
+        else None
+    )
+    run_views = []
+    for run in runs:
+        run_revision = run.get("revision") or {}
+        run_views.append(
+            {
+                "run": run,
+                "kind_label": (
+                    "人工反馈修订"
+                    if run.get("kind") == "feedback_revision"
+                    else "模型审查"
+                ),
+                "source_run_id": run_revision.get("source_run_id"),
+                "source_audit_sha256": run_revision.get("source_audit_sha256"),
+                "feedback_sha256": run_revision.get("feedback_sha256"),
+                "feedback_count": len(run_revision.get("events", [])),
+            }
+        )
     summary_audit_status = summary.get("summary_audit_status", "not_audited")
     summary_audit_labels = {
         "supported": "变更目标：已验证",
@@ -370,6 +420,7 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "audit": data,
         "summary": summary,
+        "source_audit_sha256": source_audit_sha256,
         "current_run": current_run,
         "title": title,
         "source_ref_label": _source_ref_label(str(data["source"]["ref"])),
@@ -380,6 +431,24 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
         "files": files_view,
         "claims": claims,
         "finding_groups": finding_groups,
+        "human_findings": human_findings,
+        "human_disposition_count": sum(
+            "disposition" in view["human_adjudication"] for view in human_findings
+        ),
+        "human_comment_count": sum(
+            "comment" in view["human_adjudication"] for view in human_findings
+        ),
+        "human_severity_count": sum(
+            "severity_override" in view["human_adjudication"]
+            for view in human_findings
+        ),
+        "is_feedback_revision": is_feedback_revision,
+        "revision": revision,
+        "run_views": run_views,
+        "model_verdict_label": verdict_labels[model_verdict],
+        "model_risk_score_label": (
+            "无法可靠评分" if model_risk_score is None else str(model_risk_score)
+        ),
         "feedback_target_count": len(finding_views),
         "fixes": fixes_view,
         "evidence": evidence_view,
@@ -426,7 +495,12 @@ def _build_context(audit: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def validate_html_trace(html: str, audit: Mapping[str, Any]) -> list[str]:
+def validate_html_trace(
+    html: str,
+    audit: Mapping[str, Any],
+    *,
+    source_audit_sha256: str | None = None,
+) -> list[str]:
     """Validate HTML identity, trace targets, and self-contained resource policy."""
     parser = _TraceParser()
     parser.feed(html)
@@ -491,6 +565,12 @@ def validate_html_trace(html: str, audit: Mapping[str, Any]) -> list[str]:
     expected_run_ids = [runs[-1]["id"]] if runs else []
     if parser.run_ids != expected_run_ids:
         errors.append("HTML data-run-id does not match the latest run")
+    if len(parser.audit_hashes) != 1 or not re.fullmatch(
+        r"sha256:[0-9a-f]{64}", parser.audit_hashes[0] if parser.audit_hashes else ""
+    ):
+        errors.append("HTML must contain exactly one valid data-audit-sha256")
+    elif source_audit_sha256 and parser.audit_hashes != [source_audit_sha256]:
+        errors.append("HTML data-audit-sha256 does not match audit.json bytes")
     if parser.external_references:
         errors.append("HTML contains remote href/src references")
     for required_tag in ("html", "head", "body", "main"):
@@ -499,11 +579,23 @@ def validate_html_trace(html: str, audit: Mapping[str, Any]) -> list[str]:
     return errors
 
 
-def render_audit_data(audit: Mapping[str, Any]) -> str:
-    """Render an in-memory audit after structural and semantic validation."""
+def render_audit_data(
+    audit: Mapping[str, Any], *, source_audit_sha256: str | None = None
+) -> str:
+    """Render an in-memory audit after structural and semantic validation.
+
+    Use ``render_audit_file`` when feedback must bind to exact ``audit.json`` bytes.
+    """
     try:
         assert_valid_audit(audit)
-        context = _build_context(audit)
+        if source_audit_sha256 is None:
+            canonical = (
+                json.dumps(audit, ensure_ascii=False, indent=2) + "\n"
+            ).encode("utf-8")
+            source_audit_sha256 = f"sha256:{hashlib.sha256(canonical).hexdigest()}"
+        context = _build_context(
+            audit, source_audit_sha256=source_audit_sha256
+        )
         context["trusted_css"] = _resource_text(
             "evidentloop.renderers", "static/audit.css"
         )
@@ -523,7 +615,9 @@ def render_audit_data(audit: Mapping[str, Any]) -> str:
     except (AuditValidationError, TemplateError, OSError, ValueError) as exc:
         raise AuditRenderError(str(exc)) from exc
 
-    trace_errors = validate_html_trace(html, audit)
+    trace_errors = validate_html_trace(
+        html, audit, source_audit_sha256=source_audit_sha256
+    )
     if trace_errors:
         raise AuditRenderError("; ".join(trace_errors))
     return html
@@ -536,13 +630,15 @@ def render_audit_file(input_path: str | Path, output_path: str | Path) -> Path:
     try:
         if source.resolve() == target.resolve():
             raise AuditRenderError("output HTML must not replace the input audit.json")
-        audit = json.loads(source.read_text(encoding="utf-8"))
+        source_raw = source.read_bytes()
+        audit = json.loads(source_raw.decode("utf-8"))
     except AuditRenderError:
         raise
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise AuditRenderError(f"cannot read valid audit JSON: {exc}") from exc
 
-    html = render_audit_data(audit)
+    source_hash = f"sha256:{hashlib.sha256(source_raw).hexdigest()}"
+    html = render_audit_data(audit, source_audit_sha256=source_hash)
     candidate: Path | None = None
     try:
         target.parent.mkdir(parents=True, exist_ok=True)

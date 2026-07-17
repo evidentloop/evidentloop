@@ -282,7 +282,7 @@ def test_json_render_trace_and_rename_failures_preserve_staging(
     _write_raw(trace, _analysis(trace))
     monkeypatch.setattr(
         "evidentloop.renderers.html.validate_html_trace",
-        lambda html, audit: ["forced trace"],
+        lambda html, audit, **kwargs: ["forced trace"],
     )
     with pytest.raises(AuditWorkflowError, match="forced trace"):
         finalize_review(trace["final_dir"])

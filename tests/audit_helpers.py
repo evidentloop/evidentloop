@@ -13,13 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def demo_audit() -> dict[str, Any]:
-    audit = json.loads(
-        (ROOT / "docs/examples/hunk-context-demo/audit.json").read_text(encoding="utf-8")
+    return json.loads(
+        (ROOT / "tests/fixtures/audit-v0.4.json").read_text(encoding="utf-8")
     )
-    # Keep the published v0.2 example byte-for-byte historical while exercising the
-    # active schema and renderer contract with an in-memory v0.3 fixture.
-    audit["schema_version"] = "0.3"
-    return audit
 
 
 def fingerprint(label: str) -> str:
@@ -36,7 +32,7 @@ def minimal_audit(
     change_id = "change-minimal"
     file_id = "file-minimal"
     return {
-        "schema_version": "0.3",
+        "schema_version": "0.4",
         "graph_id": f"audit:minimal:{review_status}",
         "source": {
             "type": "git_diff",
@@ -49,6 +45,7 @@ def minimal_audit(
                 "label": "Minimal audit",
                 "status": verdict,
                 "summary": "Synthetic renderer state fixture.",
+                "kind": "model_review",
             }
         ],
         "nodes": [
@@ -92,6 +89,7 @@ def minimal_audit(
             "fix_count": 0,
             "fix_done_count": 0,
             "summary_audit_status": "not_audited",
+            "basis": "model_review",
         },
     }
 
@@ -112,6 +110,7 @@ def unanchored_risk_audit(*, review_status: str = "complete") -> dict[str, Any]:
         "title": "Semantic concern without exact location",
         "detail": "The review found a real concern but could not resolve a trusted hunk.",
         "fingerprint": fingerprint("finding-unanchored"),
+        "model_judgment": {"status": "open", "severity": "medium"},
         "extensions": {
             "evidentloop": {
                 "original_category": "logic_error",

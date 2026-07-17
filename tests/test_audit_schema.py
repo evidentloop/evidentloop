@@ -29,9 +29,9 @@ def test_strict_core_allows_namespaced_extensions() -> None:
     assert validate_audit(audit) == []
 
 
-def test_previous_public_schema_version_is_historical_only() -> None:
+def test_historical_schema_version_is_rejected_by_current_runtime() -> None:
     audit = minimal_audit()
-    audit["schema_version"] = "0.2"
+    audit["schema_version"] = "0.3"
 
     issues = validate_structure(audit)
 
@@ -116,7 +116,8 @@ def test_bug_requires_complete_trusted_anchor() -> None:
     del audit["nodes"][3]["hunk"]
     issues = validate_audit(audit)
     assert any(
-        issue.code == "anchor.bug_requires_exact" and issue.related_ids == ("finding-001",)
+        issue.code == "anchor.bug_requires_exact"
+        and issue.related_ids == ("finding-001",)
         for issue in issues
     )
 

@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from evidentloop.audit.feedback import normalize_feedback
+from evidentloop.audit.revision import audit_sha256, build_feedback_revision
 from evidentloop.renderers.html import (
     AuditRenderError,
     render_audit_data,
@@ -20,6 +22,28 @@ from tests.audit_helpers import demo_audit, minimal_audit, unanchored_risk_audit
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _revised_audit() -> dict:
+    source = demo_audit()
+    raw = (json.dumps(source, ensure_ascii=False, indent=2) + "\n").encode()
+    source_hash = audit_sha256(raw)
+    events = []
+    for finding in (node for node in source["nodes"] if node["type"] == "finding"):
+        events.append(
+            {
+                "target_type": "finding",
+                "target_id": finding["id"],
+                "action": "false_positive",
+                "fingerprint": finding["fingerprint"],
+                "graph_id": source["graph_id"],
+                "run_id": source["runs"][-1]["id"],
+                "created_at": "2026-07-17T10:00:00+08:00",
+                "source_audit_sha256": source_hash,
+            }
+        )
+    normalized, _ = normalize_feedback(events)
+    return build_feedback_revision(source, normalized, source_hash=source_hash)
 
 
 def _long_hunk_audit(*, highlights: tuple[int, ...] = (50,)) -> dict:
@@ -192,6 +216,22 @@ def test_trace_validator_rejects_unknown_ids_and_remote_resources() -> None:
     assert any("remote" in error for error in errors)
 
 
+def test_trace_validator_rejects_mismatched_audit_byte_identity() -> None:
+    audit = minimal_audit()
+    raw = (json.dumps(audit, ensure_ascii=False, indent=2) + "\n").encode()
+    expected_hash = audit_sha256(raw)
+    html = render_audit_data(audit, source_audit_sha256=expected_hash)
+    broken = html.replace(expected_hash, "sha256:" + "0" * 64, 1)
+
+    errors = validate_html_trace(
+        broken,
+        audit,
+        source_audit_sha256=expected_hash,
+    )
+
+    assert "HTML data-audit-sha256 does not match audit.json bytes" in errors
+
+
 def test_trace_validator_requires_all_findings_claims_hunks_and_feedback() -> None:
     audit = demo_audit()
     html = render_audit_data(audit)
@@ -224,6 +264,9 @@ def test_render_file_atomically_replaces_only_html(tmp_path: Path) -> None:
 
     assert result == output_path
     assert output_path.read_text(encoding="utf-8").startswith("<!doctype html>")
+    assert f'data-audit-sha256="sha256:{input_hash}"' in output_path.read_text(
+        encoding="utf-8"
+    )
     assert _sha256(input_path) == input_hash
     assert list(tmp_path.glob(".audit.html.*.tmp")) == []
 
@@ -274,8 +317,54 @@ def test_user_facing_renderer_labels_are_chinese() -> None:
     html = render_audit_data(demo_audit())
     assert "待处理问题" in html
     assert ">缺陷<" in html
-    assert ">人工决策<" in html
+    assert ">更新我的裁定<" in html
     assert "可信节选" not in html  # reference fixture hunks are short and fully shown
     assert "Human decision" not in html
     assert "Open findings" not in html
     assert ">Bugs<" not in html
+
+
+def test_feedback_revision_keeps_model_human_and_current_judgments_distinct() -> None:
+    html = render_audit_data(_revised_audit())
+
+    assert "模型原判断" in html
+    assert "我的裁定" in html
+    assert "当前剩余问题" in html
+    assert "基于人工裁定，未重新审查代码" in html
+    assert "误报" in html
+    assert "修订详情" in html
+    assert "source audit：sha256:" in html
+    assert "feedback：sha256:" in html
+    assert "复制给 AI 更新报告" in html
+    assert "下载 JSONL" in html
+
+
+def test_feedback_revision_escapes_untrusted_human_comment() -> None:
+    source = _revised_audit()
+    source_hash = audit_sha256(
+        (json.dumps(source, ensure_ascii=False, indent=2) + "\n").encode()
+    )
+    finding = next(node for node in source["nodes"] if node["type"] == "finding")
+    attack = '</script><script data-human-attack="1">alert(1)</script>'
+    events, _ = normalize_feedback(
+        [
+            {
+                "target_type": "finding",
+                "target_id": finding["id"],
+                "action": "comment",
+                "fingerprint": finding["fingerprint"],
+                "graph_id": source["graph_id"],
+                "run_id": source["runs"][-1]["id"],
+                "created_at": "2026-07-17T10:05:00+08:00",
+                "source_audit_sha256": source_hash,
+                "comment": attack,
+            }
+        ]
+    )
+    revised = build_feedback_revision(source, events, source_hash=source_hash)
+
+    html = render_audit_data(revised)
+
+    assert attack not in html
+    assert "&lt;/script&gt;" in html
+    assert 'data-human-attack="1"' not in html

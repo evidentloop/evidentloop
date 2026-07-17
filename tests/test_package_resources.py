@@ -15,15 +15,21 @@ from evidentloop.validation import load_audit_schema
 
 def test_runtime_resources_are_readable_via_importlib() -> None:
     schema = load_audit_schema()
-    template = files("evidentloop.renderers").joinpath(
-        "templates/audit.html.j2"
-    ).read_text(encoding="utf-8")
-    css = files("evidentloop.renderers").joinpath("static/audit.css").read_text(
-        encoding="utf-8"
+    template = (
+        files("evidentloop.renderers")
+        .joinpath("templates/audit.html.j2")
+        .read_text(encoding="utf-8")
     )
-    javascript = files("evidentloop.renderers").joinpath(
-        "static/audit.js"
-    ).read_text(encoding="utf-8")
+    css = (
+        files("evidentloop.renderers")
+        .joinpath("static/audit.css")
+        .read_text(encoding="utf-8")
+    )
+    javascript = (
+        files("evidentloop.renderers")
+        .joinpath("static/audit.js")
+        .read_text(encoding="utf-8")
+    )
     prompt = get_default_reviewer_template()
     demo_fixture = json.loads(
         files("evidentloop.demo_resources")
@@ -33,10 +39,11 @@ def test_runtime_resources_are_readable_via_importlib() -> None:
 
     assert schema["$schema"].endswith("2020-12/schema")
     assert schema["$id"] == (
-        "https://evidentloop.github.io/evidentloop/schemas/audit-v0.3.schema.json"
+        "https://evidentloop.github.io/evidentloop/schemas/audit-v0.4.schema.json"
     )
     assert schema["title"] == "EvidentLoop code-diff audit profile"
-    assert schema["properties"]["schema_version"]["const"] == "0.3"
+    assert schema["properties"]["schema_version"]["const"] == "0.4"
+    assert not files("evidentloop.schemas").joinpath("audit-v0.3.schema.json").is_file()
     assert "<!doctype html>" in template
     assert "EvidentLoop · 代码变更" in template
     assert "prefers-reduced-motion" in css

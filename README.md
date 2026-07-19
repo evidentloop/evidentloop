@@ -77,7 +77,11 @@ EvidentLoop uses the model already available in your coding agent. It never exec
 
 ## Integration and development
 
-Most users should use the Skill. Host integrators can use the `prepare -> external review -> finalize` path documented in [AI host integration](https://github.com/evidentloop/evidentloop/blob/main/docs/ai-host-integration.md). The public Python API is available from `evidentloop.api`.
+Use EvidentLoop through the Skill as a standalone product; no workflow integration is required.
+
+EvidentLoop can also provide verifiable audit results to a workflow: `diff_version` identifies the reviewed Git diff, while `report_version` identifies the formal `audit.json` revision. [Sopify](https://github.com/evidentloop/sopify) is the first workflow to integrate this capability, and other workflows are welcome to use the same public integration contract.
+
+Integrators can follow the `prepare -> external review -> finalize` path in [AI host integration](https://github.com/evidentloop/evidentloop/blob/main/docs/ai-host-integration.md). The public Python API is available from `evidentloop.api`.
 
 For local development:
 

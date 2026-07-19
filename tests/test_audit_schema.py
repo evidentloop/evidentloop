@@ -29,6 +29,15 @@ def test_strict_core_allows_namespaced_extensions() -> None:
     assert validate_audit(audit) == []
 
 
+def test_diff_version_uses_content_version_format() -> None:
+    audit = minimal_audit()
+    audit["extensions"] = {"evidentloop": {"diff_version": "not-a-version"}}
+
+    issues = validate_audit(audit)
+
+    assert any(issue.code == "version.invalid_diff_version" for issue in issues)
+
+
 def test_historical_schema_version_is_rejected_by_current_runtime() -> None:
     audit = minimal_audit()
     audit["schema_version"] = "0.3"

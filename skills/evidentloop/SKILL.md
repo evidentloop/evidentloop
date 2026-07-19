@@ -46,7 +46,7 @@ Run this read-only compatibility probe with the selected interpreter:
 <PYTHON> -I -c 'import json; import evidentloop; from evidentloop.api import finalize_review, prepare_local_diff, recover_interrupted_revision, render_audit_file, revise_audit; from evidentloop.review.core.prompt import PRODUCT_REVIEWER_PROMPT_VERSION; from evidentloop.validation import SCHEMA_VERSION; print(json.dumps({"package_version": evidentloop.__version__, "schema_version": SCHEMA_VERSION, "prompt_version": PRODUCT_REVIEWER_PROMPT_VERSION}))'
 ```
 
-Require `package_version` equal to `0.1.0a1`, `schema_version` equal to `0.4`, and `prompt_version` equal to `v0.5`. Treat any other value as incompatible and stop before the requested operation. The API imports prove that `prepare`, `finalize`, `render`, `revise`, and interrupted-revision recovery are present. Current runtime operations consume only validated schema `0.4` reports.
+Require `package_version` equal to `0.1.0a2`, `schema_version` equal to `0.4`, and `prompt_version` equal to `v0.5`. Treat any other value as incompatible and stop before the requested operation. The API imports prove that `prepare`, `finalize`, `render`, `revise`, and interrupted-revision recovery are present. Current runtime operations consume only validated schema `0.4` reports.
 
 Also run `<PYTHON> -I -m evidentloop --help` and require exit code 0 with the `prepare`, `finalize`, `render`, and `revise` subcommands listed. This separately proves the module CLI dispatcher.
 
@@ -75,7 +75,7 @@ Use this flow only when the request contains exactly one machine block delimited
 2. Read `source_audit_sha256` from the JSONL using `<PYTHON> -I`. Require every event to declare the same value. Enumerate files named `audit.json` only below the current workspace, without following symlink directories; hash each file's original bytes. Never search parent directories, user directories, package caches, or other workspaces. Map an `audit.json` directly inside `.<REPORT>.evidentloop-revise-candidate` or `.<REPORT>.evidentloop-revise-backup` to the sibling formal path `<REPORT>/audit.json`, then group matches by that formal report path.
 3. Continue only when exactly one formal report path matches the declared SHA-256. Pass its matching formal or residual `audit.json` to `revise`; the runtime maps deterministic residuals back to the formal report and recovers before updating. With zero matches, ask the user to open or restore the report in the current workspace. With multiple formal report matches, list only those paths and ask which report to update; do not choose one.
 4. By default run `<PYTHON> -I -m evidentloop revise <MATCHED_AUDIT_JSON> --feedback <TEMP_JSONL>`. Add `--out <NEW_DIR>` only when the user explicitly asked to save a copy; require a new directory outside the source report.
-5. Require exit code 0 and parse stdout as exactly one JSON object. Require `mode` to be `in_place` or `copy`; `audit_json` and `audit_html` must both be direct children of `report_dir`, validate as one schema `0.4` pair, and contain the returned new `revision_run_id`. Delete the temporary JSONL on success or failure.
+5. Require exit code 0 and parse stdout as exactly one JSON object. Require `mode` to be `in_place` or `copy`; `audit_json` and `audit_html` must both be direct children of `report_dir`, validate as one schema `0.4` pair, and contain the returned new `revision_run_id`. Recompute `report_version` from the exact returned `audit_json` bytes. Require `diff_version` to equal `audit.json.extensions.evidentloop.diff_version`; only a legacy schema `0.4` source that lacks that extension may return `diff_version: null`. Delete the temporary JSONL on success or failure.
 
 Stop on stale source, conflicting feedback, ambiguous recovery, or any CLI failure. Do not retry with another report, merge events, modify business code, or start model review. Tell the user to refresh the report and copy again for stale feedback. For `revision.unsupported_schema`, explain that this is a read-only historical report and ask the user to generate a current report before continuing feedback. For `revision.recovery_ambiguous`, show only the returned recovery paths and ask which valid report to keep.
 
@@ -144,6 +144,8 @@ Verify all of the following before reporting success:
 - result `final_dir` equals the locator `final_dir`;
 - `audit_json` and `audit_html` both exist under the non-hidden final directory;
 - `audit.json` has schema `0.4`, the same run identity, and a summary containing `review_status`, `verdict`, counts, and risk score;
+- result `diff_version` is non-empty and equals `audit.json.extensions.evidentloop.diff_version`;
+- result `report_version` equals the SHA-256 content version recomputed from the exact `audit.json` bytes;
 - `audit.html` exists alongside that exact JSON.
 
 Treat `partial` and `failed` as truthful generated reports, not successful clean reviews. If finalize fails or either formal artifact is missing, report failure and the staging diagnostic path; never cite an older or partial file as this run's report.
@@ -154,6 +156,7 @@ Report:
 
 - reviewed repository and diff spec;
 - `review_status`, `verdict`, risk score, open findings, and unscored findings;
+- `diff_version` and `report_version`;
 - the formal `audit.json` and `audit.html` paths;
 - whether `.run/` was retained;
 - any partial or failed limitation in plain language.

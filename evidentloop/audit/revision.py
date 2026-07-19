@@ -13,6 +13,7 @@ from typing import Any, Mapping
 
 from evidentloop.renderers.html import render_audit_file, validate_html_trace
 from evidentloop.validation import AuditValidationError, assert_valid_audit
+from evidentloop.versions import audit_diff_version, content_version
 
 from .feedback import FeedbackError, normalize_feedback, parse_feedback_jsonl
 from .summary import build_summary
@@ -50,7 +51,7 @@ class RevisionError(RuntimeError):
 
 
 def audit_sha256(raw: bytes) -> str:
-    return f"sha256:{hashlib.sha256(raw).hexdigest()}"
+    return content_version(raw)
 
 
 def _read_audit(path: Path) -> tuple[dict[str, Any], bytes]:
@@ -76,6 +77,14 @@ def _read_audit(path: Path) -> tuple[dict[str, Any], bytes]:
     except AuditValidationError as exc:
         raise RevisionError("revision.invalid_source", str(exc), (path,)) from exc
     return value, raw
+
+
+def _report_versions(report_dir: Path) -> dict[str, str | None]:
+    audit, raw = _read_audit(report_dir / "audit.json")
+    return {
+        "diff_version": audit_diff_version(audit),
+        "report_version": content_version(raw),
+    }
 
 
 def _report_is_valid(report_dir: Path) -> bool:
@@ -652,6 +661,7 @@ def _revise_audit(
                 "schema_version": "0.4",
                 "revision_run_id": revision_run_id,
                 "recovery": recovery["status"],
+                **_report_versions(report),
             }
     _validate_event_identity(source, parsed, source_hash)
     candidate_audit = build_feedback_revision(
@@ -736,6 +746,7 @@ def _revise_audit(
             "schema_version": "0.4",
             "revision_run_id": candidate_audit["runs"][-1]["id"],
             "recovery": recovery["status"],
+            **_report_versions(target),
         }
 
     candidate = _candidate_path(report)
@@ -757,6 +768,7 @@ def _revise_audit(
         "schema_version": "0.4",
         "revision_run_id": candidate_audit["runs"][-1]["id"],
         "recovery": recovery["status"],
+        **_report_versions(report),
     }
 
 

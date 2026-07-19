@@ -11,6 +11,7 @@ from evidentloop.audit.finalize import AuditWorkflowError, finalize_review, prep
 from evidentloop.cli import main
 from evidentloop.renderers.html import AuditRenderError
 from evidentloop.validation import AuditValidationError, ValidationIssue, assert_valid_audit
+from evidentloop.versions import content_version
 from tests.git_helpers import initialized_repo, stage_simple_change
 
 
@@ -70,6 +71,14 @@ def _audit(locator: dict[str, str]) -> dict:
 def test_finalize_publishes_exact_bug_pair_and_cleans_run_dir(tmp_path: Path) -> None:
     locator = _prepare(tmp_path)
     trusted_header = _header(locator)
+    review_pack = json.loads(
+        (
+            Path(locator["staging_dir"])
+            / ".run"
+            / "review-pack.json"
+        ).read_text(encoding="utf-8")
+    )
+    expected_diff_version = f"sha256:{review_pack['artifact_fingerprint']}"
     _write_raw(locator, _analysis(locator))
 
     result = finalize_review(locator["final_dir"])
@@ -81,6 +90,14 @@ def test_finalize_publishes_exact_bug_pair_and_cleans_run_dir(tmp_path: Path) ->
     assert {item.name for item in final_dir.iterdir()} == {"audit.json", "audit.html"}
     assert not Path(locator["staging_dir"]).exists()
     audit = _audit(locator)
+    assert result["diff_version"] == expected_diff_version
+    assert (
+        audit["extensions"]["evidentloop"]["diff_version"]
+        == expected_diff_version
+    )
+    assert result["report_version"] == content_version(
+        (final_dir / "audit.json").read_bytes()
+    )
     finding = next(item for item in audit["nodes"] if item["type"] == "finding")
     assert finding["category"] == "bug"
     assert finding["hunk"].startswith(trusted_header)
@@ -314,5 +331,13 @@ def test_finalize_cli_stdout_is_only_result_json(
     assert main(["finalize", "--out", locator["final_dir"]]) == 0
     captured = capsys.readouterr()
     result = json.loads(captured.out)
-    assert set(result) >= {"run_id", "audit_json", "audit_html", "review_status", "verdict"}
+    assert set(result) >= {
+        "run_id",
+        "audit_json",
+        "audit_html",
+        "review_status",
+        "verdict",
+        "diff_version",
+        "report_version",
+    }
     assert captured.err == ""

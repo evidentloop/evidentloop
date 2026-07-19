@@ -31,6 +31,7 @@ from evidentloop.review.schema import (
     to_serializable,
 )
 from evidentloop.validation import AuditValidationError, assert_valid_audit
+from evidentloop.versions import audit_diff_version, content_version
 
 from .adapter import build_audit_graph
 
@@ -448,6 +449,9 @@ def finalize_review(
             overall_assessment=_overall_assessment(raw_analysis),
         )
         assert_valid_audit(audit)
+        diff_version = audit_diff_version(audit)
+        if diff_version is None:
+            raise AuditWorkflowError("finalized audit is missing diff_version")
         _atomic_write_json(staging_dir / "audit.json", audit)
         if preserve_run_artifacts:
             _atomic_write_json(run_dir / "review-result.json", to_serializable(result))
@@ -486,4 +490,6 @@ def finalize_review(
         "audit_html": str(audit_html),
         "review_status": audit["summary"]["review_status"],
         "verdict": audit["summary"]["verdict"],
+        "diff_version": diff_version,
+        "report_version": content_version(audit_json.read_bytes()),
     }

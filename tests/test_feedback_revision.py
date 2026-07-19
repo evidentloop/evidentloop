@@ -29,6 +29,17 @@ from evidentloop.validation import assert_valid_audit, validate_audit
 from tests.audit_helpers import demo_audit, minimal_audit
 
 
+DIFF_VERSION = "sha256:" + "a" * 64
+
+
+def _versioned_audit() -> dict:
+    audit = demo_audit()
+    audit.setdefault("extensions", {}).setdefault("evidentloop", {})[
+        "diff_version"
+    ] = DIFF_VERSION
+    return audit
+
+
 def _write_report(report_dir: Path, audit: dict | None = None) -> tuple[dict, str]:
     report_dir.mkdir(parents=True)
     value = copy.deepcopy(audit or demo_audit())
@@ -346,7 +357,7 @@ def test_revise_updates_pair_in_place_and_explicit_out_preserves_source(
     tmp_path: Path,
 ) -> None:
     report = tmp_path / "report"
-    source, _ = _write_report(report)
+    source, _ = _write_report(report, _versioned_audit())
     note = report / "notes.txt"
     note.write_text("keep me", encoding="utf-8")
     report_inode = report.stat().st_ino
@@ -358,6 +369,10 @@ def test_revise_updates_pair_in_place_and_explicit_out_preserves_source(
 
     copy_result = revise_audit(report / "audit.json", feedback, tmp_path / "copy")
     assert copy_result["mode"] == "copy"
+    assert copy_result["diff_version"] == DIFF_VERSION
+    assert copy_result["report_version"] == audit_sha256(
+        (tmp_path / "copy" / "audit.json").read_bytes()
+    )
     assert json.loads((report / "audit.json").read_text())["schema_version"] == "0.4"
     assert (
         json.loads((tmp_path / "copy" / "audit.json").read_text())["schema_version"]
@@ -366,12 +381,34 @@ def test_revise_updates_pair_in_place_and_explicit_out_preserves_source(
 
     in_place_result = revise_audit(report / "audit.json", feedback)
     assert in_place_result["mode"] == "in_place"
+    assert in_place_result["diff_version"] == DIFF_VERSION
+    assert in_place_result["report_version"] == audit_sha256(
+        (report / "audit.json").read_bytes()
+    )
     assert json.loads((report / "audit.json").read_text())["schema_version"] == "0.4"
     assert (report / "audit.html").is_file()
     assert report.stat().st_ino == report_inode
     assert note.read_text(encoding="utf-8") == "keep me"
     assert note.stat().st_ino == note_inode
     assert validate_audit(json.loads((report / "audit.json").read_text())) == []
+
+
+def test_revise_legacy_v04_report_returns_unknown_diff_version(
+    tmp_path: Path,
+) -> None:
+    report = tmp_path / "report"
+    source, _ = _write_report(report)
+    feedback = _feedback_file(
+        tmp_path / "feedback.jsonl",
+        [_event(source, "finding-001", "false_positive")],
+    )
+
+    result = revise_audit(report / "audit.json", feedback)
+
+    assert result["diff_version"] is None
+    assert result["report_version"] == audit_sha256(
+        (report / "audit.json").read_bytes()
+    )
 
 
 def test_revise_rejects_historical_schema_source(tmp_path: Path) -> None:
@@ -392,7 +429,7 @@ def test_revise_rejects_historical_schema_source(tmp_path: Path) -> None:
 
 def test_two_round_report_revision_replays_only_the_new_delta(tmp_path: Path) -> None:
     report = tmp_path / "report"
-    source, source_hash = _write_report(report)
+    source, source_hash = _write_report(report, _versioned_audit())
     first_feedback = _feedback_file(
         tmp_path / "first.jsonl",
         [
@@ -449,6 +486,15 @@ def test_two_round_report_revision_replays_only_the_new_delta(tmp_path: Path) ->
     html = (report / "audit.html").read_text(encoding="utf-8")
 
     assert first_result["revision_run_id"] != second_result["revision_run_id"]
+    assert (
+        first_result["diff_version"]
+        == second_result["diff_version"]
+        == DIFF_VERSION
+    )
+    assert first_result["report_version"] != second_result["report_version"]
+    assert second_result["report_version"] == audit_sha256(
+        (report / "audit.json").read_bytes()
+    )
     assert [run["kind"] for run in second["runs"]] == [
         "model_review",
         "feedback_revision",
@@ -791,7 +837,7 @@ def test_interruption_recovery_matrix(tmp_path: Path) -> None:
 
 def test_revise_from_backup_path_restores_then_completes_update(tmp_path: Path) -> None:
     report = tmp_path / "report"
-    source, source_hash = _write_report(report)
+    source, source_hash = _write_report(report, _versioned_audit())
     events = [_event(source, "finding-001", "false_positive", source_hash=source_hash)]
     feedback = _feedback_file(tmp_path / "feedback.jsonl", events)
     normalized, _ = normalize_feedback(events)
@@ -805,6 +851,10 @@ def test_revise_from_backup_path_restores_then_completes_update(tmp_path: Path) 
     result = revise_audit(backup / "audit.json", feedback)
 
     assert result["recovery"] == "restored_old_report"
+    assert result["diff_version"] == DIFF_VERSION
+    assert result["report_version"] == audit_sha256(
+        (report / "audit.json").read_bytes()
+    )
     assert result["report_dir"] == str(report)
     assert report.is_dir() and not candidate.exists() and not backup.exists()
     assert (

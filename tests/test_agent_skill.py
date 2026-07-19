@@ -160,7 +160,7 @@ def test_install_authority_and_fixed_version_text_contract() -> None:
     assert "schema `0.3`" not in text
     assert "`prompt_version` equal to `v0.5`" in text
     assert "PRODUCT_REVIEWER_PROMPT_VERSION" in text
-    assert "`package_version` equal to `0.1.0a1`" in text
+    assert "`package_version` equal to `0.1.0a2`" in text
     assert (
         "Treat any other value as incompatible and stop before the requested operation"
         in text
@@ -191,6 +191,8 @@ def test_feedback_revision_flow_is_bounded_and_fail_closed() -> None:
     assert "maps deterministic residuals back to the formal report" in text
     assert "--feedback <TEMP_JSONL>" in text
     assert "only when the user explicitly asked to save a copy" in text
+    assert "only a legacy schema `0.4` source" in text
+    assert "Recompute `report_version`" in text
     assert "refresh the report and copy again" in text
     assert "revision.unsupported_schema" in text
     assert "read-only historical report" in text
@@ -214,3 +216,5 @@ def test_intermediate_and_formal_artifact_failure_text_contract() -> None:
     assert "no formal `audit.json` or `audit.html` exists yet" in text
     assert "If finalize fails or either formal artifact is missing" in text
     assert "never cite an older or partial file as this run's report" in text
+    assert "result `diff_version` is non-empty" in text
+    assert "result `report_version` equals" in text

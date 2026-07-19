@@ -10,6 +10,7 @@ from typing import Any, Iterable, Mapping
 from jsonschema import Draft202012Validator
 
 from .renderers.hunk import HunkParseError, parse_hunk
+from .versions import is_content_version
 
 
 SCHEMA_VERSION = "0.4"
@@ -595,6 +596,17 @@ def _validate_finding_anchor(
 def validate_semantics(data: Mapping[str, Any]) -> list[ValidationIssue]:
     """Validate global IDs, relations, claims, anchors, and summary semantics."""
     issues: list[ValidationIssue] = []
+    extensions = data.get("extensions")
+    if isinstance(extensions, Mapping):
+        evidentloop = extensions.get("evidentloop")
+        if isinstance(evidentloop, Mapping) and "diff_version" in evidentloop:
+            if not is_content_version(evidentloop["diff_version"]):
+                _issue(
+                    issues,
+                    "version.invalid_diff_version",
+                    "/extensions/evidentloop/diff_version",
+                    "diff_version must be a SHA-256 content version",
+                )
     runs = [run for run in data["runs"] if isinstance(run, Mapping)]
     nodes = [node for node in data["nodes"] if isinstance(node, Mapping)]
     edges = [edge for edge in data["edges"] if isinstance(edge, Mapping)]

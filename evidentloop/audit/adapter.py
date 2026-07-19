@@ -12,6 +12,7 @@ from evidentloop.audit.summary import build_summary
 from evidentloop.renderers.hunk import parse_hunk
 from evidentloop.review.schema import Finding, ReviewResult, ReviewStatus
 from evidentloop.validation import SCHEMA_VERSION
+from evidentloop.versions import diff_version_from_fingerprint
 
 
 _BUG_CATEGORIES = {"bug", "logic_error", "semantic_equivalence", "correctness"}
@@ -381,6 +382,9 @@ def build_audit_graph(
                 "profile": "code_diff",
                 "run_id": skeleton["run_id"],
                 "adapter": "gitdiff/v0",
+                "diff_version": diff_version_from_fingerprint(
+                    review_result.artifact_fingerprint
+                ),
                 "reviewer_prompt": dict(skeleton.get("reviewer_prompt") or {}),
             }
         },

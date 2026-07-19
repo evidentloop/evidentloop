@@ -24,11 +24,22 @@ Canonical schema URI 为 `https://evidentloop.github.io/evidentloop/schemas/audi
   "nodes": [],
   "edges": [],
   "summary": {},
-  "extensions": {}
+  "extensions": {
+    "evidentloop": {
+      "diff_version": "sha256:..."
+    }
+  }
 }
 ```
 
 核心对象拒绝未知字段。Adapter 或宿主诊断数据只能进入 namespaced `extensions`，例如 `extensions.evidentloop`。
+
+## 版本值
+
+- `diff_version`：本次实际 Git diff 的确定版本。新 finalize 报告写入 `extensions.evidentloop.diff_version`，并在结构化结果中返回同一值。
+- `report_version`：正式 `audit.json` 原始字节的确定版本。它只由 finalize/revise 结果返回，不能写入自身；HTML 已用同一 JSON 字节哈希绑定反馈来源。
+
+两个值都使用 `sha256:<hex>` 机器格式，但对外语义名称保持稳定。既有 schema `0.4` 报告可以没有 `diff_version`；这类报告修订后返回 `diff_version: null`，不得从 ref、graph 或历史 run 猜测。
 
 ## 节点类型
 

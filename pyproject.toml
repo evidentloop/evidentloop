@@ -1,6 +1,6 @@
 [project]
 name = "evidentloop"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "Traceable code review artifacts for local Git diffs"
 readme = "README.md"
 license = "MIT"

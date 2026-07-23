@@ -11,10 +11,12 @@ import shutil
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from evidentloop.adapters.gitdiff import GitDiffCollectionError, collect_git_diff
 from evidentloop.renderers.html import AuditRenderError, render_audit_file
+from evidentloop.review.change_summary import parse_change_summary
+from evidentloop.review.claims import parse_fix_verification_results
 from evidentloop.review.core.prompt import (
     PRODUCT_REVIEWER_PROMPT_SOURCE,
     PRODUCT_REVIEWER_PROMPT_VERSION,
@@ -27,11 +29,16 @@ from evidentloop.review.schema import (
     BudgetStatus,
     ReviewStatus,
     ReviewerFailureReason,
+    compute_fingerprint,
     review_pack_from_dict,
     to_serializable,
 )
 from evidentloop.validation import AuditValidationError, assert_valid_audit
-from evidentloop.versions import audit_diff_version, content_version
+from evidentloop.versions import (
+    audit_diff_version,
+    content_version,
+    diff_version_from_fingerprint,
+)
 
 from .adapter import build_audit_graph
 
@@ -50,7 +57,9 @@ _FINDINGS_SECTION_RE = re.compile(
     r"(?ms)^#+\s*Section 1:\s*Findings\s*(.*?)(?:^#+\s*Section 2:|^#+\s*Section 3:|\Z)",
     re.IGNORECASE,
 )
-_OVERALL_RE = re.compile(r"(?m)^#+\s*Section 3:\s*Overall Assessment\s*$", re.IGNORECASE)
+_OVERALL_RE = re.compile(
+    r"(?m)^#+\s*Section 3:\s*Overall Assessment\s*$", re.IGNORECASE
+)
 _OVERALL_SECTION_RE = re.compile(
     r"(?ms)^#+\s*Section 3:\s*Overall Assessment\s*\n+(.*?)(?=^#+\s*Section\s+\d+:|\Z)",
     re.IGNORECASE,
@@ -78,7 +87,9 @@ def _best_effort_chmod(path: Path, mode: int) -> None:
 
 
 def _atomic_write_text(path: Path, value: str, *, mode: int = 0o600) -> None:
-    descriptor, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    descriptor, temp_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
     temp_path = Path(temp_name)
     try:
         try:
@@ -143,7 +154,9 @@ def _candidate_available(final_dir: Path) -> bool:
     return not _lexists(final_dir) and not _lexists(_staging_path(final_dir))
 
 
-def _select_output(repo_root: Path, diff_spec: str, output_dir: str | Path | None) -> Path:
+def _select_output(
+    repo_root: Path, diff_spec: str, output_dir: str | Path | None
+) -> Path:
     if output_dir is not None:
         requested = Path(output_dir)
         final_dir = _resolve_leaf(requested, base=repo_root)
@@ -187,14 +200,27 @@ def _prepare_local_diff(
     diff_spec: str,
     output_dir: str | Path | None = None,
     *,
+    focus: str | None = None,
+    fix_verification: Mapping[str, Any] | None = None,
     source_extensions: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     """Prepare a hidden review workspace and return its machine locator."""
+    if focus is not None and not focus.strip():
+        raise AuditWorkflowError("focus must be non-empty when provided")
     repo_root = Path(repo_path).resolve()
     try:
         bundle = collect_git_diff(repo_root, diff_spec)
     except GitDiffCollectionError as exc:
         raise AuditWorkflowError(str(exc)) from exc
+    if fix_verification is not None:
+        current_diff_version = diff_version_from_fingerprint(
+            compute_fingerprint(bundle.diff)
+        )
+        if current_diff_version == fix_verification["source_diff_version"]:
+            raise AuditWorkflowError(
+                "current diff matches the source report; "
+                "fix verification requires a new diff"
+            )
 
     final_dir = _select_output(repo_root, diff_spec, output_dir)
     final_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -204,7 +230,9 @@ def _prepare_local_diff(
     try:
         os.mkdir(staging_dir, 0o700)
     except OSError as exc:
-        raise AuditWorkflowError(f"cannot exclusively create staging directory: {exc}") from exc
+        raise AuditWorkflowError(
+            f"cannot exclusively create staging directory: {exc}"
+        ) from exc
     _best_effort_chmod(staging_dir, 0o700)
     run_dir = staging_dir / ".run"
     try:
@@ -228,10 +256,19 @@ def _prepare_local_diff(
         changed_files=bundle.changed_files,
         intent=f"Audit Git diff {diff_spec}",
         diff_source=bundle.diff_source,
+        focus=[focus] if focus else None,
     )
     try:
         try:
-            prompt, boundary = render_host_reviewer_prompt(pack, run_id=run_id)
+            prompt, boundary = render_host_reviewer_prompt(
+                pack,
+                run_id=run_id,
+                fix_verification_targets=(
+                    fix_verification["targets"]
+                    if fix_verification is not None
+                    else None
+                ),
+            )
         except ValueError as exc:
             raise AuditWorkflowError(str(exc)) from exc
     except AuditWorkflowError as exc:
@@ -285,6 +322,8 @@ def _prepare_local_diff(
         },
         "files": files,
     }
+    if fix_verification is not None:
+        skeleton["fix_verification"] = dict(fix_verification)
     hunk_index = bundle.hunk_index_dict(
         run_id=run_id,
         artifact_fingerprint=pack.artifact_fingerprint,
@@ -306,12 +345,14 @@ def prepare_local_diff(
     repo_path: str | Path,
     diff_spec: str,
     output_dir: str | Path | None = None,
+    *,
+    focus: str | None = None,
 ) -> dict[str, str]:
     """Prepare a normal host-reviewed Git diff without synthetic provenance."""
-    return _prepare_local_diff(repo_path, diff_spec, output_dir)
+    return _prepare_local_diff(repo_path, diff_spec, output_dir, focus=focus)
 
 
-def _completion_state(raw_analysis: str) -> str:
+def _completion_state(raw_analysis: str, expected_claim_ids: Sequence[str] = ()) -> str:
     body = _RUN_ID_RE.sub("", raw_analysis, count=1).strip()
     findings_match = _FINDINGS_SECTION_RE.search(body)
     if not body or (_REFUSAL_RE.search(body) and findings_match is None):
@@ -325,6 +366,10 @@ def _completion_state(raw_analysis: str) -> str:
     findings_body = findings_match.group(1)
     if not (declared_finding_ids(body) or _EXPLICIT_ZERO_RE.search(findings_body)):
         return "partial"
+    if expected_claim_ids:
+        _, problems = parse_fix_verification_results(body, expected_claim_ids)
+        if problems:
+            return "partial"
     return "complete"
 
 
@@ -352,7 +397,10 @@ def _record_finalize_failure(staging_dir: Path, message: str) -> None:
         _best_effort_chmod(run_dir, 0o700)
         _atomic_write_json(
             run_dir / "finalize-error.json",
-            {"error": message, "recorded_at": dt.datetime.now(dt.timezone.utc).isoformat()},
+            {
+                "error": message,
+                "recorded_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+            },
         )
     except Exception:
         pass
@@ -368,10 +416,14 @@ def finalize_review(
     if _lexists(final_dir):
         raise AuditWorkflowError(f"final output leaf already exists: {final_dir}")
     if not staging_dir.is_dir() or staging_dir.is_symlink():
-        raise AuditWorkflowError(f"prepared staging directory is missing or unsafe: {staging_dir}")
+        raise AuditWorkflowError(
+            f"prepared staging directory is missing or unsafe: {staging_dir}"
+        )
     run_dir = staging_dir / ".run"
     if not run_dir.is_dir() or run_dir.is_symlink():
-        raise AuditWorkflowError("prepared .run directory is missing or unsafe", staging_dir=staging_dir)
+        raise AuditWorkflowError(
+            "prepared .run directory is missing or unsafe", staging_dir=staging_dir
+        )
 
     try:
         locator = _read_json_object(run_dir / "locator.json")
@@ -394,16 +446,30 @@ def finalize_review(
         str(hunk_index.get("run_id") or ""),
     }
     if len(identity_values) != 1 or not run_id:
-        raise AuditWorkflowError("locator, skeleton and hunk index run_id mismatch", staging_dir=staging_dir)
-    if locator.get("final_dir") != str(final_dir) or locator.get("staging_dir") != str(staging_dir):
-        raise AuditWorkflowError("locator paths do not match the requested output", staging_dir=staging_dir)
-    if skeleton.get("final_dir") != str(final_dir) or skeleton.get("staging_dir") != str(staging_dir):
-        raise AuditWorkflowError("skeleton paths do not match the requested output", staging_dir=staging_dir)
+        raise AuditWorkflowError(
+            "locator, skeleton and hunk index run_id mismatch", staging_dir=staging_dir
+        )
+    if locator.get("final_dir") != str(final_dir) or locator.get("staging_dir") != str(
+        staging_dir
+    ):
+        raise AuditWorkflowError(
+            "locator paths do not match the requested output", staging_dir=staging_dir
+        )
+    if skeleton.get("final_dir") != str(final_dir) or skeleton.get(
+        "staging_dir"
+    ) != str(staging_dir):
+        raise AuditWorkflowError(
+            "skeleton paths do not match the requested output", staging_dir=staging_dir
+        )
     if skeleton.get("artifact_fingerprint") != hunk_index.get("artifact_fingerprint"):
-        raise AuditWorkflowError("prepared artifact fingerprint mismatch", staging_dir=staging_dir)
+        raise AuditWorkflowError(
+            "prepared artifact fingerprint mismatch", staging_dir=staging_dir
+        )
     prompt_contract = skeleton.get("reviewer_prompt")
     if not isinstance(prompt_contract, Mapping):
-        raise AuditWorkflowError("skeleton reviewer prompt contract is missing", staging_dir=staging_dir)
+        raise AuditWorkflowError(
+            "skeleton reviewer prompt contract is missing", staging_dir=staging_dir
+        )
     prompt_source = str(prompt_contract.get("source") or "")
     prompt_version = str(prompt_contract.get("version") or "")
     prompt_sha256 = str(prompt_contract.get("sha256") or "")
@@ -411,11 +477,15 @@ def finalize_review(
         prompt_source != PRODUCT_REVIEWER_PROMPT_SOURCE
         or prompt_version != PRODUCT_REVIEWER_PROMPT_VERSION
     ):
-        raise AuditWorkflowError("prepared reviewer prompt version mismatch", staging_dir=staging_dir)
+        raise AuditWorkflowError(
+            "prepared reviewer prompt version mismatch", staging_dir=staging_dir
+        )
     # prepare/finalize may run in separate host processes. The frozen hash keeps
     # the reported prompt provenance tied to the exact reviewed payload.
     if prompt_sha256 != _sha256_text(prompt_text):
-        raise AuditWorkflowError("prepared reviewer prompt fingerprint mismatch", staging_dir=staging_dir)
+        raise AuditWorkflowError(
+            "prepared reviewer prompt fingerprint mismatch", staging_dir=staging_dir
+        )
     try:
         _validate_run_identity(raw_analysis, run_id)
     except AuditWorkflowError as exc:
@@ -427,7 +497,17 @@ def finalize_review(
             raise AuditWorkflowError("ReviewPack artifact fingerprint mismatch")
         if pack.pack_fingerprint != skeleton.get("pack_fingerprint"):
             raise AuditWorkflowError("ReviewPack fingerprint mismatch")
-        completion = _completion_state(raw_analysis)
+        frozen_verification = skeleton.get("fix_verification")
+        expected_claim_ids = tuple(
+            str(target["claim_id"])
+            for target in (frozen_verification or {}).get("targets", [])
+        )
+        completion = _completion_state(raw_analysis, expected_claim_ids)
+        claim_results: list[dict[str, str]] = []
+        if expected_claim_ids and completion == "complete":
+            claim_results, _ = parse_fix_verification_results(
+                _RUN_ID_RE.sub("", raw_analysis, count=1).strip(), expected_claim_ids
+            )
         result = run_ingest(
             pack,
             raw_analysis,
@@ -447,6 +527,8 @@ def finalize_review(
             skeleton=skeleton,
             hunk_index=hunk_index,
             overall_assessment=_overall_assessment(raw_analysis),
+            change_summary=parse_change_summary(raw_analysis),
+            fix_verification_results=claim_results or None,
         )
         assert_valid_audit(audit)
         diff_version = audit_diff_version(audit)
@@ -456,8 +538,16 @@ def finalize_review(
         if preserve_run_artifacts:
             _atomic_write_json(run_dir / "review-result.json", to_serializable(result))
         render_audit_file(staging_dir / "audit.json", staging_dir / "audit.html")
-    except (AuditWorkflowError, AuditValidationError, AuditRenderError, ValueError, KeyError) as exc:
-        raise AuditWorkflowError(f"finalize validation failed: {exc}", staging_dir=staging_dir) from exc
+    except (
+        AuditWorkflowError,
+        AuditValidationError,
+        AuditRenderError,
+        ValueError,
+        KeyError,
+    ) as exc:
+        raise AuditWorkflowError(
+            f"finalize validation failed: {exc}", staging_dir=staging_dir
+        ) from exc
 
     if _lexists(final_dir):
         raise AuditWorkflowError(
@@ -482,7 +572,9 @@ def finalize_review(
     audit_json = final_dir / "audit.json"
     audit_html = final_dir / "audit.html"
     if not audit_json.is_file() or not audit_html.is_file():
-        raise AuditWorkflowError("published directory does not contain the complete artifact pair")
+        raise AuditWorkflowError(
+            "published directory does not contain the complete artifact pair"
+        )
     return {
         "run_id": run_id,
         "final_dir": str(final_dir),

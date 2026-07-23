@@ -6,6 +6,7 @@ import copy
 
 import pytest
 
+from evidentloop.audit.summary import build_summary
 from evidentloop.validation import (
     AuditValidationError,
     assert_valid_audit,
@@ -13,7 +14,7 @@ from evidentloop.validation import (
     validate_audit,
     validate_structure,
 )
-from tests.audit_helpers import demo_audit, minimal_audit
+from tests.audit_helpers import demo_audit, minimal_audit, unanchored_finding_audit
 
 
 def test_schema_declares_2020_12_and_validates_reference_demo() -> None:
@@ -142,27 +143,41 @@ def test_complete_review_can_remain_inconclusive_when_input_is_insufficient() ->
     audit = minimal_audit(
         review_status="complete",
         verdict="inconclusive",
-        risk_score=None,
+        overall_severity=None,
     )
     assert_valid_audit(audit)
 
-    audit["summary"]["risk_score"] = 0
+    audit["summary"]["overall_severity"] = "note"
     issues = validate_audit(audit)
-    assert any(issue.code == "summary.invalid_inconclusive_score" for issue in issues)
+    assert any(issue.code == "summary.invalid_overall_severity" for issue in issues)
 
 
 def test_summary_counts_and_status_combinations_are_cross_checked() -> None:
     audit = minimal_audit()
     audit["summary"]["finding_count"] = 3
-    audit["summary"]["risk_score"] = None
+    audit["summary"]["overall_severity"] = "high"
     issues = validate_audit(audit)
     codes = {issue.code for issue in issues}
     assert "summary.count_mismatch" in codes
-    assert "summary.invalid_pass_candidate" in codes
+    assert "summary.invalid_overall_severity" in codes
+
+
+def test_missing_file_requires_triage_before_extension_shape() -> None:
+    audit = unanchored_finding_audit()
+    finding = next(node for node in audit["nodes"] if node["type"] == "finding")
+    finding["extensions"]["evidentloop"] = "opaque vendor value"
+
+    calculated = build_summary([finding], [], review_status="complete")
+    assert calculated["verdict"] == "needs_human_triage"
+
+    audit["summary"]["verdict"] = "concerns"
+    audit["runs"][0]["status"] = "concerns"
+    issues = validate_audit(audit)
+    assert any(issue.code == "summary.invalid_concerns" for issue in issues)
 
 
 def test_validation_error_preserves_structured_issues() -> None:
-    audit = minimal_audit(review_status="partial", verdict="concerns", risk_score=10)
+    audit = minimal_audit(review_status="partial", verdict="concerns")
     with pytest.raises(AuditValidationError) as captured:
         assert_valid_audit(audit)
     assert captured.value.issues

@@ -156,11 +156,11 @@ def test_install_authority_and_fixed_version_text_contract() -> None:
     text = _skill_text()
     assert "Ask for installation or upgrade authorization" in text
     assert "If the user declines installation, stop" in text
-    assert "`schema_version` equal to `0.4`" in text
-    assert "schema `0.3`" not in text
-    assert "`prompt_version` equal to `v0.5`" in text
+    assert "`schema_version` equal to `0.5`" in text
+    assert "schema `0.4`" not in text
+    assert "`prompt_version` equal to `v0.7`" in text
     assert "PRODUCT_REVIEWER_PROMPT_VERSION" in text
-    assert "`package_version` equal to `0.1.0a2`" in text
+    assert "`package_version` equal to `0.1.0a3`" in text
     assert (
         "Treat any other value as incompatible and stop before the requested operation"
         in text
@@ -191,7 +191,7 @@ def test_feedback_revision_flow_is_bounded_and_fail_closed() -> None:
     assert "maps deterministic residuals back to the formal report" in text
     assert "--feedback <TEMP_JSONL>" in text
     assert "only when the user explicitly asked to save a copy" in text
-    assert "only a legacy schema `0.4` source" in text
+    assert "only a source that lacks that extension" in text
     assert "Recompute `report_version`" in text
     assert "refresh the report and copy again" in text
     assert "revision.unsupported_schema" in text

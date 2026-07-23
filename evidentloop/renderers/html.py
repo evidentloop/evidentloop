@@ -20,7 +20,7 @@ from ..validation import AuditValidationError, assert_valid_audit
 from .hunk import ParsedHunk, parse_hunk
 
 
-RENDERER_VERSION = "0.3"
+RENDERER_VERSION = "0.4"
 FULL_HUNK_LINE_LIMIT = 40
 HUNK_EXCERPT_CONTEXT_LINES = 8
 
@@ -63,7 +63,9 @@ class _TraceParser(HTMLParser):
                 target.append(value)
         for key in ("href", "src"):
             value = values.get(key)
-            if value and value.lstrip().lower().startswith(("http://", "https://", "//")):
+            if value and value.lstrip().lower().startswith(
+                ("http://", "https://", "//")
+            ):
                 self.external_references.append(value)
 
 
@@ -98,7 +100,8 @@ def _as_hunk_view(
         hit_indexes = [
             index
             for index, line in indexed_lines
-            if (line.old_number if line_side == "old" else line.new_number) in highlights
+            if (line.old_number if line_side == "old" else line.new_number)
+            in highlights
         ]
         windows = []
         for index in hit_indexes:
@@ -151,57 +154,142 @@ def _build_context(
     nodes = data["nodes"]
     edges = data["edges"]
     summary = data["summary"]
-    source_provenance = (
-        data["source"].get("extensions", {}).get("evidentloop", {})
-    )
-    demo_replay = source_provenance.get("execution_mode") == "demo_replay"
     current_run = runs[-1] if runs else None
+    model_run = next(
+        (run for run in reversed(runs) if run.get("kind") == "model_review"),
+        None,
+    )
     node_by_id = {node["id"]: node for node in nodes}
     outgoing: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for edge in edges:
         outgoing[edge["from"]].append(edge)
 
+    severity_labels = {"high": "高", "medium": "中", "low": "低", "note": "提示"}
+    finding_status_labels = {"open": "待处理", "fixed": "已修复", "dismissed": "已忽略"}
+    disposition_labels = {"accept": "确认有效", "false_positive": "误报"}
+    verdict_labels = {
+        "pass_candidate": "无待处理问题",
+        "concerns": "存在待处理问题",
+        "needs_human_triage": "需要人工分诊",
+        "inconclusive": "结论不充分",
+    }
+    review_status_labels = {
+        "not_reviewed": "未审查",
+        "complete": "输出完整",
+        "partial": "部分完成",
+        "failed": "失败",
+    }
+    claim_status_labels = {
+        "supported": "认可",
+        "challenged": "不认可",
+        "partial": "部分认可",
+        "unknown": "暂无法判断",
+    }
+    change_type_labels = {
+        "added": "新增",
+        "modified": "修改",
+        "deleted": "删除",
+        "renamed": "重命名",
+        "binary": "二进制",
+    }
+
     changes: list[dict[str, Any]] = []
-    if current_run:
-        for edge in outgoing[current_run["id"]]:
-            if edge["type"] != "contains_change":
-                continue
-            change = copy.deepcopy(node_by_id[edge["to"]])
-            change["_edge_id"] = edge["id"]
-            changes.append(change)
+    if model_run:
+        for edge in outgoing[model_run["id"]]:
+            if edge["type"] == "contains_change":
+                change = copy.deepcopy(node_by_id[edge["to"]])
+                change["_edge_id"] = edge["id"]
+                changes.append(change)
     if not changes:
         changes = [copy.deepcopy(node) for node in nodes if node["type"] == "change"]
         for change in changes:
             change["_edge_id"] = None
 
     change_ids = {change["id"] for change in changes}
+    finding_nodes = [node for node in nodes if node["type"] == "finding"]
+    finding_nodes_by_file: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for finding in finding_nodes:
+        if finding.get("file_path"):
+            finding_nodes_by_file[str(finding["file_path"])].append(finding)
+
+    claim_findings: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for edge in edges:
+        source = node_by_id.get(edge["from"])
+        if (
+            edge["type"] in {"supports_claim", "challenges_claim"}
+            and edge.get("claim_id")
+            and source
+            and source["type"] == "finding"
+        ):
+            claim_findings[(edge["to"], edge["claim_id"])].append(source)
+
     files_view: list[dict[str, Any]] = []
     seen_files: set[str] = set()
     for edge in edges:
-        if edge["type"] != "changes_file" or edge["from"] not in change_ids:
-            continue
-        if edge["to"] in seen_files:
+        if (
+            edge["type"] != "changes_file"
+            or edge["from"] not in change_ids
+            or edge["to"] in seen_files
+        ):
             continue
         file_node = copy.deepcopy(node_by_id[edge["to"]])
         file_node["_edge_id"] = edge["id"]
+        related_findings = finding_nodes_by_file.get(file_node["path"], [])
+        file_node["_finding_ids"] = [str(finding["id"]) for finding in related_findings]
+        open_findings = [
+            finding for finding in related_findings if finding["status"] == "open"
+        ]
+        if open_findings:
+            file_node["_issue_link_id"] = open_findings[0]["id"]
+            file_node["_issue_link_label"] = f"查看待处理问题（{len(open_findings)}）"
+        elif related_findings:
+            statuses = {finding["status"] for finding in related_findings}
+            file_node["_issue_link_id"] = related_findings[0]["id"]
+            if statuses == {"dismissed"}:
+                state_label = "已忽略"
+            elif statuses == {"fixed"}:
+                state_label = "已修复"
+            else:
+                state_label = "已处理"
+            file_node["_issue_link_label"] = (
+                f"查看{state_label}问题（{len(related_findings)}）"
+            )
         files_view.append(file_node)
         seen_files.add(edge["to"])
 
-    claims: list[dict[str, Any]] = []
-    for owner in runs + changes:
-        summary_audit = owner.get("summary_audit")
-        if not summary_audit:
-            continue
-        claims.extend(
-            {"owner_id": owner["id"], "claim": claim}
-            for claim in summary_audit.get("claims", [])
-        )
+    primary_change = changes[0] if changes else None
+    primary_change_extension = (
+        primary_change.get("extensions", {}).get("evidentloop", {})
+        if primary_change
+        else {}
+    )
+    review_focus = primary_change_extension.get("review_focus")
+    semantic_change_summary = (
+        {
+            "overview": primary_change,
+            "review_focus": str(review_focus),
+            "themes": [
+                {
+                    "node": change,
+                    "impact": str(
+                        change.get("extensions", {})
+                        .get("evidentloop", {})
+                        .get("impact", "")
+                    ),
+                }
+                for change in changes[1:]
+            ],
+        }
+        if review_focus and len(changes) > 1
+        else None
+    )
+    change_stats = {
+        "file_count": len(files_view),
+        "additions": sum(int(item.get("additions") or 0) for item in files_view),
+        "deletions": sum(int(item.get("deletions") or 0) for item in files_view),
+        "binary_count": sum(item.get("change_type") == "binary" for item in files_view),
+    }
 
-    finding_nodes = [node for node in nodes if node["type"] == "finding"]
-    severity_labels = {"high": "高", "medium": "中", "low": "低", "note": "提示"}
-    finding_status_labels = {"open": "待处理", "fixed": "已修复", "dismissed": "已忽略"}
-    disposition_labels = {"accept": "确认有效", "false_positive": "误报"}
-    line_side_labels = {"old": "旧文件", "new": "新文件"}
     finding_views: list[dict[str, Any]] = []
     for finding in finding_nodes:
         related = outgoing[finding["id"]]
@@ -237,14 +325,6 @@ def _build_context(
         finding_views.append(
             {
                 "node": finding,
-                "evidence_links": evidence_links,
-                "fix_links": fix_links,
-                "file_edge_id": file_edge["id"] if file_edge else None,
-                "hunk_view": hunk_view,
-                "unanchored": (
-                    extension.get("unscored") is True
-                    or extension.get("downgraded_from") == "bug"
-                ),
                 "severity_label": severity_labels[finding["severity"]],
                 "status_label": finding_status_labels[finding["status"]],
                 "model_severity_label": severity_labels[model_judgment["severity"]],
@@ -256,241 +336,237 @@ def _build_context(
                 "human_severity_label": severity_labels.get(
                     human_adjudication.get("severity_override")
                 ),
-                "line_side_label": line_side_labels.get(finding.get("line_side"), ""),
+                "evidence_links": evidence_links,
+                "fix_links": fix_links,
+                "file_edge_id": file_edge["id"] if file_edge else None,
+                "hunk_view": hunk_view,
+                "line_side_label": {
+                    "old": "旧文件",
+                    "new": "新文件",
+                }.get(finding.get("line_side"), ""),
+                "unanchored": (
+                    extension.get("downgraded_from") == "bug"
+                    or not finding.get("file_path")
+                ),
             }
         )
 
-    category_labels = {
-        "bug": "缺陷",
-        "risk": "风险",
-        "quality": "质量",
-        "scope": "范围",
-    }
-    finding_groups: list[dict[str, Any]] = []
-    next_number = 2
-    for category in ("bug", "risk", "quality", "scope"):
-        group = [view for view in finding_views if view["node"]["category"] == category]
-        if group:
-            finding_groups.append(
+    evidentloop_extensions = data.get("extensions", {}).get("evidentloop", {})
+    frozen_verification = evidentloop_extensions.get("fix_verification")
+    fix_verification_view: dict[str, Any] | None = None
+    if isinstance(frozen_verification, Mapping) and model_run:
+        claims = {
+            claim["id"]: claim
+            for claim in model_run.get("summary_audit", {}).get("claims", [])
+        }
+        if all(
+            target["claim_id"] in claims for target in frozen_verification["targets"]
+        ):
+            targets = []
+            status_counts = {status: 0 for status in claim_status_labels}
+            for frozen_target in frozen_verification["targets"]:
+                claim = claims[frozen_target["claim_id"]]
+                claim_edges = [
+                    edge
+                    for edge in edges
+                    if edge.get("claim_id") == claim["id"]
+                    and edge["to"] == model_run["id"]
+                    and edge["type"] in {"supports_claim", "challenges_claim"}
+                ]
+                evidence = [
+                    {
+                        "edge_id": edge["id"],
+                        "edge_type": edge["type"],
+                        "node": node_by_id[edge["from"]],
+                    }
+                    for edge in claim_edges
+                ]
+                status_counts[claim["status"]] += 1
+                targets.append(
+                    {
+                        "source": frozen_target,
+                        "claim": claim,
+                        "status_label": claim_status_labels[claim["status"]],
+                        "evidence": evidence,
+                    }
+                )
+            fix_verification_view = {
+                "source_report_version": frozen_verification["source_report_version"],
+                "source_diff_version": frozen_verification["source_diff_version"],
+                "owner_id": model_run["id"],
+                "targets": targets,
+                "status_counts": [
+                    {
+                        "status": status,
+                        "label": label,
+                        "count": status_counts[status],
+                    }
+                    for status, label in claim_status_labels.items()
+                    if status_counts[status]
+                ],
+            }
+
+    change_claims: list[dict[str, Any]] = []
+    if fix_verification_view is None:
+        for owner in [*runs, *changes]:
+            for claim in owner.get("summary_audit", {}).get("claims", []):
+                related_findings = claim_findings.get((owner["id"], claim["id"]), [])
+                related_state = None
+                related_state_label = None
+                if related_findings and not any(
+                    finding["status"] == "open" for finding in related_findings
+                ):
+                    statuses = {finding["status"] for finding in related_findings}
+                    if statuses == {"dismissed"}:
+                        related_state = "dismissed"
+                        related_state_label = "相关问题已忽略"
+                    elif statuses == {"fixed"}:
+                        related_state = "fixed"
+                        related_state_label = "相关问题已修复"
+                    else:
+                        related_state = "handled"
+                        related_state_label = "相关问题已处理"
+                change_claims.append(
+                    {
+                        "owner_id": owner["id"],
+                        "claim": claim,
+                        "status_label": ("模型原判断" if related_state else "模型判断")
+                        + f"：{claim_status_labels[claim['status']]}",
+                        "related_state": related_state,
+                        "related_state_label": related_state_label,
+                    }
+                )
+
+    revision_runs = [run for run in runs if run.get("kind") == "feedback_revision"]
+    feedback_history: list[dict[str, Any]] = []
+    for index, run in enumerate(revision_runs):
+        revision = run["revision"]
+        before_summary = revision["source_summary"]
+        after_summary = (
+            revision_runs[index + 1]["revision"]["source_summary"]
+            if index + 1 < len(revision_runs)
+            else summary
+        )
+        summary_changes: list[dict[str, str]] = []
+        if before_summary["verdict"] != after_summary["verdict"]:
+            summary_changes.append(
                 {
-                    "category": category,
-                    "label": category_labels[category],
-                    "number": next_number,
-                    "findings": group,
+                    "label": "结论",
+                    "before": verdict_labels[before_summary["verdict"]],
+                    "after": verdict_labels[after_summary["verdict"]],
                 }
             )
-            next_number += 1
+        if before_summary.get("overall_severity") != after_summary.get(
+            "overall_severity"
+        ):
+            summary_changes.append(
+                {
+                    "label": "严重程度",
+                    "before": severity_labels.get(
+                        before_summary.get("overall_severity"), "无"
+                    ),
+                    "after": severity_labels.get(
+                        after_summary.get("overall_severity"), "无"
+                    ),
+                }
+            )
+        if before_summary["open_finding_count"] != after_summary["open_finding_count"]:
+            summary_changes.append(
+                {
+                    "label": "待处理问题",
+                    "before": str(before_summary["open_finding_count"]),
+                    "after": str(after_summary["open_finding_count"]),
+                }
+            )
 
-    evidence_view: list[dict[str, Any]] = []
-    for node in nodes:
-        if node["type"] != "evidence":
-            continue
-        item = copy.deepcopy(node)
-        item["_related_findings"] = [
-            edge["from"]
-            for edge in edges
-            if edge["type"] == "supported_by_evidence" and edge["to"] == node["id"]
-        ]
-        item["_source_label"] = {
-            "host_llm": "宿主语义审查",
-            "test": "测试",
-            "lint": "静态检查",
-            "typecheck": "类型检查",
-            "security_scan": "安全扫描",
-        }.get(item["source"], item["source"])
-        item["_status_label"] = {
-            "pass": "通过",
-            "fail": "发现问题",
-            "error": "错误",
-            "skipped": "已跳过",
-        }.get(item["status"], item["status"])
-        evidence_view.append(item)
+        event_views: list[dict[str, Any]] = []
+        for event in revision["events"]:
+            action = event["action"]
+            value: str | None = None
+            if action == "comment":
+                label = "删除评论" if event["comment"] is None else "更新评论"
+                value = event["comment"]
+            elif action == "severity_override":
+                label = "恢复模型严重度" if event["severity"] is None else "调整严重度"
+                value = severity_labels.get(event["severity"])
+            else:
+                label = {
+                    "accept": "确认有效",
+                    "false_positive": "标记误报",
+                }[action]
+            event_views.append(
+                {
+                    "target_title": node_by_id[event["target_id"]]["title"],
+                    "label": label,
+                    "value": value,
+                }
+            )
 
-    fixes_view: list[dict[str, Any]] = []
-    for node in nodes:
-        if node["type"] != "fix":
-            continue
-        item = copy.deepcopy(node)
-        item["_source_findings"] = [
-            edge["from"]
-            for edge in edges
-            if edge["type"] == "requires_fix" and edge["to"] == node["id"]
-        ]
-        item["_status_label"] = {
-            "open": "待处理",
-            "done": "已完成",
-            "deferred": "已延期",
-            "wont_fix": "不修复",
-        }.get(item["status"], item["status"])
-        fixes_view.append(item)
-
-    status_copy = {
-        "not_reviewed": (
-            "审查尚未执行",
-            "没有宿主审查依据，不能把零问题解读为干净结果。",
-            "warning",
-        ),
-        "complete": (
-            "审查输出已完整接收",
-            "这只表示审查者输出满足结构契约，不代表上下文覆盖充分；请结合结论、问题与未计分项人工判断。",
-            "clean" if summary["verdict"] == "pass_candidate" else "warning",
-        ),
-        "partial": (
-            "审查仅部分完成",
-            "已有问题可以查看，但本轮不能作为完整或干净结论。",
-            "warning",
-        ),
-        "failed": (
-            "审查失败",
-            "报告保留失败状态，不把缺失 finding 包装为通过。",
-            "failure",
-        ),
-    }
-    status_heading, status_message, status_callout_class = status_copy[summary["review_status"]]
-    if summary["verdict"] == "needs_human_triage":
-        status_message = "本轮只有未精确锚定的语义风险，无法可靠计算数字风险分。"
-        status_callout_class = "warning"
-
-    verdict_labels = {
-        "pass_candidate": "候选通过",
-        "concerns": "存在待处理问题",
-        "needs_human_triage": "需要人工分诊",
-        "inconclusive": "结论不充分",
-    }
-    is_feedback_revision = summary.get("basis") == "human_adjudication"
-    model_verdict = summary.get("model_verdict", summary["verdict"])
-    model_risk_score = summary.get("model_risk_score", summary["risk_score"])
-    human_findings = [
-        view for view in finding_views if view["human_adjudication"]
-    ]
-    revision = (
-        current_run.get("revision")
-        if current_run and current_run.get("kind") == "feedback_revision"
-        else None
-    )
-    run_views = []
-    for run in runs:
-        run_revision = run.get("revision") or {}
-        run_views.append(
+        feedback_history.append(
             {
                 "run": run,
-                "kind_label": (
-                    "人工反馈修订"
-                    if run.get("kind") == "feedback_revision"
-                    else "模型审查"
-                ),
-                "source_run_id": run_revision.get("source_run_id"),
-                "source_audit_sha256": run_revision.get("source_audit_sha256"),
-                "feedback_sha256": run_revision.get("feedback_sha256"),
-                "feedback_count": len(run_revision.get("events", [])),
+                "summary_changes": summary_changes,
+                "events": event_views,
             }
         )
-    summary_audit_status = summary.get("summary_audit_status", "not_audited")
-    summary_audit_labels = {
-        "supported": "变更目标：已验证",
-        "challenged": "变更目标：存在偏差",
-        "partial": "变更目标：部分达成",
-        "not_audited": "变更目标：未审计",
-    }
-    summary_audit_badge_classes = {
-        "supported": "ok",
-        "challenged": "risk",
-        "partial": "warn",
-        "not_audited": "soft",
-    }
-    score = summary["risk_score"]
-    if score is None:
-        risk_score_label = "无法可靠评分"
-        risk_badge_label = "不适用"
-        risk_badge_class = "warn"
-    else:
-        risk_score_label = str(score)
-        if score >= 60:
-            risk_badge_label, risk_badge_class = "高", "risk"
-        elif score >= 25:
-            risk_badge_label, risk_badge_class = "中", "warn"
-        else:
-            risk_badge_label, risk_badge_class = "低", "ok"
 
-    has_run_history = len(runs) > 1
-    fixes_section_number = next_number
-    history_section_number = fixes_section_number + (1 if fixes_view else 0)
-    evidence_section_number = history_section_number + (1 if has_run_history else 0)
-    title = current_run["label"] if current_run else data["source"].get("description", "Audit Report")
+    overall_severity = summary.get("overall_severity")
+    overall_severity_label = (
+        "不适用"
+        if overall_severity is None
+        else severity_labels.get(overall_severity, overall_severity)
+    )
+    fix_truth_label = (
+        "本轮未验证"
+        if not isinstance(frozen_verification, Mapping)
+        else "验证未完成"
+        if fix_verification_view is None
+        else " / ".join(
+            f"{item['label']} {item['count']}"
+            for item in fix_verification_view["status_counts"]
+        )
+    )
+    status_messages = {
+        "not_reviewed": "未执行模型审查，不能把零问题理解为通过。",
+        "partial": "只取得部分审查结果，本轮不能作为完整结论。",
+        "failed": "审查失败；报告保留失败事实，不把缺失问题包装为通过。",
+    }
+    status_note = summary.get("notice") or status_messages.get(summary["review_status"])
+    source_provenance = data["source"].get("extensions", {}).get("evidentloop", {})
+    title = (
+        model_run["label"]
+        if model_run
+        else data["source"].get("description", "Audit Report")
+    )
     return {
         "audit": data,
         "summary": summary,
         "source_audit_sha256": source_audit_sha256,
         "current_run": current_run,
+        "model_run": model_run,
         "title": title,
         "source_ref_label": _source_ref_label(str(data["source"]["ref"])),
-        "demo_replay": demo_replay,
-        "demo_fixture_id": source_provenance.get("fixture_id"),
         "changes": changes,
-        "primary_change": changes[0] if changes else None,
+        "primary_change": primary_change,
+        "semantic_change_summary": semantic_change_summary,
+        "change_stats": change_stats,
         "files": files_view,
-        "claims": claims,
-        "finding_groups": finding_groups,
-        "human_findings": human_findings,
-        "human_disposition_count": sum(
-            "disposition" in view["human_adjudication"] for view in human_findings
-        ),
-        "human_comment_count": sum(
-            "comment" in view["human_adjudication"] for view in human_findings
-        ),
-        "human_severity_count": sum(
-            "severity_override" in view["human_adjudication"]
-            for view in human_findings
-        ),
-        "is_feedback_revision": is_feedback_revision,
-        "revision": revision,
-        "run_views": run_views,
-        "model_verdict_label": verdict_labels[model_verdict],
-        "model_risk_score_label": (
-            "无法可靠评分" if model_risk_score is None else str(model_risk_score)
-        ),
+        "change_claims": change_claims,
+        "findings": finding_views,
+        "fix_verification_view": fix_verification_view,
+        "feedback_history": feedback_history,
         "feedback_target_count": len(finding_views),
-        "fixes": fixes_view,
-        "evidence": evidence_view,
-        "next_section_number": next_number,
-        "fixes_section_number": fixes_section_number,
-        "history_section_number": history_section_number,
-        "evidence_section_number": evidence_section_number,
-        "has_run_history": has_run_history,
-        "run_status_labels": {
-            "pass_candidate": "候选通过",
-            "concerns": "存在待处理问题",
-            "needs_human_triage": "需要人工分诊",
-            "inconclusive": "结论不充分",
+        "change_type_labels": change_type_labels,
+        "claim_status_labels": claim_status_labels,
+        "report_truth": {
+            "review_status": review_status_labels[summary["review_status"]],
+            "verdict": verdict_labels[summary["verdict"]],
+            "overall_severity": overall_severity_label,
+            "fix_verification": fix_truth_label,
+            "status_note": status_note,
         },
-        "review_status_labels": {
-            "not_reviewed": "未审查",
-            "complete": "输出完整",
-            "partial": "部分完成",
-            "failed": "失败",
-        },
-        "verdict_label": verdict_labels[summary["verdict"]],
-        "risk_score_label": risk_score_label,
-        "risk_badge_label": risk_badge_label,
-        "risk_badge_class": risk_badge_class,
-        "summary_audit_label": summary_audit_labels[summary_audit_status],
-        "summary_audit_badge_class": summary_audit_badge_classes[summary_audit_status],
-        "claim_status_labels": {
-            "supported": "已支持",
-            "challenged": "有偏差",
-            "partial": "部分支持",
-            "unknown": "未知",
-        },
-        "change_type_labels": {
-            "added": "新增",
-            "modified": "修改",
-            "deleted": "删除",
-            "renamed": "重命名",
-            "binary": "二进制",
-        },
-        "status_heading": status_heading,
-        "status_message": status_message,
-        "status_callout_class": status_callout_class,
+        "demo_replay": source_provenance.get("execution_mode") == "demo_replay",
+        "demo_fixture_id": source_provenance.get("fixture_id"),
         "renderer_version": RENDERER_VERSION,
     }
 
@@ -518,9 +594,7 @@ def validate_html_trace(
         node["id"]: node for node in audit["nodes"] if node["type"] == "finding"
     }
     hunk_ids = {
-        node["hunk_id"]
-        for node in finding_by_id.values()
-        if node.get("hunk_id")
+        node["hunk_id"] for node in finding_by_id.values() if node.get("hunk_id")
     }
 
     for node_id, fingerprint in parser.nodes:
@@ -589,13 +663,11 @@ def render_audit_data(
     try:
         assert_valid_audit(audit)
         if source_audit_sha256 is None:
-            canonical = (
-                json.dumps(audit, ensure_ascii=False, indent=2) + "\n"
-            ).encode("utf-8")
+            canonical = (json.dumps(audit, ensure_ascii=False, indent=2) + "\n").encode(
+                "utf-8"
+            )
             source_audit_sha256 = f"sha256:{hashlib.sha256(canonical).hexdigest()}"
-        context = _build_context(
-            audit, source_audit_sha256=source_audit_sha256
-        )
+        context = _build_context(audit, source_audit_sha256=source_audit_sha256)
         context["trusted_css"] = _resource_text(
             "evidentloop.renderers", "static/audit.css"
         )

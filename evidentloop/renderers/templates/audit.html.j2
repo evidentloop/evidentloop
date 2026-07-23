@@ -8,394 +8,423 @@
   <style>{{ trusted_css | safe }}</style>
 </head>
 <body>
-  <main class="report-shell" data-graph-id="{{ audit.graph_id }}" data-audit-sha256="{{ source_audit_sha256 }}"{% if current_run %} data-run-id="{{ current_run.id }}"{% endif %}>
-    <header class="hero {{ summary.verdict }}"{% if current_run %} data-node-id="{{ current_run.id }}" data-node-type="run"{% endif %}>
-      <div class="hero-top">
-        <div class="hero-copy">
-          <div class="kicker">EvidentLoop · 代码变更</div>
+  <a class="skip-link" href="#report-content">跳到报告正文</a>
+  <main id="report-content" class="report-shell" data-graph-id="{{ audit.graph_id }}" data-audit-sha256="{{ source_audit_sha256 }}"{% if current_run %} data-run-id="{{ current_run.id }}"{% endif %}>
+    <header class="hero review-{{ summary.review_status }} verdict-{{ summary.verdict }}"{% if current_run %} data-node-id="{{ current_run.id }}" data-node-type="run"{% endif %}>
+      <div class="hero-heading">
+        <div>
+          <p class="kicker">EvidentLoop · 代码变更审计</p>
           <h1>{{ title }}</h1>
-          <div class="muted">
-            {% if current_run %}运行：{{ current_run.id }} · {% endif %}
-            来源：{{ source_ref_label }} · schema：{{ audit.schema_version }} · 审查状态：{{ review_status_labels.get(summary.review_status, summary.review_status) }}
-          </div>
+          {% if model_run %}<p class="hero-summary">{{ model_run.summary }}</p>{% endif %}
         </div>
-        <div class="verdict-box">
-          <span class="muted">当前结论</span>
-          <strong>{{ verdict_label }}</strong>
-          {% if is_feedback_revision %}
-          <div class="human-notice">{{ summary.notice }}</div>
-          {% else %}
-          <div class="ref">来自模型审查</div>
-          {% endif %}
+        <span class="result-chip verdict-{{ summary.verdict }}">{{ report_truth.verdict }}</span>
+      </div>
+
+      <div class="truth-grid" aria-label="报告结论">
+        <div class="truth-item">
+          <span>审查状态</span>
+          <strong>{{ report_truth.review_status }}</strong>
+        </div>
+        <div class="truth-item">
+          <span>当前结论</span>
+          <strong>{{ report_truth.verdict }}</strong>
+          <small>{{ summary.open_finding_count }} 项待处理问题</small>
+        </div>
+        <div class="truth-item">
+          <span>严重程度</span>
+          <strong>{{ report_truth.overall_severity }}</strong>
+        </div>
+        <div class="truth-item">
+          <span>旧问题验证</span>
+          <strong>{{ report_truth.fix_verification }}</strong>
         </div>
       </div>
 
-      <div class="judgment-grid" aria-label="模型判断、人工裁定与当前状态">
-        <div class="judgment-card">
-          <span>模型原判断</span>
-          <strong>{{ model_verdict_label }}</strong>
-          <div class="ref">原风险分：{{ model_risk_score_label }}</div>
-        </div>
-        <div class="judgment-card">
-          <span>我的裁定</span>
-          {% if is_feedback_revision %}
-          <strong>{{ human_disposition_count }} 项结论裁定</strong>
-          <div class="ref">{{ human_severity_count }} 项严重度调整 · {{ human_comment_count }} 条评论</div>
-          {% else %}
-          <strong>尚未写入报告</strong>
-          <div class="ref">可在问题卡片中记录待更新裁定</div>
-          {% endif %}
-        </div>
-        <div class="judgment-card">
-          <span>当前剩余问题</span>
-          <strong>{{ summary.open_finding_count }} 项</strong>
-          <div class="ref">当前结论：{{ verdict_label }} · 风险分：{{ risk_score_label }}</div>
-        </div>
+      {% if report_truth.status_note %}
+      <div class="status-note" role="note">
+        <strong>报告说明：</strong>{{ report_truth.status_note }}
       </div>
-
-      <div class="metric-grid">
-        <div class="metric">
-          <span>已计分风险分</span>
-          <strong>{{ risk_score_label }}</strong>
-          <span class="badge {{ risk_badge_class }}">{{ risk_badge_label }}</span>
-        </div>
-        <div class="metric">
-          <span>待处理问题</span>
-          <strong>{{ summary.open_finding_count }}</strong>
-          <span class="badge {{ 'risk' if summary.open_finding_count else 'ok' }}">{{ '待处理' if summary.open_finding_count else '已清空' }}</span>
-        </div>
-        <div class="metric">
-          <span>未计分问题</span>
-          <strong>{{ summary.unscored_finding_count }}</strong>
-          <span class="badge {{ 'warn' if summary.unscored_finding_count else 'soft' }}">{{ '需人工分诊' if summary.unscored_finding_count else '无' }}</span>
-        </div>
-        <div class="metric">
-          {% if summary.fix_count %}
-          <span>修复进度</span>
-          <strong>{{ summary.get('fix_done_count', 0) }}/{{ summary.fix_count }}</strong>
-          <span class="badge {{ 'ok' if summary.get('fix_done_count', 0) == summary.fix_count else 'warn' }}">{{ '完成' if summary.get('fix_done_count', 0) == summary.fix_count else '未完成' }}</span>
-          {% else %}
-          <span>影响文件</span>
-          <strong>{{ files | length }}</strong>
-          <span class="badge soft">已采集</span>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="status-callout {{ status_callout_class }}">
-        <strong>{{ status_heading }}</strong>
-        <div>{{ status_message }}</div>
-      </div>
+      {% endif %}
       {% if demo_replay %}
-      <div class="status-callout warning" data-demo-provenance="frozen-replay">
-        <strong>合成演示 · 固定 replay</strong>
-        <div>fixture：{{ demo_fixture_id }}。本报告没有执行实时 AI 审查，只演示离线确定性审计链路。</div>
+      <div class="status-note demo-note" data-demo-provenance="frozen-replay">
+        <strong>合成演示：</strong>fixture {{ demo_fixture_id }}。没有执行实时 AI 审查。
       </div>
       {% endif %}
     </header>
 
-    {% if changes or current_run %}
-    <section class="panel"{% if primary_change %} data-node-id="{{ primary_change.id }}" data-node-type="change"{% endif %}>
-      <div class="section-title">
-        <h2>1. 变更摘要与审计结论</h2>
-        <span class="badge {{ summary_audit_badge_class }}">{{ summary_audit_label }}</span>
-      </div>
-      {% if current_run %}<p class="overall-summary">{{ current_run.summary }}</p>{% endif %}
-      <div class="summary-grid{% if not claims %} summary-grid-empty-claim{% endif %}">
+    {% if changes or model_run %}
+    <section class="panel change-section"{% if primary_change %} data-node-id="{{ primary_change.id }}" data-node-type="change"{% endif %}>
+      <div class="section-heading">
         <div>
-          {% for change in changes %}
-            <article data-node-id="{{ change.id }}" data-node-type="change"{% if change._edge_id %} data-edge-id="{{ change._edge_id }}"{% endif %}>
-              <h3>{{ change.title }}</h3>
-              <p>{{ change.summary }}</p>
-            </article>
-          {% endfor %}
-          {% if files %}
-          {% if files | length > 8 %}
-          <details class="change-files">
-            <summary>影响文件（{{ files | length }}）· 查看全部</summary>
-          {% endif %}
-          <div class="change-list">
-            {% for file in files %}
-            <div class="file-change" data-node-id="{{ file.id }}" data-node-type="file"{% if file._edge_id %} data-edge-id="{{ file._edge_id }}"{% endif %}>
-              <span class="file-path">{{ file.path }}</span>
-              <span class="diff-stat">
-                <span class="add">+{{ file.get('additions', 0) }}</span>
-                <span class="del">-{{ file.get('deletions', 0) }}</span>
-                · {{ change_type_labels.get(file.get('change_type', 'modified'), file.get('change_type', 'modified')) }}{% if file.get('role') %} · {{ file.role }}{% endif %}
-              </span>
+          <p class="eyebrow">先看业务变化</p>
+          <h2>变更摘要</h2>
+        </div>
+        <span class="count-chip">{{ files | length }} 个文件</span>
+      </div>
+      {% if semantic_change_summary %}
+      <article class="change-summary semantic-change-summary" data-node-id="{{ semantic_change_summary.overview.id }}" data-node-type="change"{% if semantic_change_summary.overview._edge_id %} data-edge-id="{{ semantic_change_summary.overview._edge_id }}"{% endif %}>
+        <p class="change-lead">{{ semantic_change_summary.overview.summary }}</p>
+
+        <div class="change-theme-grid" aria-label="核心实现变化">
+          {% for item in semantic_change_summary.themes %}
+          <section class="change-theme" data-node-id="{{ item.node.id }}" data-node-type="change"{% if item.node._edge_id %} data-edge-id="{{ item.node._edge_id }}"{% endif %}>
+            <span class="change-theme-index" aria-hidden="true">{{ "%02d"|format(loop.index) }}</span>
+            <div>
+              <h3>{{ item.node.title }}</h3>
+              <p>{{ item.node.summary }}</p>
+              {% if item.impact %}<p class="change-impact"><strong>影响范围：</strong>{{ item.impact }}</p>{% endif %}
             </div>
-            {% endfor %}
-          </div>
-          {% if files | length > 8 %}</details>{% endif %}
-          {% endif %}
-        </div>
-        <div class="claim-list{% if not claims %} claim-list-empty{% endif %}">
-          {% for item in claims %}
-          <div class="claim" data-node-id="{{ item.owner_id }}" data-claim-id="{{ item.claim.id }}" data-status="{{ item.claim.status }}">
-            <strong>{{ claim_status_labels.get(item.claim.status, item.claim.status) }}</strong>
-            <p>{{ item.claim.text }}</p>
-            <div class="ref">claim: {{ item.claim.id }} · owner: {{ item.owner_id }}</div>
-          </div>
-          {% else %}
-          <div class="claim claim-empty" data-status="unknown">
-            <strong>暂无摘要声明审计</strong>
-            <span class="muted">未生成结构化 claim</span>
-          </div>
+          </section>
           {% endfor %}
         </div>
+
+        <aside class="change-attention" aria-label="本次审计重点">
+          <strong>本次审计重点</strong>
+          <p>{{ semantic_change_summary.review_focus }}</p>
+        </aside>
+
+        <p class="change-stats">
+          <strong>变更规模：</strong>{{ change_stats.file_count }} 个文件，新增 {{ change_stats.additions }} 行、删除 {{ change_stats.deletions }} 行{% if change_stats.binary_count %}，其中 {{ change_stats.binary_count }} 个二进制文件{% endif %}。下方保留完整文件清单和问题关联。
+        </p>
+      </article>
+      {% else %}
+      {% for change in changes %}
+      <article class="change-summary" data-node-id="{{ change.id }}" data-node-type="change"{% if change._edge_id %} data-edge-id="{{ change._edge_id }}"{% endif %}>
+        <h3>{{ change.title }}</h3>
+        <p>{{ change.summary }}</p>
+      </article>
+      {% endfor %}
+      {% endif %}
+
+      {% if change_claims %}
+      <div class="change-claims" aria-label="变更声明判断">
+        {% for item in change_claims %}
+        <article class="change-claim status-{{ item.claim.status }}{% if item.related_state %} related-{{ item.related_state }}{% endif %}" data-node-id="{{ item.owner_id }}" data-claim-id="{{ item.claim.id }}">
+          <span class="claim-status">{{ item.status_label }}</span>
+          <div>
+            <strong>{{ item.claim.text }}</strong>
+            {% if item.related_state_label %}
+            <p class="claim-current-state">当前裁定：{{ item.related_state_label }}</p>
+            {% endif %}
+            <p>{{ item.claim.reason }}</p>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if files %}
+      {% if files | length > 8 %}<details class="file-list-details"><summary>查看全部 {{ files | length }} 个变更文件</summary>{% endif %}
+      <div class="file-list">
+        {% for file in files %}
+        <div class="file-row" data-node-id="{{ file.id }}" data-node-type="file"{% if file._edge_id %} data-edge-id="{{ file._edge_id }}"{% endif %}>
+          <div>
+            <strong class="file-path">{{ file.path }}</strong>
+            <span class="file-meta">
+              <span class="add">+{{ file.get('additions', 0) }}</span>
+              <span class="del">−{{ file.get('deletions', 0) }}</span>
+              · {{ change_type_labels.get(file.get('change_type', 'modified'), file.get('change_type', 'modified')) }}
+            </span>
+          </div>
+          {% if file._finding_ids %}
+          <a class="issue-link" href="#{{ file._issue_link_id }}">{{ file._issue_link_label }}</a>
+          {% else %}
+          <span class="no-issue">未关联问题</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% if files | length > 8 %}</details>{% endif %}
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% if fix_verification_view %}
+    <section class="panel fix-verification-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">独立审查当前新 diff</p>
+          <h2>上一轮问题是否已解决</h2>
+        </div>
+        <div class="status-counts" aria-label="修复验证结果计数">
+          {% for item in fix_verification_view.status_counts %}
+          <span class="status-chip status-{{ item.status }}">{{ item.label }} {{ item.count }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      <p class="section-intro">这里只判断明确选择的问题，不把整个新 diff 都推断为修复。</p>
+      <div class="verification-list">
+        {% for target in fix_verification_view.targets %}
+        <article class="verification-card status-{{ target.claim.status }}" data-node-id="{{ fix_verification_view.owner_id }}" data-claim-id="{{ target.claim.id }}">
+          <div class="verification-source">
+            <span class="claim-status">{{ target.status_label }}</span>
+            <div>
+              <p class="label">来源问题</p>
+              <h3>{{ target.source.source_title }}</h3>
+              <p class="technical-id">{{ target.source.finding_id }}</p>
+            </div>
+          </div>
+          <div class="verification-claim">
+            <p class="label">用户声明</p>
+            <strong>{{ target.source.claim }}</strong>
+          </div>
+          <div class="verification-reason">
+            <p class="label">本轮判断</p>
+            <p>{{ target.claim.reason }}</p>
+            {% if target.evidence %}
+            <ul class="evidence-list">
+              {% for evidence in target.evidence %}
+              <li data-node-id="{{ evidence.node.id }}" data-node-type="{{ evidence.node.type }}" data-edge-id="{{ evidence.edge_id }}">
+                <span>{{ '支持证据' if evidence.edge_type == 'supports_claim' else '挑战证据' }}</span>
+                {{ evidence.node.summary if evidence.node.get('summary') else evidence.node.title }}
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="evidence-none">没有足够证据支持或挑战该声明。</p>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
       </div>
     </section>
     {% endif %}
 
-    {% for group in finding_groups %}
-    <section class="panel findings-section" data-category="{{ group.category }}">
-      <div class="section-title">
-        <h2>{{ group.number }}. {{ group.label }}</h2>
-        <span class="badge soft">{{ group.findings | length }} 条</span>
+    {% if findings %}
+    <section class="panel findings-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">当前 diff</p>
+          <h2>当前问题与裁定</h2>
+        </div>
+        <span class="count-chip">{{ findings | length }} 条</span>
       </div>
       <div class="finding-stack">
-        {% for view in group.findings %}
+        {% for view in findings %}
         {% set finding = view.node %}
-        <article class="finding-card {{ finding.severity }}" data-node-id="{{ finding.id }}" data-node-type="finding" data-category="{{ finding.category }}" data-severity="{{ finding.severity }}" data-fingerprint="{{ finding.fingerprint }}"{% if view.file_edge_id %} data-edge-id="{{ view.file_edge_id }}"{% endif %}>
-          <div class="finding-header">
-            <span class="badge {{ 'risk' if finding.severity == 'high' else ('warn' if finding.severity == 'medium' else 'info') }}">{{ view.severity_label }}</span>
-            <span class="badge soft category-badge">{{ group.label }}</span>
-            <div>
-              <span class="finding-title">{{ finding.title }}</span>
-              <span class="location">
-                {% if finding.get('file_path') %}{{ finding.file_path }}{% if finding.get('start_line') %}:{{ finding.start_line }}{% if finding.end_line != finding.start_line %}-{{ finding.end_line }}{% endif %}{% endif %}{% else %}位置未确认{% endif %}
+        <details id="{{ finding.id }}" class="finding-card severity-{{ finding.severity }} state-{{ finding.status }}" data-node-id="{{ finding.id }}" data-node-type="finding" data-category="{{ finding.category }}" data-severity="{{ finding.severity }}" data-fingerprint="{{ finding.fingerprint }}"{% if view.file_edge_id %} data-edge-id="{{ view.file_edge_id }}"{% endif %}{% if finding.status == 'open' %} open{% endif %}>
+          <summary class="finding-header">
+            <span class="finding-title-block">
+              <span class="badge-row">
+                <span class="finding-position" aria-label="第 {{ loop.index }} 个问题，共 {{ loop.length }} 个">问题 {{ loop.index }}/{{ loop.length }}</span>
+                <span class="status-chip severity-{{ finding.severity }}">{% if finding.status == 'open' %}{{ view.severity_label }}严重度{% else %}原严重度：{{ view.model_severity_label }}{% endif %}</span>
+                <span class="status-chip state-{{ finding.status }}">{{ view.status_label }}</span>
               </span>
-            </div>
-            <span class="badge {{ 'ok' if finding.status == 'fixed' else ('soft' if finding.status == 'dismissed' else 'warn') }}">{{ view.status_label }}</span>
-          </div>
-          <div class="finding-body">
-            <div class="finding-layout">
-              <div>
-                <div class="finding-note{% if view.unanchored %} unanchored{% endif %}">
-                  {% if view.unanchored %}<strong>语义发现，位置未精确锚定且未计分：</strong>{% else %}<strong>为什么是问题：</strong>{% endif %}
-                  {{ finding.detail }}
-                </div>
+              <span class="finding-title" role="heading" aria-level="3">{{ finding.title }}</span>
+              <span class="location">{% if finding.get('file_path') %}{{ finding.file_path }}{% if finding.get('start_line') %}:{{ finding.start_line }}{% if finding.end_line != finding.start_line %}-{{ finding.end_line }}{% endif %}{% endif %}{% else %}位置未确认{% endif %}</span>
+            </span>
+            <span class="finding-summary-meta">
+              <span class="finding-toggle-label">
+                <span class="finding-toggle-closed">查看详情</span>
+                <span class="finding-toggle-open">收起详情</span>
+              </span>
+              <svg class="details-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="m4 6 4 4 4-4"></path>
+              </svg>
+            </span>
+          </summary>
 
-                {% if view.hunk_view %}
-                <div class="hunk" data-hunk-id="{{ finding.hunk_id }}">
-                  <div class="hunk-caption">
-                    <span>{{ view.hunk_view.header }}</span>
-                    <span>{% if view.hunk_view.is_excerpt %}可信节选 · {% endif %}展示 {{ view.hunk_view.displayed_line_count }}/{{ view.hunk_view.total_line_count }} 行 · <span class="hunk-hit-key">橙色标记</span>：{{ view.line_side_label }}第 {{ finding.highlight_lines | join(', ') }} 行</span>
-                  </div>
-                  <div class="hunk-scroll">
-                    <table class="hunk-table" aria-label="可信 unified diff 证据">
-                      <thead><tr><th></th><th>旧行</th><th>新行</th><th>代码</th></tr></thead>
-                      <tbody>
-                        {% for line in view.hunk_view.lines %}
-                        {% if line.kind == 'omitted' %}
-                        <tr class="hunk-omitted">
-                          <td class="hunk-omitted-cell" colspan="4">… 省略 {{ line.omitted_count }} 行可信 diff 内容 …</td>
-                        </tr>
-                        {% else %}
-                        <tr class="hunk-{{ line.kind }}{% if line.highlighted %} hunk-line-active{% endif %}"{% if line.highlighted %} data-highlighted="true"{% endif %}>
-                          <td class="hunk-stripe"></td>
-                          <td class="hunk-num">{{ line.old_number if line.old_number is not none else '' }}</td>
-                          <td class="hunk-num">{{ line.new_number if line.new_number is not none else '' }}</td>
-                          <td class="hunk-code">{{ line.prefix }}{{ line.content }}</td>
-                        </tr>
-                        {% endif %}
-                        {% endfor %}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-                {% endif %}
-              </div>
-
-              <aside class="chain">
+          <div class="finding-content">
+            <div class="problem-explanation{% if view.unanchored %} unanchored{% endif %}">
+              <strong>{{ '语义发现，位置未精确锚定' if view.unanchored else '为什么是问题' }}</strong>
+              <p>{{ finding.detail }}</p>
+              {% if view.evidence_links %}
+              <ul class="evidence-list compact">
                 {% for link in view.evidence_links %}
-                <div class="chain-row">
-                  <span class="chain-label">审查依据</span>
-                  <span data-node-id="{{ link.node.id }}" data-node-type="evidence" data-edge-id="{{ link.edge_id }}">{{ link.node.summary }}</span>
-                </div>
+                <li data-node-id="{{ link.node.id }}" data-node-type="evidence" data-edge-id="{{ link.edge_id }}">
+                  <span>审查依据</span>{{ link.node.summary }}
+                </li>
                 {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+
+            {% if view.fix_links %}
+            <div class="finding-fixes">
+              <strong>建议怎么改</strong>
+              <div class="finding-fix-list">
                 {% for link in view.fix_links %}
-                <div class="chain-row">
-                  <span class="chain-label">修复建议</span>
-                  <span data-node-id="{{ link.node.id }}" data-node-type="fix" data-edge-id="{{ link.edge_id }}">{{ link.node.id }} · {{ link.node.title }}</span>
+                <div class="finding-fix" data-node-id="{{ link.node.id }}" data-node-type="fix" data-edge-id="{{ link.edge_id }}">
+                  <h4>{{ link.node.title }}</h4>
+                  <p>{{ link.node.detail }}</p>
                 </div>
                 {% endfor %}
-                {% if not view.evidence_links and not view.fix_links %}
-                <div class="chain-row"><span class="chain-label">关系</span><span>无关联审查依据或修复建议</span></div>
-                {% endif %}
-              </aside>
+              </div>
             </div>
+            {% endif %}
 
-            {% for link in view.fix_links %}
-            <div class="fix-inline" data-node-id="{{ link.node.id }}" data-node-type="fix">
-              <strong>{{ link.node.id }}（{{ link.node.priority | upper }}）：</strong> {{ link.node.detail }}
-            </div>
-            {% endfor %}
-
-            <div class="finding-judgments" aria-label="该问题的人机判断">
+            <div class="adjudication-strip" aria-label="问题裁定摘要">
               <div>
                 <span>模型原判断</span>
                 <strong>{{ view.model_status_label }} · {{ view.model_severity_label }}</strong>
               </div>
               <div>
-                <span>我的裁定</span>
+                <span>已应用的我的裁定</span>
                 {% if view.human_adjudication %}
                 <strong>{{ view.human_disposition_label or '未改变问题结论' }}</strong>
-                <div class="ref">
-                  {% if view.human_severity_label %}严重度改为{{ view.human_severity_label }}{% endif %}
+                <small>
+                  {% if view.human_severity_label %}严重度：{{ view.human_severity_label }}{% endif %}
                   {% if view.human_severity_label and view.human_adjudication.get('comment') %} · {% endif %}
                   {% if view.human_adjudication.get('comment') %}评论：{{ view.human_adjudication.comment }}{% endif %}
-                </div>
+                </small>
                 {% else %}
                 <strong>无</strong>
                 {% endif %}
               </div>
               <div>
-                <span>当前状态</span>
-                <strong>{{ view.status_label }} · {{ view.severity_label }}</strong>
+                <span>待提交变化</span>
+                <strong data-feedback-pending-for="{{ finding.id }}">无</strong>
               </div>
             </div>
 
-            <div class="feedback-placeholder" data-feedback-for="{{ finding.id }}" data-fingerprint="{{ finding.fingerprint }}" data-applied-disposition="{{ view.human_adjudication.get('disposition', '') }}" data-applied-comment="{{ view.human_adjudication.get('comment', '') }}" data-applied-severity="{{ view.human_adjudication.get('severity_override', '') }}">
+            {% if view.hunk_view %}
+            <div class="diff-block" data-hunk-id="{{ finding.hunk_id }}">
+              <div class="diff-file-header">
+                <strong>{{ finding.file_path }}</strong>
+                <span>{{ view.hunk_view.header }}</span>
+              </div>
+              <div class="diff-caption">
+                {% if view.hunk_view.is_excerpt %}可信节选 · {% endif %}展示 {{ view.hunk_view.displayed_line_count }}/{{ view.hunk_view.total_line_count }} 行
+                · 橙色边线标记 {{ view.line_side_label }}第 {{ finding.highlight_lines | join(', ') }} 行
+              </div>
+              <div class="hunk-scroll" tabindex="0" aria-label="可信单栏 unified diff，可横向和纵向滚动">
+                <table class="hunk-table">
+                  <thead><tr><th aria-label="标记"></th><th>旧行</th><th>新行</th><th>代码</th></tr></thead>
+                  <tbody>
+                    {% for line in view.hunk_view.lines %}
+                    {% if line.kind == 'omitted' %}
+                    <tr class="hunk-omitted"><td colspan="4">… 省略 {{ line.omitted_count }} 行可信 diff 内容 …</td></tr>
+                    {% else %}
+                    <tr class="hunk-{{ line.kind }}{% if line.highlighted %} hunk-line-active{% endif %}"{% if line.highlighted %} data-highlighted="true"{% endif %}>
+                      <td class="hunk-stripe"></td>
+                      <td class="hunk-num">{{ line.old_number if line.old_number is not none else '' }}</td>
+                      <td class="hunk-num">{{ line.new_number if line.new_number is not none else '' }}</td>
+                      <td class="hunk-code">{{ line.prefix }}{{ line.content }}</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="feedback-panel" data-feedback-for="{{ finding.id }}" data-fingerprint="{{ finding.fingerprint }}" data-applied-disposition="{{ view.human_adjudication.get('disposition', '') }}" data-applied-comment="{{ view.human_adjudication.get('comment', '') }}" data-applied-severity="{{ view.human_adjudication.get('severity_override', '') }}">
               <div class="feedback-heading">
-                <div><strong>更新我的裁定</strong><div class="ref">只记录相对当前报告的新变化，不触发代码修改或模型复审。</div></div>
-                <span class="badge soft" data-feedback-state>待决策</span>
+                <div>
+                  <strong>更新我的裁定</strong>
+                  <p>只记录相对当前报告的新变化，不修改代码，也不重新审查。</p>
+                </div>
+                <span class="status-chip neutral" data-feedback-state>待决策</span>
               </div>
               <div class="feedback-actions" role="group" aria-label="问题决策">
                 <button type="button" class="button" data-feedback-action="accept" aria-pressed="false">确认有效</button>
                 <button type="button" class="button" data-feedback-action="false_positive" aria-pressed="false">标记误报</button>
               </div>
               <details class="feedback-more">
-                <summary>评论与严重度调整</summary>
+                <summary>
+                  评论与严重度
+                  <svg class="details-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <path d="m4 6 4 4 4-4"></path>
+                  </svg>
+                </summary>
                 <div class="feedback-controls">
-                <label>
-                  严重度调整
-                  <select data-feedback-severity>
-                    <option value="">恢复模型原严重度</option>
-                    <option value="high">高</option>
-                    <option value="medium">中</option>
-                    <option value="low">低</option>
-                    <option value="note">提示</option>
-                  </select>
-                </label>
-                <label>
-                  评论
-                  <textarea rows="3" maxlength="4000" placeholder="可选；清空后保存会移除已有评论" data-feedback-comment></textarea>
-                </label>
-                <div class="feedback-comment-actions">
-                  <button type="button" class="button" data-feedback-action="comment">保存评论</button>
-                  <span class="ref" role="status" aria-live="polite" data-feedback-message>尚未记录决策</span>
-                </div>
+                  <label>严重度调整
+                    <select data-feedback-severity>
+                      <option value="">恢复模型原严重度</option>
+                      <option value="high">高</option>
+                      <option value="medium">中</option>
+                      <option value="low">低</option>
+                      <option value="note">提示</option>
+                    </select>
+                  </label>
+                  <label>评论
+                    <textarea rows="3" maxlength="4000" placeholder="可选；清空后保存会移除已有评论" data-feedback-comment></textarea>
+                  </label>
+                  <div class="feedback-comment-actions">
+                    <button type="button" class="button secondary" data-feedback-action="comment">保存评论</button>
+                    <span role="status" aria-live="polite" data-feedback-message>尚未记录变化</span>
+                  </div>
                 </div>
               </details>
             </div>
           </div>
-        </article>
+        </details>
         {% endfor %}
       </div>
     </section>
-    {% endfor %}
+    {% endif %}
 
     {% if feedback_target_count %}
-    <section class="panel feedback-toolbar" aria-labelledby="feedback-export-title">
+    <section class="panel feedback-export" aria-labelledby="feedback-export-title">
       <div>
-        <h2 id="feedback-export-title">把裁定交给 AI 更新报告</h2>
-        <p class="muted">待更新内容仅保存在当前浏览器，并按 graph、run 与 finding fingerprint 隔离；点击复制前不会离开本页。</p>
-        <p class="ref" data-feedback-summary>0 项决策 · 0 条评论 · 不自动上传</p>
-        <p class="ref" data-feedback-storage-status>本地保存可用</p>
+        <p class="eyebrow">当前浏览器中的待提交变化</p>
+        <h2 id="feedback-export-title">交给 AI 更新报告</h2>
+        <p>内容按当前 graph、run 和问题 fingerprint 隔离；复制或下载前不会离开本页。</p>
+        <p class="feedback-summary" data-feedback-summary>0 项决策 · 0 条评论 · 不自动上传</p>
+        <p class="storage-status" data-feedback-storage-status>本地保存可用</p>
       </div>
-      <div class="feedback-export-actions">
-        <button type="button" class="button primary" data-feedback-copy>复制给 AI 更新报告</button>
-        <button type="button" class="button secondary" data-feedback-export>下载 JSONL</button>
-        <span class="ref" role="status" aria-live="polite" data-feedback-export-status>尚未复制</span>
-      </div>
-    </section>
-    {% endif %}
-
-    {% if fixes %}
-    <section class="panel">
-      <div class="section-title">
-        <h2>{{ fixes_section_number }}. 修复建议</h2>
-        <span class="badge soft">{{ fixes | length }} 条</span>
-      </div>
-      <div class="data-table-wrap">
-        <table class="data-table">
-          <thead><tr><th>优先级</th><th>修复项</th><th>状态</th><th>来源</th></tr></thead>
-          <tbody>
-            {% for fix in fixes %}
-            <tr data-node-id="{{ fix.id }}" data-node-type="fix">
-              <td>{{ fix.priority | upper }}</td>
-              <td><strong>{{ fix.title }}</strong><div class="ref">{{ fix.detail }}</div></td>
-              <td><span class="badge {{ 'ok' if fix.status == 'done' else 'warn' }}">{{ fix._status_label }}</span></td>
-              <td class="ref">{{ fix._source_findings | join(', ') if fix._source_findings else '—' }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="feedback-export-control">
+        <div class="feedback-export-actions">
+          <button type="button" class="button primary" data-feedback-copy>复制给 AI</button>
+          <button type="button" class="button" data-feedback-export>下载 JSONL</button>
+        </div>
+        <span class="export-status" role="status" aria-live="polite" data-feedback-export-status>尚未导出</span>
       </div>
     </section>
     {% endif %}
 
-    {% if has_run_history %}
-    <section class="panel">
-      <div class="section-title">
-        <h2>{{ history_section_number }}. 多轮对比</h2>
-        <span class="badge soft">{{ audit.runs | length }} 轮</span>
+    {% if feedback_history %}
+    <section class="panel feedback-history-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">仅当前 diff</p>
+          <h2>反馈与复审历史</h2>
+        </div>
+        <span class="count-chip">{{ feedback_history | length }} 轮</span>
       </div>
-      <div class="data-table-wrap">
-        <table class="data-table">
-          <thead><tr><th>运行</th><th>状态</th><th>摘要</th></tr></thead>
-          <tbody>
-            {% for view in run_views %}
-            {% set run = view.run %}
-            <tr data-node-id="{{ run.id }}" data-node-type="run">
-              <td>{{ run.label }}<div class="ref">{{ view.kind_label }}</div></td>
-              <td>{{ run_status_labels.get(run.status, run.status) }}</td>
-              <td>
-                {{ run.summary }}
-                {% if view.source_run_id %}
-                <details class="revision-details">
-                  <summary>修订详情 · 本轮采用 {{ view.feedback_count }} 条反馈</summary>
-                  <div class="ref">source run：{{ view.source_run_id }}</div>
-                  <div class="ref">source audit：{{ view.source_audit_sha256 }}</div>
-                  <div class="ref">feedback：{{ view.feedback_sha256 }}</div>
-                </details>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      <ol class="history-list">
+        {% for item in feedback_history %}
+        <li data-node-id="{{ item.run.id }}" data-node-type="run">
+          <div class="history-summary">
+            <strong>{{ item.run.label }}</strong>
+            {% if item.summary_changes %}
+            <p>报告变化：{% for change in item.summary_changes %}{{ change.label }}：{{ change.before }} → {{ change.after }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+            {% else %}
+            <p>报告结论未变化</p>
+            {% endif %}
+          </div>
+          <div class="history-actions">
+            <strong class="history-actions-title">本轮裁定</strong>
+            <ul>
+              {% for event in item.events %}
+              <li class="history-event">
+                <span class="history-event-target">{{ event.target_title }}</span>
+                <span class="history-event-action">{{ event.label }}{% if event.value %}：{{ event.value }}{% endif %}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
     </section>
     {% endif %}
 
-    {% if evidence %}
-    <section class="panel">
-      <div class="section-title">
-        <h2>{{ evidence_section_number }}. 审查依据详情</h2>
-        <span class="badge soft">{{ evidence | length }} 条</span>
-      </div>
-      <details class="evidence-details">
-        <summary>查看全部 {{ evidence | length }} 条审查依据</summary>
-      <div class="data-table-wrap">
-        <table class="data-table">
-          <thead><tr><th>证据</th><th>来源</th><th>状态</th><th>关联</th></tr></thead>
-          <tbody>
-            {% for item in evidence %}
-            <tr data-node-id="{{ item.id }}" data-node-type="evidence" data-status="{{ item.status }}">
-              <td>{{ item.summary }}{% if item.get('detail') %}<div class="ref">{{ item.detail }}</div>{% endif %}</td>
-              <td>{{ item._source_label }}</td>
-              <td><span class="badge {{ 'ok' if item.status == 'pass' else ('risk' if item.status in ['fail', 'error'] else 'soft') }}">{{ item._status_label }}</span></td>
-              <td class="ref">{{ item._related_findings | join(', ') if item._related_findings else '—' }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      </details>
-    </section>
-    {% endif %}
+    <details class="panel report-identity">
+      <summary>报告身份与校验信息</summary>
+      <dl>
+        <div><dt>报告版本</dt><dd>{{ source_audit_sha256 }}</dd></div>
+        <div><dt>Diff 版本</dt><dd>{{ audit.get('extensions', {}).get('evidentloop', {}).get('diff_version', '—') }}</dd></div>
+        <div><dt>来源</dt><dd>{{ source_ref_label }}</dd></div>
+        <div><dt>Schema</dt><dd>{{ audit.schema_version }}</dd></div>
+        <div><dt>Graph</dt><dd>{{ audit.graph_id }}</dd></div>
+        {% if fix_verification_view %}
+        <div><dt>直接前驱报告</dt><dd>{{ fix_verification_view.source_report_version }}</dd></div>
+        <div><dt>直接前驱 diff</dt><dd>{{ fix_verification_view.source_diff_version }}</dd></div>
+        {% endif %}
+      </dl>
+    </details>
   </main>
   <script>{{ trusted_js | safe }}</script>
 </body>

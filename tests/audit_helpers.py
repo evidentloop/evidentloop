@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def demo_audit() -> dict[str, Any]:
     return json.loads(
-        (ROOT / "tests/fixtures/audit-v0.4.json").read_text(encoding="utf-8")
+        (ROOT / "tests/fixtures/audit-v0.5.json").read_text(encoding="utf-8")
     )
 
 
@@ -26,13 +26,13 @@ def minimal_audit(
     *,
     review_status: str = "complete",
     verdict: str = "pass_candidate",
-    risk_score: int | None = 0,
+    overall_severity: str | None = None,
 ) -> dict[str, Any]:
     run_id = "run-minimal"
     change_id = "change-minimal"
     file_id = "file-minimal"
     return {
-        "schema_version": "0.4",
+        "schema_version": "0.5",
         "graph_id": f"audit:minimal:{review_status}",
         "source": {
             "type": "git_diff",
@@ -82,9 +82,8 @@ def minimal_audit(
         "summary": {
             "review_status": review_status,
             "verdict": verdict,
-            "risk_score": risk_score,
+            "overall_severity": overall_severity,
             "finding_count": 0,
-            "unscored_finding_count": 0,
             "open_finding_count": 0,
             "fix_count": 0,
             "fix_done_count": 0,
@@ -94,12 +93,12 @@ def minimal_audit(
     }
 
 
-def unanchored_risk_audit(*, review_status: str = "complete") -> dict[str, Any]:
+def unanchored_finding_audit(*, review_status: str = "complete") -> dict[str, Any]:
     verdict = "needs_human_triage" if review_status == "complete" else "inconclusive"
     audit = minimal_audit(
         review_status=review_status,
         verdict=verdict,
-        risk_score=None,
+        overall_severity="medium" if review_status == "complete" else None,
     )
     finding = {
         "id": "finding-unanchored",
@@ -123,7 +122,6 @@ def unanchored_risk_audit(*, review_status: str = "complete") -> dict[str, Any]:
     audit["summary"].update(
         {
             "finding_count": 1,
-            "unscored_finding_count": 1,
             "open_finding_count": 1,
         }
     )

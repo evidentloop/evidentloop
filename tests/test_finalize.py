@@ -7,10 +7,18 @@ from pathlib import Path
 
 import pytest
 
-from evidentloop.audit.finalize import AuditWorkflowError, finalize_review, prepare_local_diff
+from evidentloop.audit.finalize import (
+    AuditWorkflowError,
+    finalize_review,
+    prepare_local_diff,
+)
 from evidentloop.cli import main
 from evidentloop.renderers.html import AuditRenderError
-from evidentloop.validation import AuditValidationError, ValidationIssue, assert_valid_audit
+from evidentloop.validation import (
+    AuditValidationError,
+    ValidationIssue,
+    assert_valid_audit,
+)
 from evidentloop.versions import content_version
 from tests.git_helpers import initialized_repo, stage_simple_change
 
@@ -39,12 +47,20 @@ def _analysis(
 ) -> str:
     location = where or f"`app.py`, line 1, {_header(locator)}"
     ending = (
-        f"\n## Section 3: Overall Assessment\n\n{overall_text}\n"
-        if overall
-        else ""
+        f"\n## Section 3: Overall Assessment\n\n{overall_text}\n" if overall else ""
     )
     return f"""\
-<!-- evidentloop-run-id: {locator['run_id']} -->
+<!-- evidentloop-run-id: {locator["run_id"]} -->
+## Section 0: Change Summary
+
+- **Overview**: 本次改动调整应用值并形成可核验的行为变化。
+- **Review focus**: 重点核验调用方是否仍依赖旧值。
+
+### theme-001
+- **Title**: 调整应用运行值
+- **Summary**: 应用从旧值切换到新值，调用行为随之变化。
+- **Impact**: 应用运行时与调用方
+
 ## Section 1: Findings
 
 **f-001**
@@ -65,18 +81,18 @@ def _write_raw(locator: dict[str, str], value: str) -> None:
 
 
 def _audit(locator: dict[str, str]) -> dict:
-    return json.loads((Path(locator["final_dir"]) / "audit.json").read_text(encoding="utf-8"))
+    return json.loads(
+        (Path(locator["final_dir"]) / "audit.json").read_text(encoding="utf-8")
+    )
 
 
 def test_finalize_publishes_exact_bug_pair_and_cleans_run_dir(tmp_path: Path) -> None:
     locator = _prepare(tmp_path)
     trusted_header = _header(locator)
     review_pack = json.loads(
-        (
-            Path(locator["staging_dir"])
-            / ".run"
-            / "review-pack.json"
-        ).read_text(encoding="utf-8")
+        (Path(locator["staging_dir"]) / ".run" / "review-pack.json").read_text(
+            encoding="utf-8"
+        )
     )
     expected_diff_version = f"sha256:{review_pack['artifact_fingerprint']}"
     _write_raw(locator, _analysis(locator))
@@ -91,10 +107,7 @@ def test_finalize_publishes_exact_bug_pair_and_cleans_run_dir(tmp_path: Path) ->
     assert not Path(locator["staging_dir"]).exists()
     audit = _audit(locator)
     assert result["diff_version"] == expected_diff_version
-    assert (
-        audit["extensions"]["evidentloop"]["diff_version"]
-        == expected_diff_version
-    )
+    assert audit["extensions"]["evidentloop"]["diff_version"] == expected_diff_version
     assert result["report_version"] == content_version(
         (final_dir / "audit.json").read_bytes()
     )
@@ -102,7 +115,7 @@ def test_finalize_publishes_exact_bug_pair_and_cleans_run_dir(tmp_path: Path) ->
     assert finding["category"] == "bug"
     assert finding["hunk"].startswith(trusted_header)
     assert audit["runs"][0]["summary"] == "The diff has one concrete problem."
-    assert audit["extensions"]["evidentloop"]["reviewer_prompt"]["version"] == "v0.5"
+    assert audit["extensions"]["evidentloop"]["reviewer_prompt"]["version"] == "v0.7"
     assert audit["extensions"]["evidentloop"]["reviewer_prompt"]["sha256"].startswith(
         "sha256:"
     )
@@ -111,9 +124,14 @@ def test_finalize_publishes_exact_bug_pair_and_cleans_run_dir(tmp_path: Path) ->
     assert f'data-graph-id="{audit["graph_id"]}"' in html
     assert f'data-run-id="{locator["run_id"]}"' in html
     assert "The diff has one concrete problem." in html
+    assert "调整应用运行值" in html
+    assert "应用运行时与调用方" in html
+    assert "重点核验调用方是否仍依赖旧值" in html
 
 
-def test_finalize_distinguishes_clean_partial_failed_and_unanchored(tmp_path: Path) -> None:
+def test_finalize_distinguishes_clean_partial_failed_and_unanchored(
+    tmp_path: Path,
+) -> None:
     clean = _prepare(tmp_path / "clean")
     _write_raw(
         clean,
@@ -124,8 +142,10 @@ def test_finalize_distinguishes_clean_partial_failed_and_unanchored(tmp_path: Pa
     clean_result = finalize_review(clean["final_dir"])
     assert clean_result["review_status"] == "complete"
     assert clean_result["verdict"] == "inconclusive"
-    assert _audit(clean)["summary"]["risk_score"] is None
-    assert "findings-section" not in (Path(clean["final_dir"]) / "audit.html").read_text()
+    assert _audit(clean)["summary"]["overall_severity"] is None
+    assert (
+        "findings-section" not in (Path(clean["final_dir"]) / "audit.html").read_text()
+    )
 
     partial = _prepare(tmp_path / "partial")
     _write_raw(partial, _analysis(partial, overall=False))
@@ -133,7 +153,7 @@ def test_finalize_distinguishes_clean_partial_failed_and_unanchored(tmp_path: Pa
     partial_summary = _audit(partial)["summary"]
     assert partial_result["review_status"] == "partial"
     assert partial_summary["verdict"] == "inconclusive"
-    assert partial_summary["risk_score"] is None
+    assert partial_summary["overall_severity"] is None
     assert partial_summary["finding_count"] == 1
 
     empty_overall = _prepare(tmp_path / "empty-overall")
@@ -160,8 +180,8 @@ def test_finalize_distinguishes_clean_partial_failed_and_unanchored(tmp_path: Pa
     unanchored_result = finalize_review(unanchored["final_dir"])
     unanchored_summary = _audit(unanchored)["summary"]
     assert unanchored_result["verdict"] == "needs_human_triage"
-    assert unanchored_summary["risk_score"] is None
-    assert unanchored_summary["unscored_finding_count"] == 1
+    assert unanchored_summary["overall_severity"] == "medium"
+    assert unanchored_summary["open_finding_count"] == 1
 
     malformed = _prepare(tmp_path / "malformed-finding")
     _write_raw(
@@ -218,7 +238,9 @@ def test_finalize_rejects_tampered_prompt_provenance(tmp_path: Path) -> None:
     locator = _prepare(tmp_path)
     _write_raw(locator, _analysis(locator))
     prompt_path = Path(locator["prompt_path"])
-    prompt_path.write_text(prompt_path.read_text(encoding="utf-8") + "\ntampered\n", encoding="utf-8")
+    prompt_path.write_text(
+        prompt_path.read_text(encoding="utf-8") + "\ntampered\n", encoding="utf-8"
+    )
 
     with pytest.raises(AuditWorkflowError, match="prompt fingerprint mismatch"):
         finalize_review(locator["final_dir"])
@@ -234,7 +256,9 @@ def test_identity_and_missing_material_fail_without_formal_output(
 ) -> None:
     locator = _prepare(tmp_path)
     if failure == "run_mismatch":
-        _write_raw(locator, _analysis(locator).replace(locator["run_id"], "run-other", 1))
+        _write_raw(
+            locator, _analysis(locator).replace(locator["run_id"], "run-other", 1)
+        )
     with pytest.raises(AuditWorkflowError):
         finalize_review(locator["final_dir"])
     assert not Path(locator["final_dir"]).exists()

@@ -1,4 +1,4 @@
-"""ReviewResult to Audit Graph mapping, anchoring and scoring tests."""
+"""ReviewResult to Audit Graph mapping, anchoring and verdict tests."""
 
 from __future__ import annotations
 
@@ -6,7 +6,8 @@ from typing import Any
 
 import pytest
 
-from evidentloop.audit.adapter import SEVERITY_WEIGHTS, build_audit_graph
+from evidentloop.audit.adapter import build_audit_graph
+from evidentloop.audit.summary import build_summary
 from evidentloop.review.ingest import run_ingest
 from evidentloop.review.pack import assemble_pack
 from evidentloop.review.schema import FileMeta, ReviewStatus
@@ -26,7 +27,9 @@ HUNK = "@@ -1 +1 @@\n-value = 1\n+value = 2"
 
 
 def _parts() -> tuple[Any, dict[str, Any], dict[str, Any]]:
-    pack = assemble_pack(DIFF, changed_files=[FileMeta(path="app.py", language="python")])
+    pack = assemble_pack(
+        DIFF, changed_files=[FileMeta(path="app.py", language="python")]
+    )
     skeleton = {
         "run_id": "run-adapter",
         "graph_id": "audit:run-adapter",
@@ -93,8 +96,74 @@ The change has a concrete compatibility problem.
     """
 
 
-def test_wave2_dogfood_freezes_severity_weights() -> None:
-    assert SEVERITY_WEIGHTS == {"high": 40, "medium": 20, "low": 8, "note": 2}
+def test_wave2_dogfood_has_no_severity_weights() -> None:
+    import evidentloop.audit.adapter as adapter_module
+    import evidentloop.audit.summary as summary_module
+
+    assert not hasattr(adapter_module, "SEVERITY_WEIGHTS")
+    assert not hasattr(summary_module, "SEVERITY_WEIGHTS")
+
+
+def test_complete_inconclusive_summary_keeps_open_finding_severity() -> None:
+    summary = build_summary(
+        [
+            {
+                "status": "open",
+                "severity": "high",
+                "file_path": "app.py",
+            }
+        ],
+        [],
+        review_status="complete",
+        force_inconclusive=True,
+    )
+
+    assert summary["verdict"] == "inconclusive"
+    assert summary["overall_severity"] == "high"
+
+
+def test_semantic_summary_reuses_change_nodes_without_moving_file_edges() -> None:
+    pack, skeleton, hunk_index = _parts()
+    result = run_ingest(pack, _raw("logic_error"), model="test-host")
+
+    audit = build_audit_graph(
+        review_result=result,
+        skeleton=skeleton,
+        hunk_index=hunk_index,
+        change_summary={
+            "overview": "本次改动调整运行时行为并补齐验证链路。",
+            "review_focus": "重点核验新旧行为是否保持一致。",
+            "themes": [
+                {
+                    "title": "调整运行时行为",
+                    "summary": "旧值被替换为新值。",
+                    "impact": "运行时调用方",
+                },
+                {
+                    "title": "补齐验证证据",
+                    "summary": "报告现在明确展示变更影响。",
+                    "impact": "审计报告",
+                },
+            ],
+        },
+    )
+
+    changes = [node for node in audit["nodes"] if node["type"] == "change"]
+    assert [change["id"] for change in changes] == [
+        "change-001",
+        "change-002",
+        "change-003",
+    ]
+    assert changes[0]["summary"] == "本次改动调整运行时行为并补齐验证链路。"
+    assert (
+        changes[0]["extensions"]["evidentloop"]["review_focus"]
+        == "重点核验新旧行为是否保持一致。"
+    )
+    assert changes[1]["extensions"]["evidentloop"]["impact"] == "运行时调用方"
+    assert [
+        edge["from"] for edge in audit["edges"] if edge["type"] == "changes_file"
+    ] == ["change-001"]
+    assert_valid_audit(audit)
 
 
 @pytest.mark.parametrize(
@@ -171,7 +240,7 @@ def test_context_line_is_not_promoted_to_a_changed_line_anchor() -> None:
     assert finding["extensions"]["evidentloop"]["downgrade_reason"] == (
         "line_outside_trusted_hunk"
     )
-    assert audit["summary"]["unscored_finding_count"] == 1
+    assert audit["summary"]["verdict"] == "needs_human_triage"
 
 
 def test_deleted_line_is_a_trusted_old_side_anchor() -> None:
@@ -221,7 +290,7 @@ def test_embedded_line_range_resolves_to_trusted_hunk() -> None:
     assert finding["start_line"] == 1
     assert "downgraded_from" not in finding["extensions"]["evidentloop"]
     assert finding["fingerprint"].startswith("sha256:")
-    assert audit["summary"]["risk_score"] == 40
+    assert audit["summary"]["overall_severity"] == "high"
     assert audit["summary"]["verdict"] == "concerns"
 
 
@@ -287,8 +356,7 @@ def test_forged_header_or_line_downgrades_bug_without_copying_text() -> None:
     assert "hunk" not in finding
     assert extension["downgraded_from"] == "bug"
     assert extension["downgrade_reason"] == "header_not_in_trusted_hunk"
-    assert audit["summary"]["unscored_finding_count"] == 1
-    assert audit["summary"]["risk_score"] is None
+    assert audit["summary"]["overall_severity"] == "medium"
     assert audit["summary"]["verdict"] == "needs_human_triage"
     assert_valid_audit(audit)
 
@@ -309,12 +377,14 @@ def test_unsafe_path_is_never_promoted_to_a_file_or_hunk_anchor() -> None:
     assert finding["category"] == "risk"
     assert "file_path" not in finding
     assert "hunk" not in finding
-    assert finding["extensions"]["evidentloop"]["downgrade_reason"] == "unsafe_file_path"
+    assert (
+        finding["extensions"]["evidentloop"]["downgrade_reason"] == "unsafe_file_path"
+    )
     assert not any(edge["type"] == "finding_in_file" for edge in audit["edges"])
     assert_valid_audit(audit)
 
 
-def test_non_bug_file_only_anchor_is_scored_without_fabricated_hunk() -> None:
+def test_non_bug_file_only_anchor_counts_without_fabricated_hunk() -> None:
     pack, skeleton, hunk_index = _parts()
     result = run_ingest(pack, _raw("security", where="`app.py`"), model="test-host")
     audit = build_audit_graph(
@@ -326,8 +396,8 @@ def test_non_bug_file_only_anchor_is_scored_without_fabricated_hunk() -> None:
     assert finding["category"] == "risk"
     assert finding["file_path"] == "app.py"
     assert "hunk" not in finding
-    assert audit["summary"]["unscored_finding_count"] == 0
-    assert audit["summary"]["risk_score"] == 20
+    assert audit["summary"]["overall_severity"] == "medium"
+    assert audit["summary"]["verdict"] == "concerns"
     assert_valid_audit(audit)
 
 
@@ -342,7 +412,7 @@ def test_partial_and_clean_results_preserve_process_state() -> None:
     )
     assert partial["summary"]["review_status"] == "partial"
     assert partial["summary"]["verdict"] == "inconclusive"
-    assert partial["summary"]["risk_score"] is None
+    assert partial["summary"]["overall_severity"] is None
 
     clean_result = run_ingest(
         pack,
@@ -357,7 +427,7 @@ def test_partial_and_clean_results_preserve_process_state() -> None:
     )
     assert clean["summary"]["review_status"] == "complete"
     assert clean["summary"]["verdict"] == "inconclusive"
-    assert clean["summary"]["risk_score"] is None
+    assert clean["summary"]["overall_severity"] is None
     assert clean["summary"]["finding_count"] == 0
     assert_valid_audit(partial)
     assert_valid_audit(clean)

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://evidentloop.github.io/evidentloop/schemas/audit-v0.4.schema.json",
+  "$id": "https://evidentloop.github.io/evidentloop/schemas/audit-v0.5.schema.json",
   "title": "EvidentLoop code-diff audit profile",
   "type": "object",
   "additionalProperties": false,
@@ -15,7 +15,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "0.4"
+      "const": "0.5"
     },
     "graph_id": {
       "$ref": "#/$defs/identifier"
@@ -95,7 +95,8 @@
       "required": [
         "id",
         "text",
-        "status"
+        "status",
+        "reason"
       ],
       "properties": {
         "id": {
@@ -112,6 +113,10 @@
             "partial",
             "unknown"
           ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
         },
         "extensions": {
           "$ref": "#/$defs/extensions"
@@ -131,6 +136,7 @@
             "supported",
             "challenged",
             "partial",
+            "unknown",
             "not_audited"
           ]
         },
@@ -311,7 +317,7 @@
           }
         },
         "notice": {
-          "const": "基于人工裁定，未重新审查代码"
+          "const": "报告已按人工裁定更新；未重新审查代码，模型原判断仍保留。"
         }
       }
     },
@@ -840,9 +846,8 @@
       "required": [
         "review_status",
         "verdict",
-        "risk_score",
+        "overall_severity",
         "finding_count",
-        "unscored_finding_count",
         "open_finding_count",
         "fix_count"
       ],
@@ -863,19 +868,16 @@
             "inconclusive"
           ]
         },
-        "risk_score": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "minimum": 0,
-          "maximum": 100
+        "overall_severity": {
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "note",
+            null
+          ]
         },
         "finding_count": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "unscored_finding_count": {
           "type": "integer",
           "minimum": 0
         },
@@ -896,13 +898,8 @@
             "supported",
             "challenged",
             "partial",
+            "unknown",
             "not_audited"
-          ]
-        },
-        "risk_delta": {
-          "type": [
-            "number",
-            "null"
           ]
         },
         "basis": {
@@ -919,16 +916,17 @@
             "inconclusive"
           ]
         },
-        "model_risk_score": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "minimum": 0,
-          "maximum": 100
+        "model_overall_severity": {
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "note",
+            null
+          ]
         },
         "notice": {
-          "const": "基于人工裁定，未重新审查代码"
+          "const": "报告已按人工裁定更新；未重新审查代码，模型原判断仍保留。"
         },
         "extensions": {
           "$ref": "#/$defs/extensions"
@@ -959,7 +957,7 @@
           "then": {
             "required": [
               "model_verdict",
-              "model_risk_score",
+              "model_overall_severity",
               "notice"
             ]
           }

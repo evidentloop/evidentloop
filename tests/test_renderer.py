@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -17,11 +18,17 @@ from evidentloop.renderers.html import (
     render_audit_file,
     validate_html_trace,
 )
-from tests.audit_helpers import demo_audit, minimal_audit, unanchored_risk_audit
+from tests.audit_helpers import demo_audit, minimal_audit, unanchored_finding_audit
 
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _finding_details_tag(html: str, finding_id: str) -> str:
+    match = re.search(rf'<details id="{re.escape(finding_id)}"[^>]*>', html)
+    assert match is not None
+    return match.group(0)
 
 
 def _revised_audit() -> dict:
@@ -72,26 +79,70 @@ def _long_hunk_audit(*, highlights: tuple[int, ...] = (50,)) -> dict:
     return audit
 
 
+def _semantic_summary_fixture() -> dict:
+    audit = minimal_audit()
+    primary = next(node for node in audit["nodes"] if node["type"] == "change")
+    primary["summary"] = "本次改动把单次报告升级为可追踪的审计闭环。"
+    primary["extensions"] = {
+        "evidentloop": {"review_focus": "重点核验来源身份和报告可读性。"}
+    }
+    for index, values in enumerate(
+        [
+            ("统一审计契约", "结论和严重程度分别表达。", "报告契约与校验"),
+            ("建立修复验证", "新 diff 可以核验旧问题。", "审计流程与模型提示"),
+        ],
+        start=2,
+    ):
+        title, summary, impact = values
+        change_id = f"change-{index:03d}"
+        audit["nodes"].append(
+            {
+                "id": change_id,
+                "type": "change",
+                "title": title,
+                "summary": summary,
+                "extensions": {"evidentloop": {"impact": impact}},
+            }
+        )
+        audit["edges"].append(
+            {
+                "id": f"edge-run-change-{index}",
+                "type": "contains_change",
+                "from": audit["runs"][0]["id"],
+                "to": change_id,
+            }
+        )
+    return audit
+
+
 def test_reference_demo_renders_full_dual_line_hunks_and_trace() -> None:
     audit = demo_audit()
     html = render_audit_data(audit)
     assert '<table class="hunk-table"' in html
     assert "<th>旧行</th><th>新行</th>" in html
-    assert "变更目标：部分达成" in html
+    assert "变更声明判断" in html
+    assert ">模型判断：不认可<" in html
+    assert "模型原判断：不认可" not in html
+    assert "当前裁定：相关问题已忽略" not in html
+    assert "查看待处理问题（1）" in html
     assert ">partial</span>" not in html
     assert 'data-node-id="finding-001"' in html
     assert 'data-edge-id="edge-008"' in html
     assert 'data-claim-id="claim-001"' in html
+    assert 'data-run-id="' in html
+    assert "<dt>当前 run</dt>" not in html
     assert 'data-feedback-for="finding-001"' in html
     assert 'data-feedback-action="accept"' in html
     assert 'data-feedback-action="false_positive"' in html
     assert "data-feedback-comment" in html
     assert "data-feedback-severity" in html
+    assert 'class="details-chevron"' in html
+    assert ">⌄<" not in html
     assert "data-feedback-export" in html
     assert "audit-feedback.jsonl" in html
-    assert "<td>宿主语义审查</td>" in html
+    assert "隔离宿主审查标记" in html
     assert html.index('class="panel findings-section"') < html.index(
-        'class="panel feedback-toolbar"'
+        'class="panel feedback-export"'
     )
     assert "<pre" not in html
     assert validate_html_trace(html, audit) == []
@@ -147,34 +198,56 @@ def test_long_hunk_keeps_distant_highlights_with_explicit_middle_omission() -> N
 
 def test_complete_clean_review_omits_empty_finding_sections() -> None:
     html = render_audit_data(minimal_audit())
-    assert "候选通过" in html
-    assert "审查输出已完整接收" in html
+    assert "无待处理问题" in html
+    assert "输出完整" in html
+    assert 'class="status-note"' not in html
+    assert "报告说明" not in html
     assert "findings-section" not in html
-    assert 'class="panel feedback-toolbar"' not in html
-    assert "claim claim-empty" in html
+    assert 'class="panel feedback-export"' not in html
+    assert '<div class="change-claims"' not in html
+    assert '<section class="panel fix-verification-section">' not in html
+    assert '<section class="panel feedback-history-section">' not in html
+    assert '<section class="panel fixes-section">' not in html
 
 
 @pytest.mark.parametrize(
     "status, expected",
     [
-        ("not_reviewed", "审查尚未执行"),
-        ("partial", "审查仅部分完成"),
+        ("not_reviewed", "未审查"),
+        ("partial", "部分完成"),
         ("failed", "审查失败"),
     ],
 )
-def test_incomplete_states_are_never_rendered_as_clean(status: str, expected: str) -> None:
-    audit = minimal_audit(review_status=status, verdict="inconclusive", risk_score=None)
+def test_incomplete_states_are_never_rendered_as_clean(
+    status: str, expected: str
+) -> None:
+    audit = minimal_audit(review_status=status, verdict="inconclusive")
     html = render_audit_data(audit)
     assert expected in html
-    assert "候选通过" not in html
-    assert "无法可靠评分" in html
+    assert "报告说明" in html
+    assert "无待处理问题" not in html
 
 
-def test_unanchored_only_risk_renders_triage_without_fake_code_hunk() -> None:
-    html = render_audit_data(unanchored_risk_audit())
+def test_semantic_change_summary_uses_dynamic_themes_and_keeps_file_details() -> None:
+    audit = _semantic_summary_fixture()
+
+    html = render_audit_data(audit)
+
+    assert "本次改动把单次报告升级为可追踪的审计闭环" in html
+    assert "统一审计契约" in html
+    assert "建立修复验证" in html
+    assert "影响范围：</strong>报告契约与校验" in html
+    assert "重点核验来源身份和报告可读性" in html
+    assert "变更规模：</strong>1 个文件，新增 1 行、删除 1 行" in html
+    assert "src/example.py" in html
+    assert html.count('class="change-theme"') == 2
+    assert validate_html_trace(html, audit) == []
+
+
+def test_unanchored_only_finding_renders_triage_without_fake_code_hunk() -> None:
+    html = render_audit_data(unanchored_finding_audit())
     assert "需要人工分诊" in html
-    assert "语义发现，位置未精确锚定且未计分" in html
-    assert "无法可靠评分" in html
+    assert "语义发现，位置未精确锚定" in html
     assert '<table class="hunk-table"' not in html
 
 
@@ -202,7 +275,7 @@ def test_long_commit_range_is_shortened_only_in_html() -> None:
 
     assert audit["source"]["ref"] == exact_ref
     assert exact_ref not in html
-    assert "来源：d5ef26de..9a64e5a9" in html
+    assert "d5ef26de..9a64e5a9" in html
 
 
 def test_trace_validator_rejects_unknown_ids_and_remote_resources() -> None:
@@ -249,7 +322,10 @@ def test_trace_validator_requires_all_findings_claims_hunks_and_feedback() -> No
 
     assert any("missing finding fingerprint: finding-001" in error for error in errors)
     assert any("missing claim: claim-001" in error for error in errors)
-    assert any("missing anchored hunk: hunk:src/auth_service.py:38:1" in error for error in errors)
+    assert any(
+        "missing anchored hunk: hunk:src/auth_service.py:38:1" in error
+        for error in errors
+    )
     assert any("missing feedback target: finding-002" in error for error in errors)
 
 
@@ -299,24 +375,65 @@ def test_render_rejects_output_equal_to_input(tmp_path: Path) -> None:
 def test_packaged_css_has_responsive_and_reduced_motion_guards() -> None:
     html = render_audit_data(minimal_audit())
     assert "@media (max-width: 780px)" in html
+    assert "@media (max-width: 390px)" in html
     assert "@media (prefers-reduced-motion: reduce)" in html
-    assert "overflow-x: hidden" in html
-    assert "overflow-x: auto" in html
-    assert ".hero-copy { min-width: 0; overflow-wrap: anywhere; }" in html
-    assert ".summary-grid p," in html
-    assert ".section-title { align-items: flex-start; }" in html
-    assert ".summary-grid { display: grid; grid-template-columns: 1.2fr .8fr; align-items: start;" in html
-    assert ".hunk-table { width: 100%; min-width: 0;" in html
-    assert "table-layout: fixed" in html
-    assert "white-space: pre-wrap" in html
-    assert "@media (max-width: 330px)" in html
-    assert "min-width: 680px" not in html
+    assert "overflow-x: hidden" not in html
+    assert "max-height: 480px; overflow: auto" in html
+    assert "overscroll-behavior-x: contain" in html
+    assert "overscroll-behavior: contain" not in html
+    assert ".hunk-table { width: max-content; min-width: 100%;" in html
+    assert "white-space: pre;" in html
+    assert "min-width: 42rem" not in html
+    assert "min-height: 44px" in html
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in html
+    assert ".finding-position {" in html
+    assert ".hero-heading > div { flex: 1; }" in html
+    assert "grid-template-columns: minmax(14rem, .35fr) minmax(0, 1fr);" in html
+    assert ".feedback-comment-actions { display: flex; grid-column: 2;" in html
+    assert ".change-claim > .claim-status { align-self: start; }" in html
+    assert ".history-actions { min-width: 0; padding-left: 20px;" in html
+    assert ".history-event { display: grid;" in html
+    assert ".history-event-target { min-width: 0;" in html
+    assert "text-wrap: wrap" in html
+    assert "font-size: .9rem" in html
+    assert "background-position: right 12px center" in html
+    assert "appearance: none" in html
+    assert ".feedback-controls select:open {" in html
+    assert "repeat(auto-fit, minmax(min(100%, 28rem), 1fr))" in html
+    assert ".finding-header::-webkit-details-marker { display: none; }" in html
+    assert (
+        ".finding-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; "
+        "row-gap: 8px; }"
+    ) in html
+    assert ".finding-summary-meta { grid-column: 1 / -1; justify-self: end; }" in html
+    assert ".finding-card:not([open]) .location" not in html
+    assert ".finding-card[open] .finding-toggle-closed { display: none; }" in html
 
 
 def test_user_facing_renderer_labels_are_chinese() -> None:
     html = render_audit_data(demo_audit())
     assert "待处理问题" in html
-    assert ">缺陷<" in html
+    assert "当前问题与裁定" in html
+    assert ">问题 1/2</span>" in html
+    assert ">问题 2/2</span>" in html
+    assert " open" in _finding_details_tag(html, "finding-001")
+    assert " open" in _finding_details_tag(html, "finding-002")
+    first_summary = html[
+        html.index('<summary class="finding-header">') : html.index("</summary>")
+    ]
+    assert first_summary.index('class="status-chip state-open">待处理') < (
+        first_summary.index('class="finding-title"')
+    )
+    summary_action = first_summary[first_summary.index('class="finding-summary-meta"') :]
+    assert 'class="status-chip state-open"' not in summary_action
+    assert "查看详情" in html
+    assert "收起详情" in html
+    assert "建议怎么改" in html
+    assert "在 refresh 成功后立即更新缓存" in html
+    assert '<section class="panel fixes-section">' not in html
+    assert "来源：finding-001" not in html
+    assert ">缺陷<" not in html
+    assert 'data-category="bug"' in html
     assert ">更新我的裁定<" in html
     assert "可信节选" not in html  # reference fixture hunks are short and fully shown
     assert "Human decision" not in html
@@ -329,13 +446,38 @@ def test_feedback_revision_keeps_model_human_and_current_judgments_distinct() ->
 
     assert "模型原判断" in html
     assert "我的裁定" in html
-    assert "当前剩余问题" in html
-    assert "基于人工裁定，未重新审查代码" in html
+    assert "0 项待处理问题" in html
+    assert "报告已按人工裁定更新；未重新审查代码，模型原判断仍保留。" in html
+    assert html.count('class="status-note"') == 1
     assert "误报" in html
-    assert "修订详情" in html
-    assert "source audit：sha256:" in html
-    assert "feedback：sha256:" in html
-    assert "复制给 AI 更新报告" in html
+    assert "模型原判断：不认可" in html
+    assert "当前裁定：相关问题已忽略" in html
+    assert html.count("查看已忽略问题（1）") == 2
+    assert 'class="change-claim status-challenged related-dismissed"' in html
+    assert ".change-claim.related-dismissed," in html
+    assert "反馈与复审历史" in html
+    assert "报告变化" in html
+    assert 'class="history-actions"' in html
+    assert "本轮裁定" in html
+    assert 'class="history-event-target">旧 token 仍可能被缓存层返回<' in html
+    assert 'class="history-event-action">标记误报<' in html
+    assert "结论：存在待处理问题 → 无待处理问题" in html
+    assert "严重程度：高 → 无" in html
+    assert "待处理问题：2 → 0" in html
+    assert "旧 token 仍可能被缓存层返回" in html
+    assert "finding-001 ·" not in html
+    dismissed_tag = _finding_details_tag(html, "finding-001")
+    assert 'class="finding-card severity-high state-dismissed"' in dismissed_tag
+    assert " open" not in dismissed_tag
+    assert "原严重度：高" in html
+    assert (
+        ".finding-card.state-dismissed { border-left-color: var(--line-strong); }"
+        in html
+    )
+    assert ".finding-card.state-dismissed .badge-row .status-chip" in html
+    assert ".finding-card.state-dismissed .finding-fixes" in html
+    assert "报告身份与校验信息" in html
+    assert "交给 AI 更新报告" in html
     assert "下载 JSONL" in html
 
 
@@ -368,3 +510,4 @@ def test_feedback_revision_escapes_untrusted_human_comment() -> None:
     assert attack not in html
     assert "&lt;/script&gt;" in html
     assert 'data-human-attack="1"' not in html
+    assert "报告结论未变化" in html

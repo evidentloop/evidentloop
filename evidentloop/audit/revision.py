@@ -12,14 +12,18 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from evidentloop.renderers.html import render_audit_file, validate_html_trace
-from evidentloop.validation import AuditValidationError, assert_valid_audit
+from evidentloop.validation import (
+    SCHEMA_VERSION,
+    AuditValidationError,
+    assert_valid_audit,
+)
 from evidentloop.versions import audit_diff_version, content_version
 
 from .feedback import FeedbackError, normalize_feedback, parse_feedback_jsonl
 from .summary import build_summary
 
 
-NOTICE = "基于人工裁定，未重新审查代码"
+NOTICE = "报告已按人工裁定更新；未重新审查代码，模型原判断仍保留。"
 _REPORT_FILES = ("audit.json", "audit.html")
 
 
@@ -66,10 +70,10 @@ def _read_audit(path: Path) -> tuple[dict[str, Any], bytes]:
         raise RevisionError(
             "revision.invalid_source", "audit.json must contain an object", (path,)
         )
-    if value.get("schema_version") != "0.4":
+    if value.get("schema_version") != SCHEMA_VERSION:
         raise RevisionError(
             "revision.unsupported_schema",
-            "current runtime accepts only audit schema 0.4; generate a new report to continue feedback",
+            f"current runtime accepts only audit schema {SCHEMA_VERSION}; generate a new report to continue feedback",
             (path,),
         )
     try:
@@ -321,10 +325,12 @@ def _snapshot_summary(summary: Mapping[str, Any]) -> dict[str, Any]:
     return copy.deepcopy(dict(summary))
 
 
-def _model_summary(source_summary: Mapping[str, Any]) -> tuple[str, int | None]:
+def _model_summary(source_summary: Mapping[str, Any]) -> tuple[str, str | None]:
     if source_summary.get("basis") == "human_adjudication":
-        return str(source_summary["model_verdict"]), source_summary["model_risk_score"]
-    return str(source_summary["verdict"]), source_summary["risk_score"]
+        return str(source_summary["model_verdict"]), source_summary.get(
+            "model_overall_severity"
+        )
+    return str(source_summary["verdict"]), source_summary.get("overall_severity")
 
 
 def _apply_event(
@@ -433,7 +439,7 @@ def build_feedback_revision(
             "revision.no_change", "feedback does not change the current report"
         )
 
-    model_verdict, model_risk_score = _model_summary(source_summary)
+    model_verdict, model_overall_severity = _model_summary(source_summary)
     empty_verdict = (
         "pass_candidate"
         if source_summary["review_status"] == "complete"
@@ -450,9 +456,8 @@ def build_feedback_revision(
             for field in (
                 "review_status",
                 "verdict",
-                "risk_score",
+                "overall_severity",
                 "finding_count",
-                "unscored_finding_count",
                 "open_finding_count",
                 "fix_count",
                 "fix_done_count",
@@ -471,15 +476,9 @@ def build_feedback_revision(
             "summary_audit_status": source_summary.get(
                 "summary_audit_status", "not_audited"
             ),
-            "risk_delta": (
-                current["risk_score"] - source_summary["risk_score"]
-                if current["risk_score"] is not None
-                and source_summary["risk_score"] is not None
-                else None
-            ),
             "basis": "human_adjudication",
             "model_verdict": model_verdict,
-            "model_risk_score": model_risk_score,
+            "model_overall_severity": model_overall_severity,
             "notice": NOTICE,
         }
     )
@@ -658,7 +657,7 @@ def _revise_audit(
                 "report_dir": str(report),
                 "audit_json": str(source_path),
                 "audit_html": str(report / "audit.html"),
-                "schema_version": "0.4",
+                "schema_version": SCHEMA_VERSION,
                 "revision_run_id": revision_run_id,
                 "recovery": recovery["status"],
                 **_report_versions(report),
@@ -726,11 +725,7 @@ def _revise_audit(
                 raise RevisionError(
                     "revision.rollback_failed",
                     f"published copy failed validation and could not be moved back: {exc}",
-                    tuple(
-                        path
-                        for path in (target, staging)
-                        if os.path.lexists(path)
-                    ),
+                    tuple(path for path in (target, staging) if os.path.lexists(path)),
                 ) from exc
             raise RevisionError(
                 "revision.commit_invalid",
@@ -743,7 +738,7 @@ def _revise_audit(
             "report_dir": str(target),
             "audit_json": str(target / "audit.json"),
             "audit_html": str(target / "audit.html"),
-            "schema_version": "0.4",
+            "schema_version": SCHEMA_VERSION,
             "revision_run_id": candidate_audit["runs"][-1]["id"],
             "recovery": recovery["status"],
             **_report_versions(target),
@@ -765,7 +760,7 @@ def _revise_audit(
         "report_dir": str(report),
         "audit_json": str(report / "audit.json"),
         "audit_html": str(report / "audit.html"),
-        "schema_version": "0.4",
+        "schema_version": SCHEMA_VERSION,
         "revision_run_id": candidate_audit["runs"][-1]["id"],
         "recovery": recovery["status"],
         **_report_versions(report),

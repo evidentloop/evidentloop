@@ -12,12 +12,12 @@ from evidentloop.review.schema import to_serializable
 
 
 PRODUCT_REVIEWER_PROMPT_SOURCE = "product"
-PRODUCT_REVIEWER_PROMPT_VERSION = "v0.5"
+PRODUCT_REVIEWER_PROMPT_VERSION = "v0.7"
 CANONICAL_DIFF_BLOCK = "```diff\n{diff}\n```"
 
 
-DEFAULT_REVIEWER_TEMPLATE = files(__package__).joinpath("reviewer-prompt.md").read_text(
-    encoding="utf-8"
+DEFAULT_REVIEWER_TEMPLATE = (
+    files(__package__).joinpath("reviewer-prompt.md").read_text(encoding="utf-8")
 )
 
 
@@ -76,7 +76,26 @@ def _render_context_files(value: Any) -> str:
     return "\n\n".join(chunks)
 
 
-def render_reviewer_prompt(template: str, pack: Any) -> str:
+def _render_fix_verification_claims(value: Any) -> str:
+    if not isinstance(value, list) or not value:
+        return "(no fix verification claims)"
+    rendered: list[str] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        claim_id = _single_line(item.get("claim_id", "<unknown>"))
+        title = _single_line(item.get("source_title", "<unknown>"))
+        claim = _single_line(item.get("claim", ""))
+        rendered.append(f"- {claim_id}: “{title}” — user claim: {claim}")
+    return "\n".join(rendered) or "(no fix verification claims)"
+
+
+def render_reviewer_prompt(
+    template: str,
+    pack: Any,
+    *,
+    fix_verification_targets: Any = None,
+) -> str:
     """Render the canonical reviewer prompt from a ReviewPack-like object."""
     normalized = _normalize_pack(pack)
     return template.format(
@@ -85,7 +104,12 @@ def render_reviewer_prompt(template: str, pack: Any) -> str:
         focus=", ".join(normalized.get("focus") or []) or "(no focus specified)",
         context_files=_render_context_files(normalized.get("context_files")),
         changed_files=_render_changed_files(normalized.get("changed_files")),
-        evidence=json.dumps(normalized.get("evidence") or [], indent=2, ensure_ascii=False),
+        evidence=json.dumps(
+            normalized.get("evidence") or [], indent=2, ensure_ascii=False
+        ),
+        fix_verification_claims=_render_fix_verification_claims(
+            fix_verification_targets
+        ),
         diff=normalized.get("diff", ""),
     )
 
@@ -94,6 +118,7 @@ def render_host_reviewer_prompt(
     pack: Any,
     *,
     run_id: str | None = None,
+    fix_verification_targets: Any = None,
 ) -> tuple[str, str]:
     """Render the product prompt with a per-run untrusted-diff boundary."""
     normalized = _normalize_pack(pack)
@@ -110,7 +135,9 @@ def render_host_reviewer_prompt(
     )
     template = get_default_reviewer_template()
     if template.count(CANONICAL_DIFF_BLOCK) != 1:
-        raise ValueError("canonical reviewer prompt must contain exactly one diff placeholder")
+        raise ValueError(
+            "canonical reviewer prompt must contain exactly one diff placeholder"
+        )
     template = template.replace(CANONICAL_DIFF_BLOCK, replacement, 1)
     if run_id is not None:
         template += (
@@ -119,4 +146,6 @@ def render_host_reviewer_prompt(
             f"<!-- evidentloop-run-id: {run_id} -->\n"
             "Do not repeat this marker elsewhere.\n"
         )
-    return render_reviewer_prompt(template, normalized), boundary
+    return render_reviewer_prompt(
+        template, normalized, fix_verification_targets=fix_verification_targets
+    ), boundary

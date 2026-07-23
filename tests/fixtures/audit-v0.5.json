@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.4",
+  "schema_version": "0.5",
   "graph_id": "audit:test-fixture:20260717",
   "source": {
     "type": "git_diff",
@@ -14,12 +14,13 @@
       "summary": "修复了 token 过期时返回旧 token 的问题，但缓存层和测试覆盖仍有缺口。",
       "kind": "model_review",
       "summary_audit": {
-        "status": "partial",
+        "status": "challenged",
         "claims": [
           {
             "id": "claim-001",
             "text": "token refresh 已完全修复，过期 token 不再返回",
-            "status": "challenged"
+            "status": "challenged",
+            "reason": "finding-001 指出缓存路径仍可能返回旧 token，声明未成立"
           }
         ]
       }
@@ -188,13 +189,12 @@
   ],
   "summary": {
     "review_status": "complete",
-    "risk_score": 58,
+    "overall_severity": "high",
     "finding_count": 2,
-    "unscored_finding_count": 0,
     "open_finding_count": 2,
     "fix_count": 2,
     "fix_done_count": 0,
-    "summary_audit_status": "partial",
+    "summary_audit_status": "challenged",
     "verdict": "concerns",
     "basis": "model_review"
   }

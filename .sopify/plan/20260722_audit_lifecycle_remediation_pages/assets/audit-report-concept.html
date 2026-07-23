@@ -250,11 +250,13 @@
       .truth-item:nth-child(even) { border-left: 1px solid var(--line); }
       .truth-item:nth-child(n+3) { border-top: 1px solid var(--line); }
       .verification-grid { grid-template-columns: minmax(0, 1fr); }
-      .feedback-controls { grid-template-columns: minmax(0, 1fr); }
-      .feedback-controls > .button { grid-column: auto; }
       .feedback-toolbar, .topline { align-items: flex-start; flex-direction: column; }
       .export-side, .export-actions { width: 100%; justify-content: flex-start; }
       .export-side { justify-items: stretch; }
+    }
+    @media (max-width: 640px) {
+      .feedback-controls { grid-template-columns: minmax(0, 1fr); }
+      .feedback-controls > .button { grid-column: auto; }
     }
     @media (max-width: 520px) {
       .report-shell { padding: 10px 8px 32px; }
@@ -442,7 +444,7 @@
 
     <details class="panel">
       <summary>报告身份与校验信息</summary>
-      <dl class="trace-grid"><dt>graph</dt><dd>audit:concept-fix-verification</dd><dt>current run</dt><dd>run-003</dd><dt>schema</dt><dd>0.5</dd><dt>renderer</dt><dd>0.4-concept</dd><dt>current report</dt><dd>sha256:343419b4e44f52ec37861b82e15f9434d33db472f4bd6887f938e1e46b118d56</dd><dt>previous report</dt><dd>sha256:8d7b…cc21</dd><dt>previous diff</dt><dd>sha256:7a11…e120</dd></dl>
+      <dl class="trace-grid"><dt>graph</dt><dd>audit:concept-fix-verification</dd><dt>current run</dt><dd>run-003</dd><dt>schema</dt><dd>0.5</dd><dt>renderer</dt><dd>0.4-concept</dd><dt>current report</dt><dd>sha256:343419b4e44f52ec37861b82e15f9434d33db472f4bd6887f938e1e46b118d56</dd><dt>previous report</dt><dd>sha256:48792d216b21a06e162ad7a7ba471c1ed829404b923e95265bc90e97dc475ca2</dd><dt>previous diff</dt><dd>sha256:b17a21333ffcf0f3a985a3710964ac477b3aedd574489cbba676bec5ce2ebef9</dd></dl>
     </details>
   </main>
 
@@ -453,10 +455,9 @@
     "change_summary": {"file_count": 3, "additions": 48, "deletions": 12, "finding_file_count": 1},
     "fix_verification": {
       "version": 1,
-      "source_report_version": "sha256:8d7b...cc21",
-      "source_diff_version": "sha256:7a11...e120",
-      "targets": [{"finding_id": "finding-002", "fingerprint": "sha256:71ef...f209", "source_title": "空评论被误当作“无变更”", "declaration": "清空已有评论时导出 comment: null", "claim_id": "claim-fix-verification-002"}],
-      "claim_status": "supported"
+      "source_report_version": "sha256:48792d216b21a06e162ad7a7ba471c1ed829404b923e95265bc90e97dc475ca2",
+      "source_diff_version": "sha256:b17a21333ffcf0f3a985a3710964ac477b3aedd574489cbba676bec5ce2ebef9",
+      "targets": [{"finding_id": "finding-002", "fingerprint": "sha256:2d43c9e929a49601069d435652d073d496a86e78b0cdceade6977d72cae22d3c", "source_title": "空评论被误当作“无变更”", "declaration": "清空已有评论时导出 comment: null", "claim": {"id": "claim-fix-verification-002", "status": "supported", "reason": "当前实现会生成显式删除事件，且回归测试覆盖 comment: null。", "evidence": ["evidence-014"]}}]
     },
     "findings": [{"id": "finding-004", "model": {"status": "open", "severity": "medium"}, "current": {"status": "open", "severity": "medium"}, "feedback_events": []}],
     "current_runs": [{"kind": "model_review", "diff_version": "diff B"}]

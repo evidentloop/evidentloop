@@ -13,9 +13,15 @@
   <img alt="审计 schema 0.5" src="https://img.shields.io/badge/audit%20schema-0.5-0F766E">
 </p>
 
-EvidentLoop 把本地 Git diff 变成经过校验的 JSON/HTML 审计产物对。每个 finding 都能追溯到真实修改行；人工裁定可以修订报告而不修改代码，后续 diff 也可以显式验证一个选定的旧问题，同时保留旧报告。
+<p align="center">
+  <img src="docs/assets/evidentloop-hero-sketch.jpg" width="620" alt="本地 Git diff 经过证据核验进入报告和人工裁定">
+</p>
 
-宿主 AI 负责判断，EvidentLoop 负责校验身份、修改行锚点、输出完整性和产物一致性。它提供审计链路，不是形式化证明系统。
+用 EvidentLoop 审查本地 Git diff，你可以沿着真实修改行核验每个问题、记录人工裁定，并在代码变化后显式验证问题是否修复。
+
+编程助手负责判断；EvidentLoop 校验结果，并把证据整理成一份自包含 HTML 报告和对应 JSON 记录。它让审计过程可追溯，但不会把模型判断包装成“代码已经安全”的证明。
+
+想先看报告实际效果？[跳到真实审计证据](#real-audit-evidence)。
 
 ## 快速开始
 
@@ -39,24 +45,26 @@ CLI 也可以通过 `pipx install evidentloop` 安装。
 用 EvidentLoop 审计我的 staged changes，并生成 HTML 报告。
 ```
 
-## 报告演示与真实 dogfood 证据
+<a name="real-audit-evidence"></a>
+
+## 真实审计证据
 
 <picture>
   <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/evidentloop-report-loop.png">
-  <img alt="代表性的 EvidentLoop 报告，展示 finding、全宽 diff 与浏览器本地裁定" src="docs/assets/evidentloop-report-loop.gif">
+  <img alt="代表性的 EvidentLoop 报告，展示问题、完整 diff、浏览器本地裁定和评论" src="docs/assets/evidentloop-report-loop.gif">
 </picture>
 
-动画使用当前报告渲染器生成的一份代表性 schema `0.5` 测试报告，展示 finding、全宽 diff 与本地裁定。另一份[真实自审报告](https://evidentloop.github.io/evidentloop/examples/evidentloop-dogfood-v05/audit.html)覆盖 43/43 个文件，结果为 `complete / pass_candidate`、0 findings，证明这段范围内的报告生成、校验和展示已经走通。目前的公开证据还不包含一次真实的双 diff 修复验证。
+<p align="center"><em>代表性 schema 0.5 报告 · 问题 → diff → 本地裁定与评论</em></p>
+
+动画使用当前报告渲染器生成的一份代表性 schema `0.5` 测试报告，展示问题、完整 diff、本地裁定与评论。另一份[真实自审报告](https://evidentloop.github.io/evidentloop/examples/evidentloop-dogfood-v05/audit.html)覆盖 43/43 个文件，结果为 `complete / pass_candidate`、0 findings，证明这段范围内的报告生成、校验和展示已经走通。目前的公开证据还不包含一次真实的双 diff 修复验证。
 
 ## 工作方式
 
 ![EvidentLoop 的报告生成、报告阅读顺序、同 diff 裁定循环和显式跨 diff 修复验证](docs/assets/evidentloop-lifecycle-zh-CN.svg)
 
-- **完整审查一份 diff。** 宿主 AI 输出判断，EvidentLoop 校验结果并生成一份自包含报告。
-- **修订报告，不改代码。** 同 diff 反馈只更新 JSON/HTML 产物对，不再次调用模型。
+- **完整审查一份 diff。** 编程助手输出判断，EvidentLoop 校验结果并生成一份自包含报告。
+- **修订报告，不改代码。** 同一份 diff 的反馈只更新现有报告和 JSON 记录，不会再次调用模型。
 - **显式验证后续 diff。** 来源报告、明确选择的问题和修复声明会发起一轮新的完整 diff 审查。旧报告保持不变，系统不会猜测 finding 关联。
-
-Alpha 报告界面和 AI 审查文本当前使用简体中文。
 
 ## 审计产物
 

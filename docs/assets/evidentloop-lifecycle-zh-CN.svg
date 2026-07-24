@@ -29,23 +29,23 @@
     </filter>
     <style>
     text { font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', 'Microsoft JhengHei', 'SimHei', sans-serif; }
-    .title { font-size: 30px; font-weight: 700; fill: #111827; }
-    .subtitle { font-size: 14px; font-weight: 500; fill: #6b7280; }
-    .section { font-size: 13px; font-weight: 700; fill: #2563eb; letter-spacing: 1.4px; }
+    .title { font-size: 32px; font-weight: 700; fill: #111827; }
+    .subtitle { font-size: 15px; font-weight: 500; fill: #6b7280; }
+    .section { font-size: 14px; font-weight: 700; fill: #2563eb; letter-spacing: 1.2px; }
     .section-sub { font-size: 12px; font-weight: 500; fill: #94a3b8; }
     .node-title { font-weight: 700; fill: #111827; }
-    .node-sub { font-size: 12px; font-weight: 500; fill: #6b7280; }
+    .node-sub { font-size: 13px; font-weight: 500; fill: #6b7280; }
     .node-type { font-size: 12px; font-weight: 700; fill: #9ca3af; letter-spacing: 0.08em; }
     .arrow-label { font-size: 12px; font-weight: 600; fill: #6b7280; }
     .legend { font-size: 12px; font-weight: 500; fill: #6b7280; }
-    .footnote { font-size: 12px; font-weight: 500; fill: #94a3b8; }
+    .footnote { font-size: 13px; font-weight: 500; fill: #94a3b8; }
     .metric-label { font-size: 8.5px; font-weight: 700; fill: #94a3b8; text-transform: uppercase; }
     .metric-value { font-size: 9.5px; font-weight: 700; fill: #111827; }
     </style>
   </defs>
   <rect data-graph-role="background" width="1440.0" height="860.0" fill="#ffffff"/>
   <text x="720.0" y="56" text-anchor="middle" class="title">从差异到可核验的裁定</text>
-  <text x="720.0" y="82" text-anchor="middle" class="subtitle">先生成一份校验报告，再明确选择下一步</text>
+  <text x="720.0" y="82" text-anchor="middle" class="subtitle">完整审查一份 diff，生成报告，再由你选择下一步</text>
   <g id="create" data-graph-role="container" data-container-id="create" data-semantic-role="boundary" data-graph-bounds="40,112,1400,286">
   <rect data-graph-role="container" x="40.0" y="112.0" width="1360.0" height="174.0" rx="16.0" fill="none" stroke="#dbe5f1" stroke-width="1.4" stroke-dasharray="6 5"/>
   <text x="58.0" y="136.0" class="section">生成报告</text>
@@ -66,7 +66,7 @@
   <text x="708.0" y="552.0" class="section">下一份差异 · 完整复审</text>
     <rect id="next-diff-header" data-graph-role="reserved" data-reserved-kind="container-header" x="698" y="534" width="163.9" height="30" fill="none" stroke="none"/>
   </g>
-  <path id="continue-loop" data-graph-role="edge" data-edge-id="continue-loop" data-source="revised-report" data-target="current-report" data-edge-kind="flow" data-topic-id="" data-flow="feedback" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="2" data-route-stretch="1.211" data-bridges="" d="M 561,670 L 561,714 L 144,714 L 144,670" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowG)" stroke-dasharray="6,4"/>
+  <path id="continue-loop" data-graph-role="edge" data-edge-id="continue-loop" data-source="revised-report" data-target="current-report" data-edge-kind="flow" data-topic-id="" data-flow="feedback" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="2" data-route-stretch="1.211" data-bridges="" d="M 541,670 L 541,714 L 144,714 L 144,670" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowG)" stroke-dasharray="6,4"/>
   <path id="freeze" data-graph-role="edge" data-edge-id="freeze" data-source="local-diff" data-target="host-review" data-edge-kind="flow" data-topic-id="" data-flow="control" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 296,207 L 384,207" fill="none" stroke="#7c3aed" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowA)"/>
   <path id="review-output" data-graph-role="edge" data-edge-id="review-output" data-source="host-review" data-target="validation" data-edge-kind="flow" data-topic-id="" data-flow="control" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 614,207 L 704,207" fill="none" stroke="#7c3aed" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowA)"/>
   <path id="finalize" data-graph-role="edge" data-edge-id="finalize" data-source="validation" data-target="report-pair" data-edge-kind="flow" data-topic-id="" data-flow="control" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 944,207 L 1034,207" fill="none" stroke="#7c3aed" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowA)"/>
@@ -74,8 +74,8 @@
   <path id="read-2" data-graph-role="edge" data-edge-id="read-2" data-source="change-summary" data-target="fix-checks" data-edge-kind="flow" data-topic-id="" data-flow="data" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 516,410 L 566,410" fill="none" stroke="#f97316" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowE)"/>
   <path id="read-3" data-graph-role="edge" data-edge-id="read-3" data-source="fix-checks" data-target="findings" data-edge-kind="flow" data-topic-id="" data-flow="data" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 756,410 L 806,410" fill="none" stroke="#f97316" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowE)"/>
   <path id="read-4" data-graph-role="edge" data-edge-id="read-4" data-source="findings" data-target="history" data-edge-kind="flow" data-topic-id="" data-flow="data" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 1050,410 L 1100,410" fill="none" stroke="#f97316" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowE)"/>
-  <path id="decide" data-graph-role="edge" data-edge-id="decide" data-source="current-report" data-target="human-decision" data-edge-kind="flow" data-topic-id="" data-flow="feedback" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 218,638 L 278,638" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowG)"/>
-  <path id="revise" data-graph-role="edge" data-edge-id="revise" data-source="human-decision" data-target="revised-report" data-edge-kind="flow" data-topic-id="" data-flow="feedback" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 442,638 L 502,638" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowG)"/>
+  <path id="decide" data-graph-role="edge" data-edge-id="decide" data-source="current-report" data-target="human-decision" data-edge-kind="flow" data-topic-id="" data-flow="feedback" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 218,638 L 258,638" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowG)"/>
+  <path id="revise" data-graph-role="edge" data-edge-id="revise" data-source="human-decision" data-target="revised-report" data-edge-kind="flow" data-topic-id="" data-flow="feedback" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 422,638 L 462,638" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowG)"/>
   <path id="verify-input" data-graph-role="edge" data-edge-id="verify-input" data-source="verification-input" data-target="next-review" data-edge-kind="flow" data-topic-id="" data-flow="write" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 900,638 L 952,638" fill="none" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowB)"/>
   <path id="publish-next" data-graph-role="edge" data-edge-id="publish-next" data-source="next-review" data-target="next-report" data-edge-kind="flow" data-topic-id="" data-flow="write" data-motion-role="" data-motion-stage="" data-motion-order="" data-protocol="" data-via="" data-critical-path-id="" data-critical-hop="" data-critical-hops="" data-critical="false" data-bends="0" data-route-stretch="1.0" data-bridges="" d="M 1146,638 L 1198,638" fill="none" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowB)"/>
   <g id="node-local-diff" data-graph-role="node" data-node-id="local-diff" data-semantic-role="rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="76,174,296,240">
@@ -86,19 +86,19 @@
   <g id="node-host-review" data-graph-role="node" data-node-id="host-review" data-semantic-role="double_rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="384,174,614,240">
   <rect x="384.0" y="174.0" width="230.0" height="66.0" rx="10.0" fill="#faf5ff" stroke="#a78bfa" stroke-width="2.0" filter="url(#shadowSoft)"/>
   <rect x="390.0" y="180.0" width="218.0" height="54.0" rx="7.0" fill="none" stroke="#a78bfa" stroke-width="1.2" opacity="0.65"/>
-  <text x="499.0" y="207.0" text-anchor="middle" class="node-title" font-size="18.0">宿主 AI 审查</text>
-  <text x="499.0" y="229.0" text-anchor="middle" class="node-sub">判断完整 diff</text>
+  <text x="499.0" y="207.0" text-anchor="middle" class="node-title" font-size="18.0">编程助手审查</text>
+  <text x="499.0" y="229.0" text-anchor="middle" class="node-sub">完整阅读并判断 diff</text>
   </g>
   <g id="node-validation" data-graph-role="node" data-node-id="validation" data-semantic-role="rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="704,174,944,240">
   <rect x="704.0" y="174.0" width="240.0" height="66.0" rx="10.0" fill="#eefbf8" stroke="#2dd4bf" stroke-width="1.8"/>
-  <text x="824.0" y="207.0" text-anchor="middle" class="node-title" font-size="18.0">校验闸门</text>
-  <text x="824.0" y="229.0" text-anchor="middle" class="node-sub">身份 · 锚点 · 输出完整性</text>
+  <text x="824.0" y="207.0" text-anchor="middle" class="node-title" font-size="18.0">EvidentLoop 校验</text>
+  <text x="824.0" y="229.0" text-anchor="middle" class="node-sub">文件 · 修改行 · 输出完整</text>
   </g>
   <g id="node-report-pair" data-graph-role="node" data-node-id="report-pair" data-semantic-role="double_rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="1034,174,1320,240">
   <rect x="1034.0" y="174.0" width="286.0" height="66.0" rx="10.0" fill="#f0fdf4" stroke="#4ade80" stroke-width="2.0" filter="url(#shadowSoft)"/>
   <rect x="1040.0" y="180.0" width="274.0" height="54.0" rx="7.0" fill="none" stroke="#4ade80" stroke-width="1.2" opacity="0.65"/>
-  <text x="1177.0" y="207.0" text-anchor="middle" class="node-title" font-size="18.0">已校验报告产物对</text>
-  <text x="1177.0" y="229.0" text-anchor="middle" class="node-sub">audit.json + 自包含 HTML</text>
+  <text x="1177.0" y="207.0" text-anchor="middle" class="node-title" font-size="18.0">HTML 报告 + JSON 记录</text>
+  <text x="1177.0" y="229.0" text-anchor="middle" class="node-sub">一一对应 · 自包含 · 可追溯</text>
   </g>
   <g id="node-result" data-graph-role="node" data-node-id="result" data-semantic-role="rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="66,378,256,442">
   <rect x="66.0" y="378.0" width="190.0" height="64.0" rx="10.0" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.8"/>
@@ -112,45 +112,45 @@
   </g>
   <g id="node-fix-checks" data-graph-role="node" data-node-id="fix-checks" data-semantic-role="rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="566,378,756,442">
   <rect x="566.0" y="378.0" width="190.0" height="64.0" rx="10.0" fill="#f0fdfa" stroke="#2dd4bf" stroke-width="1.8"/>
-  <text x="661.0" y="410.0" text-anchor="middle" class="node-title" font-size="18.0">旧问题验证</text>
-  <text x="661.0" y="432.0" text-anchor="middle" class="node-sub">有数据时才显示</text>
+  <text x="661.0" y="410.0" text-anchor="middle" class="node-title" font-size="18.0">修复验证（如有）</text>
+  <text x="661.0" y="432.0" text-anchor="middle" class="node-sub">只在有验证证据时显示</text>
   </g>
   <g id="node-findings" data-graph-role="node" data-node-id="findings" data-semantic-role="rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="806,378,1050,442">
   <rect x="806.0" y="378.0" width="244.0" height="64.0" rx="10.0" fill="#fff7ed" stroke="#fb923c" stroke-width="1.8"/>
-  <text x="928.0" y="410.0" text-anchor="middle" class="node-title" font-size="18.0">当前问题与裁定</text>
-  <text x="928.0" y="432.0" text-anchor="middle" class="node-sub">全宽 diff · 本地反馈</text>
+  <text x="928.0" y="410.0" text-anchor="middle" class="node-title" font-size="18.0">问题、证据与裁定</text>
+  <text x="928.0" y="432.0" text-anchor="middle" class="node-sub">完整 diff · 本地反馈</text>
   </g>
   <g id="node-history" data-graph-role="node" data-node-id="history" data-semantic-role="rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="1100,378,1340,442">
   <rect x="1100.0" y="378.0" width="240.0" height="64.0" rx="10.0" fill="#faf5ff" stroke="#a78bfa" stroke-width="1.8"/>
-  <text x="1220.0" y="410.0" text-anchor="middle" class="node-title" font-size="18.0">历史与报告身份</text>
-  <text x="1220.0" y="432.0" text-anchor="middle" class="node-sub">运行记录 · 报告版本 · 差异版本</text>
+  <text x="1220.0" y="410.0" text-anchor="middle" class="node-title" font-size="18.0">版本与来源</text>
+  <text x="1220.0" y="432.0" text-anchor="middle" class="node-sub">运行记录 · 报告版本 · diff 版本</text>
   </g>
   <g id="node-current-report" data-graph-role="node" data-node-id="current-report" data-semantic-role="rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="70,606,218,670">
   <rect x="70.0" y="606.0" width="148.0" height="64.0" rx="10.0" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.8"/>
   <text x="144.0" y="638.0" text-anchor="middle" class="node-title" font-size="18.0">当前报告</text>
   <text x="144.0" y="660.0" text-anchor="middle" class="node-sub">阅读证据</text>
   </g>
-  <g id="node-human-decision" data-graph-role="node" data-node-id="human-decision" data-semantic-role="rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="278,606,442,670">
-  <rect x="278.0" y="606.0" width="164.0" height="64.0" rx="10.0" fill="#fff7ed" stroke="#fb923c" stroke-width="1.8"/>
-  <text x="360.0" y="638.0" text-anchor="middle" class="node-title" font-size="18.0">人工裁定</text>
-  <text x="360.0" y="660.0" text-anchor="middle" class="node-sub">有效 · 误报 · 评论</text>
+  <g id="node-human-decision" data-graph-role="node" data-node-id="human-decision" data-semantic-role="rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="258,606,422,670">
+  <rect x="258.0" y="606.0" width="164.0" height="64.0" rx="10.0" fill="#fff7ed" stroke="#fb923c" stroke-width="1.8"/>
+  <text x="340.0" y="638.0" text-anchor="middle" class="node-title" font-size="18.0">人工裁定</text>
+  <text x="340.0" y="660.0" text-anchor="middle" class="node-sub">有效 · 误报 · 评论</text>
   </g>
-  <g id="node-revised-report" data-graph-role="node" data-node-id="revised-report" data-semantic-role="double_rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="502,606,620,670">
-  <rect x="502.0" y="606.0" width="118.0" height="64.0" rx="10.0" fill="#fff7ed" stroke="#fb923c" stroke-width="2.0" filter="url(#shadowSoft)"/>
-  <rect x="508.0" y="612.0" width="106.0" height="52.0" rx="7.0" fill="none" stroke="#fb923c" stroke-width="1.2" opacity="0.65"/>
-  <text x="561.0" y="638.0" text-anchor="middle" class="node-title" font-size="18.0">修订报告</text>
-  <text x="561.0" y="660.0" text-anchor="middle" class="node-sub">新版本</text>
+  <g id="node-revised-report" data-graph-role="node" data-node-id="revised-report" data-semantic-role="double_rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="462,606,620,670">
+  <rect x="462.0" y="606.0" width="158.0" height="64.0" rx="10.0" fill="#fff7ed" stroke="#fb923c" stroke-width="2.0" filter="url(#shadowSoft)"/>
+  <rect x="468.0" y="612.0" width="146.0" height="52.0" rx="7.0" fill="none" stroke="#fb923c" stroke-width="1.2" opacity="0.65"/>
+  <text x="541.0" y="638.0" text-anchor="middle" class="node-title" font-size="18.0">修订报告</text>
+  <text x="541.0" y="660.0" text-anchor="middle" class="node-sub">只生成报告新版本</text>
   </g>
   <g id="node-verification-input" data-graph-role="node" data-node-id="verification-input" data-semantic-role="rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="716,606,900,670">
   <rect x="716.0" y="606.0" width="184.0" height="64.0" rx="10.0" fill="#f0fdfa" stroke="#2dd4bf" stroke-width="1.8"/>
-  <text x="808.0" y="638.0" text-anchor="middle" class="node-title" font-size="18.0">显式来源</text>
-  <text x="808.0" y="660.0" text-anchor="middle" class="node-sub">报告 + finding + 声明</text>
+  <text x="808.0" y="638.0" text-anchor="middle" class="node-title" font-size="18.0">来源与问题</text>
+  <text x="808.0" y="660.0" text-anchor="middle" class="node-sub">来源报告 · 问题 · 修复说明</text>
   </g>
   <g id="node-next-review" data-graph-role="node" data-node-id="next-review" data-semantic-role="double_rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="952,606,1146,670">
   <rect x="952.0" y="606.0" width="194.0" height="64.0" rx="10.0" fill="#faf5ff" stroke="#a78bfa" stroke-width="2.0" filter="url(#shadowSoft)"/>
   <rect x="958.0" y="612.0" width="182.0" height="52.0" rx="7.0" fill="none" stroke="#a78bfa" stroke-width="1.2" opacity="0.65"/>
-  <text x="1049.0" y="638.0" text-anchor="middle" class="node-title" font-size="18.0">审查下一份 diff</text>
-  <text x="1049.0" y="660.0" text-anchor="middle" class="node-sub">宿主 AI 完整阅读</text>
+  <text x="1049.0" y="638.0" text-anchor="middle" class="node-title" font-size="18.0">完整审查下一份 diff</text>
+  <text x="1049.0" y="660.0" text-anchor="middle" class="node-sub">编程助手重新完整阅读</text>
   </g>
   <g id="node-next-report" data-graph-role="node" data-node-id="next-report" data-semantic-role="double_rect" data-motion-role="" data-motion-stage="" data-motion-order="" data-parent="" data-deployment-id="" data-topic-id="" data-span-id="" data-station-order="" data-status="" data-start-ms="" data-duration-ms="" data-parent-span="" data-graph-bounds="1198,606,1366,670">
   <rect x="1198.0" y="606.0" width="168.0" height="64.0" rx="10.0" fill="#f0fdf4" stroke="#4ade80" stroke-width="2.0" filter="url(#shadowSoft)"/>
@@ -158,7 +158,7 @@
   <text x="1282.0" y="638.0" text-anchor="middle" class="node-title" font-size="18.0">生成新报告</text>
   <text x="1282.0" y="660.0" text-anchor="middle" class="node-sub">修复结果 + 新问题</text>
   </g>
-  <g id="footer" data-graph-role="reserved" data-graph-bounds="48,814,300,830">
-  <text x="48.0" y="826.0" class="footnote">旧报告保持不变 · 不自动匹配 finding · 保留 AI 原始判断</text>
+  <g id="footer" data-graph-role="reserved" data-graph-bounds="48,814,680,832">
+  <text x="48.0" y="826.0" class="footnote">旧报告保持不变 · 不自动关联问题 · 人工裁定和原始审查结论均可追溯</text>
   </g>
 </svg>

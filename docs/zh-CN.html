@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EvidentLoop — 把本地 Git diff 变成可核验的审计链路</title>
-  <meta name="description" content="把本地 Git diff 变成经过校验的单文件审计报告，让人工裁定和后续修复验证都有明确证据。">
+  <meta name="description" content="把本地 Git diff 变成经过校验的审计报告，让人工裁定和后续修复验证都有明确证据。">
   <meta name="theme-color" content="#f3f6f9">
   <link rel="canonical" href="https://evidentloop.github.io/evidentloop/zh-CN.html">
   <link rel="alternate" hreflang="en" href="https://evidentloop.github.io/evidentloop/">
@@ -34,20 +34,19 @@
     </nav>
 
     <div class="hero">
-      <div>
-        <p class="eyebrow">开源 · 本地 Git diff 审计</p>
-        <h1>把本地 Git diff 变成可以核验的审计链路</h1>
-        <p class="lead">编程助手负责完整审查 diff。EvidentLoop 对照该 diff 校验结果，生成一份自包含报告，并让人工裁定始终可以追溯到证据。</p>
-        <div class="actions">
-          <a class="button" href="./examples/evidentloop-dogfood-v05/audit.html">打开真实审计报告</a>
-          <a class="button button-secondary" href="#start">安装 Skill</a>
-        </div>
-        <p class="version-note">Alpha · Python 3.10+ · audit schema 0.5</p>
-      </div>
+      <p class="eyebrow">开源 · 本地 Git diff 审计</p>
+      <h1>把本地 Git diff 变成可以核验的审计链路</h1>
+      <p class="lead">编程助手负责完整审查 diff。EvidentLoop 对照该 diff 校验结果，生成一份自包含报告，并让人工裁定始终可以追溯到证据。</p>
 
       <figure class="hero-visual">
-        <img src="./assets/evidentloop-hero-sketch.png" width="1200" height="800" alt="手绘的本地差异经过校验生成报告，旧报告继续保留，人工用铅笔记录裁定">
+        <img src="./assets/evidentloop-hero-sketch.jpg" width="1915" height="821" alt="手绘的本地 Git diff 经过核验生成审计报告，并由人工记录裁定">
       </figure>
+
+      <div class="actions">
+        <a class="button" href="./examples/evidentloop-dogfood-v05/audit.html">打开真实审计报告</a>
+        <a class="button button-secondary" href="#start">安装 Skill</a>
+      </div>
+      <p class="version-note">Alpha · Python 3.10+ · audit schema 0.5</p>
     </div>
   </header>
 
@@ -55,16 +54,16 @@
     <section class="page-section" id="proof" aria-labelledby="proof-title">
       <p class="eyebrow">交互演示与真实证据</p>
       <h2 id="proof-title">先看报告怎么用，再核验真实结果</h2>
-      <p class="section-intro">下面的短动画由当前报告渲染器直接生成，使用仓库内的一份代表性测试报告，展示 finding、全宽 diff 与浏览器本地裁定。</p>
+      <p class="section-intro">短动画展示如何从问题进入完整 diff，并在浏览器里记录裁定和评论。</p>
       <figure class="media-frame">
         <picture>
           <source media="(prefers-reduced-motion: reduce)" srcset="./assets/evidentloop-report-loop.png">
-          <img src="./assets/evidentloop-report-loop.gif" width="1280" height="720" loading="lazy" alt="代表性的 EvidentLoop 报告，展示 finding、全宽 diff 与浏览器本地误报裁定">
+          <img src="./assets/evidentloop-report-loop.gif" width="1280" height="720" loading="lazy" alt="代表性的 EvidentLoop 报告，展示问题、完整 diff、浏览器本地误报裁定和评论">
         </picture>
-        <figcaption>代表性测试报告 · 当前报告渲染器 · finding → diff → 本地裁定。</figcaption>
+        <figcaption>代表性 schema 0.5 报告 · 问题 → diff → 本地裁定与评论。</figcaption>
       </figure>
       <div class="evidence-note">
-        <p><strong>真实审计证据：</strong>另一份<a href="./examples/evidentloop-dogfood-v05/audit.html">覆盖 43/43 个文件的真实自审报告</a>及其<a href="./examples/evidentloop-dogfood-v05/audit.json">校验 JSON</a>结果为 <code>complete / pass_candidate</code>、0 findings，证明这段范围内的生成、校验和展示已经走通。目前的公开证据还不包含一次真实的双 diff 修复验证。</p>
+        <p><strong>真实审计证据：</strong>查看<a href="./examples/evidentloop-dogfood-v05/audit.html">覆盖 43/43 个文件的自审报告</a>及其<a href="./examples/evidentloop-dogfood-v05/audit.json">校验 JSON</a>。结果为 <code>complete / pass_candidate</code>、0 findings。</p>
       </div>
     </section>
 
@@ -72,15 +71,15 @@
       <p class="eyebrow">一条可追溯链路</p>
       <h2 id="how-title">让每次裁定都能回到证据</h2>
       <p class="section-intro">首次审查、人工裁定和后续修复验证含义不同。EvidentLoop 会把这些边界清楚保留下来。</p>
-      <figure class="media-frame">
+      <figure class="media-frame lifecycle-frame">
         <img src="./assets/evidentloop-lifecycle-zh-CN.svg" width="1440" height="860" loading="lazy" alt="EvidentLoop 的报告生成、报告阅读顺序、同 diff 裁定循环和显式跨 diff 修复验证">
-        <figcaption>使用 Fireworks Tech Graph 生成。它展示报告结构和两条明确的后续路径，不进入审计运行时。<a href="./assets/evidentloop-lifecycle-zh-CN.svg">打开完整尺寸图</a>。</figcaption>
+        <figcaption>报告结构、同 diff 裁定与显式后续 diff 验证。小屏可左右滑动，或<a href="./assets/evidentloop-lifecycle-zh-CN.svg">打开完整尺寸图</a>。</figcaption>
       </figure>
       <ol class="steps">
         <li>
           <span class="step-number" aria-hidden="true">01</span>
           <h3>完整审查一份 diff</h3>
-          <p>宿主 AI 负责判断；EvidentLoop 校验文件身份、修改行锚点、输出完整性以及 JSON/HTML 产物对。</p>
+          <p>编程助手负责判断；EvidentLoop 校验文件身份、修改行锚点和输出完整性，并生成 HTML 报告及对应 JSON 记录。</p>
         </li>
         <li>
           <span class="step-number" aria-hidden="true">02</span>
@@ -133,7 +132,7 @@ evidentloop doctor</code></pre>
         </details>
         <details>
           <summary>提交反馈会重新审查或修改代码吗？</summary>
-          <p>不会。同一份 diff 的反馈只修订报告产物；修改代码和验证后续 diff 是两项独立操作。</p>
+          <p>不会自动触发。提交同一份 diff 的反馈只会修订报告；只有你明确要求修改代码或验证后续 diff 时，编程助手才会另行执行。</p>
         </details>
       </div>
     </section>

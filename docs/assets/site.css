@@ -118,9 +118,36 @@ svg {
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(20rem, 0.92fr);
-  gap: clamp(1.25rem, 4vw, 3.5rem);
-  align-items: center;
+  grid-template-areas:
+    "eyebrow visual"
+    "title visual"
+    "lead visual"
+    "actions visual"
+    "version visual";
+  column-gap: clamp(1.25rem, 4vw, 3.5rem);
+  row-gap: 0;
+  align-items: start;
   padding-block: clamp(3.5rem, 8vw, 6rem) clamp(3.5rem, 7vw, 5.5rem);
+}
+
+.hero > .eyebrow {
+  grid-area: eyebrow;
+}
+
+.hero > h1 {
+  grid-area: title;
+}
+
+.hero > .lead {
+  grid-area: lead;
+}
+
+.hero > .actions {
+  grid-area: actions;
+}
+
+.hero > .version-note {
+  grid-area: version;
 }
 
 .eyebrow {
@@ -146,10 +173,16 @@ h3 {
   letter-spacing: -0.035em;
 }
 
+html[lang="zh-CN"] h1,
+html[lang="zh-CN"] h2,
+html[lang="zh-CN"] h3 {
+  letter-spacing: -0.015em;
+}
+
 h1 {
   max-width: 14ch;
   margin-bottom: 1.25rem;
-  font-size: clamp(2.45rem, 4.8vw, 4rem);
+  font-size: clamp(2.35rem, 4.8vw, 4rem);
 }
 
 h2 {
@@ -220,6 +253,8 @@ h3 {
 }
 
 .hero-visual {
+  grid-area: visual;
+  align-self: center;
   margin: 0;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -467,11 +502,22 @@ details p {
   }
 
   .hero {
+    grid-template-areas:
+      "eyebrow"
+      "title"
+      "lead"
+      "visual"
+      "actions"
+      "version";
     padding-top: 3.5rem;
   }
 
-  h1 {
-    font-size: clamp(2.35rem, 11vw, 3.5rem);
+  .hero-visual {
+    margin-top: 1.75rem;
+  }
+
+  .hero > .actions {
+    margin-top: 1.25rem;
   }
 
   .steps {
@@ -480,6 +526,16 @@ details p {
 
   .media-frame {
     border-radius: 0.75rem;
+  }
+
+  .lifecycle-frame {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .lifecycle-frame img {
+    width: 60rem;
+    max-width: none;
   }
 }
 

@@ -126,23 +126,23 @@ evidentloop revise SOURCE_AUDIT_JSON --feedback JSONL [--out NEW_REPORT_DIR]
 
 `summary.verdict` 只描述审查结论：
 
-- `pass_candidate`：仅在 `complete`、无未解决 findings 且 core advisory verdict 认为上下文充分时使用；可以保留 fixed 历史记录。完整输出但上下文不足时使用 `complete + inconclusive + risk_score=null`。
-- `concerns`：仅在 `complete` 且存在未解决、可评分 findings 时使用。
-- `needs_human_triage`：`complete` 且只有未锚定降级风险时使用。
+- `pass_candidate`：仅在 `complete`、无未解决 findings 且 core advisory verdict 认为上下文充分时使用；可以保留 fixed 历史记录。完整输出但上下文不足时使用 `complete + inconclusive + overall_severity=null`。
+- `concerns`：仅在 `complete` 且至少存在一个不需要人工分诊的 open finding 时使用。
+- `needs_human_triage`：`complete` 且所有 open findings 都因 bug 降级或缺少可信文件关联而需要人工分诊时使用。
 - `inconclusive`：`not_reviewed`、`partial` 或 `failed`。
 
-`partial` 即使保留了部分 findings，也必须是 `inconclusive` 且 `risk_score = null`。审查覆盖率、解析告警和文件统计不是核心字段，统一写入 `summary.extensions.evidentloop.review_diagnostics`，避免产生第二套状态真相。
+`partial` 即使保留了部分 findings，也必须是 `inconclusive` 且 `overall_severity = null`。审查覆盖率、解析告警和文件统计不是核心字段，统一写入 `summary.extensions.evidentloop.review_diagnostics`，避免产生第二套状态真相。
 
-## finding 锚点与风险评分
+## finding 锚点、人工分诊与严重程度
 
-可评分 finding 必须通过分类对应的可信锚点校验：bug 需要 `file_path + hunk_id + 行范围`，risk/quality/scope 允许可信 file-only 锚点。语义 bug 如果无法锚定，不静默丢弃，而是：
+finding 必须通过分类对应的可信锚点校验：bug 需要 `file_path + hunk_id + 行范围`，risk/quality/scope 允许可信 file-only 锚点。语义 bug 如果无法锚定，不静默丢弃，而是：
 
 - 降级到 `risk`；
 - 在 extensions 保留原 category 和降级原因；
 - 严重度最高为 `medium`；
 - HTML 标记“语义发现，位置未完全确认”。
 
-风险评分是 `0–100` 的暂定指标，只计算审查完成、当前未解决且通过分类锚点策略的 findings。因锚点降级而排除的未解决 finding 单独计入 `unscored_finding_count`；如果只有未锚定风险，则 `risk_score = null`、`verdict = needs_human_triage`。权重在真实 dogfood 后冻结。
+Schema `0.5` 不保存风险分、风险 delta、`unscored_finding_count` 或“是否计分”派生状态。完整审查中，只要存在不需要人工分诊的 open finding，verdict 就是 `concerns`；全部 open findings 都需要人工分诊时才是 `needs_human_triage`。`overall_severity` 独立取当前 open findings 的最高严重度；没有 open finding 或审查不完整时为 `null`。
 
 ## 数据与渲染契约
 

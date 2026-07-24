@@ -58,7 +58,7 @@ def test_pages_are_static_semantic_and_use_frozen_evidence(
     )
     for asset in (
         "assets/site.css",
-        "assets/evidentloop-hero-sketch.png",
+        "assets/evidentloop-hero-sketch.jpg",
         "assets/evidentloop-report-loop.gif",
         "assets/evidentloop-report-loop.png",
         localized_lifecycle,

@@ -1,0 +1,760 @@
+{
+  "schema_version": "0.5",
+  "graph_id": "audit:run-ab40720178764edabef3a7553cc6b571",
+  "source": {
+    "type": "git_diff",
+    "ref": "555f84911e8892704f69d7faee4e06cf5a71ae7b..1af67963a5ff4c6ab5da10556d206901aa173601",
+    "description": "Evidentloop 本地 Git diff 审计"
+  },
+  "runs": [
+    {
+      "id": "run-ab40720178764edabef3a7553cc6b571",
+      "label": "Evidentloop 代码变更审计",
+      "status": "pass_candidate",
+      "summary": "未发现可由当前 diff 直接验证的问题。schema 断点、显式修复验证来源、输出完成门和报告呈现形成了边界清楚的闭环，新增测试覆盖了语义变更摘要缺失时不得标记为完整的路径。",
+      "kind": "model_review"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "change-001",
+      "type": "change",
+      "title": "Evidentloop 变更",
+      "summary": "本次改动将 EvidentLoop 从单次审查报告推进为可追溯的审计闭环：统一新版报告契约，支持显式关联旧问题验证新代码，并重建面向阅读与裁定的报告页面。",
+      "extensions": {
+        "evidentloop": {
+          "review_focus": "重点核验模型输出契约、跨报告来源身份与最终报告展示是否在缺失或异常输入下保持一致。"
+        }
+      }
+    },
+    {
+      "id": "change-002",
+      "type": "change",
+      "title": "统一报告结论与严重程度契约",
+      "summary": "公开报告升级到 schema 0.5，删除风险分及其派生字段，改由 finding 严重度聚合报告级严重程度，并保留人工裁定前后的模型原判断。",
+      "extensions": {
+        "evidentloop": {
+          "impact": "审计 schema、摘要计算、反馈修订、语义校验和技术文档。"
+        }
+      }
+    },
+    {
+      "id": "change-003",
+      "type": "change",
+      "title": "建立显式的旧问题修复验证链路",
+      "summary": "用户可用旧报告版本、具体 finding 和修复声明发起新 diff 审查；系统冻结一跳来源，要求模型逐项给出支持状态、原因和证据，同时独立审查完整新 diff。",
+      "extensions": {
+        "evidentloop": {
+          "impact": "Python API、CLI、来源预校验、review prompt、claim parser、完成门和审计图。"
+        }
+      }
+    },
+    {
+      "id": "change-004",
+      "type": "change",
+      "title": "让变更摘要按实现逻辑呈现",
+      "summary": "reviewer 新增语义化 Change Summary 输出，parser 将模型选择的少量逻辑主题写入现有 change 节点；finalize 也把有效摘要纳入完整性门禁，避免正式报告静默退回纯文件统计。",
+      "extensions": {
+        "evidentloop": {
+          "impact": "reviewer prompt、变更摘要解析、完成门、audit graph 和报告首屏。"
+        }
+      }
+    },
+    {
+      "id": "change-005",
+      "type": "change",
+      "title": "重建报告阅读与裁定体验",
+      "summary": "HTML 报告改为结果优先、问题逐卡展开、单栏 diff、状态化反馈与复审历史，并使用同一 DOM 适配桌面和移动端。",
+      "extensions": {
+        "evidentloop": {
+          "impact": "renderer context、HTML 模板、自包含样式与脚本、官方 Skill 和回归测试。"
+        }
+      }
+    },
+    {
+      "id": "file-001",
+      "type": "file",
+      "path": ".sopify/plan/20260722_audit_lifecycle_remediation_pages/assets/audit-report-concept-review.md",
+      "change_type": "modified",
+      "additions": 10,
+      "deletions": 10
+    },
+    {
+      "id": "file-002",
+      "type": "file",
+      "path": ".sopify/plan/20260722_audit_lifecycle_remediation_pages/assets/audit-report-concept.html",
+      "change_type": "modified",
+      "additions": 8,
+      "deletions": 7
+    },
+    {
+      "id": "file-003",
+      "type": "file",
+      "path": ".sopify/plan/20260722_audit_lifecycle_remediation_pages/plan.md",
+      "change_type": "modified",
+      "additions": 36,
+      "deletions": 26
+    },
+    {
+      "id": "file-004",
+      "type": "file",
+      "path": ".sopify/plan/20260722_audit_lifecycle_remediation_pages/tasks.md",
+      "change_type": "modified",
+      "additions": 43,
+      "deletions": 45
+    },
+    {
+      "id": "file-005",
+      "type": "file",
+      "path": ".sopify/project.md",
+      "change_type": "binary",
+      "additions": 11,
+      "deletions": 9
+    },
+    {
+      "id": "file-006",
+      "type": "file",
+      "path": "docs/ai-host-integration.md",
+      "change_type": "modified",
+      "additions": 112,
+      "deletions": 168
+    },
+    {
+      "id": "file-007",
+      "type": "file",
+      "path": "docs/data-model.md",
+      "change_type": "modified",
+      "additions": 164,
+      "deletions": 325
+    },
+    {
+      "id": "file-008",
+      "type": "file",
+      "path": "docs/v0-scope.md",
+      "change_type": "modified",
+      "additions": 77,
+      "deletions": 172
+    },
+    {
+      "id": "file-009",
+      "type": "file",
+      "path": "evidentloop/api.py",
+      "change_type": "modified",
+      "additions": 10,
+      "deletions": 0
+    },
+    {
+      "id": "file-010",
+      "type": "file",
+      "path": "evidentloop/audit/__init__.py",
+      "change_type": "modified",
+      "additions": 9,
+      "deletions": 2
+    },
+    {
+      "id": "file-011",
+      "type": "file",
+      "path": "evidentloop/audit/adapter.py",
+      "change_type": "modified",
+      "additions": 133,
+      "deletions": 35
+    },
+    {
+      "id": "file-012",
+      "type": "file",
+      "path": "evidentloop/audit/finalize.py",
+      "change_type": "modified",
+      "additions": 119,
+      "deletions": 25
+    },
+    {
+      "id": "file-013",
+      "type": "file",
+      "path": "evidentloop/audit/fix_verification.py",
+      "change_type": "added",
+      "additions": 238,
+      "deletions": 0
+    },
+    {
+      "id": "file-014",
+      "type": "file",
+      "path": "evidentloop/audit/revision.py",
+      "change_type": "modified",
+      "additions": 20,
+      "deletions": 25
+    },
+    {
+      "id": "file-015",
+      "type": "file",
+      "path": "evidentloop/audit/summary.py",
+      "change_type": "modified",
+      "additions": 33,
+      "deletions": 28
+    },
+    {
+      "id": "file-016",
+      "type": "file",
+      "path": "evidentloop/cli.py",
+      "change_type": "modified",
+      "additions": 26,
+      "deletions": 2
+    },
+    {
+      "id": "file-017",
+      "type": "file",
+      "path": "evidentloop/renderers/html.py",
+      "change_type": "modified",
+      "additions": 331,
+      "deletions": 259
+    },
+    {
+      "id": "file-018",
+      "type": "file",
+      "path": "evidentloop/renderers/static/audit.css",
+      "change_type": "modified",
+      "additions": 583,
+      "deletions": 242
+    },
+    {
+      "id": "file-019",
+      "type": "file",
+      "path": "evidentloop/renderers/static/audit.js",
+      "change_type": "modified",
+      "additions": 11,
+      "deletions": 1
+    },
+    {
+      "id": "file-020",
+      "type": "file",
+      "path": "evidentloop/renderers/templates/audit.html.j2",
+      "change_type": "modified",
+      "additions": 334,
+      "deletions": 305
+    },
+    {
+      "id": "file-021",
+      "type": "file",
+      "path": "evidentloop/review/change_summary.py",
+      "change_type": "added",
+      "additions": 59,
+      "deletions": 0
+    },
+    {
+      "id": "file-022",
+      "type": "file",
+      "path": "evidentloop/review/claims.py",
+      "change_type": "added",
+      "additions": 116,
+      "deletions": 0
+    },
+    {
+      "id": "file-023",
+      "type": "file",
+      "path": "evidentloop/review/core/prompt.py",
+      "change_type": "modified",
+      "additions": 36,
+      "deletions": 7
+    },
+    {
+      "id": "file-024",
+      "type": "file",
+      "path": "evidentloop/review/core/reviewer-prompt.md",
+      "change_type": "modified",
+      "additions": 38,
+      "deletions": 4
+    },
+    {
+      "id": "file-025",
+      "type": "file",
+      "path": "evidentloop/review/schema.py",
+      "change_type": "modified",
+      "additions": 79,
+      "deletions": 40
+    },
+    {
+      "id": "file-026",
+      "type": "file",
+      "path": "evidentloop/schemas/audit-v0.5.schema.json",
+      "change_type": "renamed",
+      "additions": 30,
+      "deletions": 32,
+      "extensions": {
+        "evidentloop": {
+          "old_path": "evidentloop/schemas/audit-v0.4.schema.json",
+          "new_path": "evidentloop/schemas/audit-v0.5.schema.json"
+        }
+      }
+    },
+    {
+      "id": "file-027",
+      "type": "file",
+      "path": "evidentloop/validation.py",
+      "change_type": "modified",
+      "additions": 290,
+      "deletions": 49
+    },
+    {
+      "id": "file-028",
+      "type": "file",
+      "path": "pyproject.toml",
+      "change_type": "modified",
+      "additions": 1,
+      "deletions": 1
+    },
+    {
+      "id": "file-029",
+      "type": "file",
+      "path": "skills/evidentloop/SKILL.md",
+      "change_type": "modified",
+      "additions": 35,
+      "deletions": 7
+    },
+    {
+      "id": "file-030",
+      "type": "file",
+      "path": "tests/audit_helpers.py",
+      "change_type": "modified",
+      "additions": 6,
+      "deletions": 8
+    },
+    {
+      "id": "file-031",
+      "type": "file",
+      "path": "tests/fixtures/audit-v0.5.json",
+      "change_type": "renamed",
+      "additions": 6,
+      "deletions": 6,
+      "extensions": {
+        "evidentloop": {
+          "old_path": "tests/fixtures/audit-v0.4.json",
+          "new_path": "tests/fixtures/audit-v0.5.json"
+        }
+      }
+    },
+    {
+      "id": "file-032",
+      "type": "file",
+      "path": "tests/review/test_prompt_lab_run.py",
+      "change_type": "modified",
+      "additions": 9,
+      "deletions": 3
+    },
+    {
+      "id": "file-033",
+      "type": "file",
+      "path": "tests/test_adapter.py",
+      "change_type": "modified",
+      "additions": 85,
+      "deletions": 15
+    },
+    {
+      "id": "file-034",
+      "type": "file",
+      "path": "tests/test_agent_skill.py",
+      "change_type": "modified",
+      "additions": 5,
+      "deletions": 5
+    },
+    {
+      "id": "file-035",
+      "type": "file",
+      "path": "tests/test_audit_schema.py",
+      "change_type": "modified",
+      "additions": 22,
+      "deletions": 7
+    },
+    {
+      "id": "file-036",
+      "type": "file",
+      "path": "tests/test_change_summary.py",
+      "change_type": "added",
+      "additions": 53,
+      "deletions": 0
+    },
+    {
+      "id": "file-037",
+      "type": "file",
+      "path": "tests/test_feedback_revision.py",
+      "change_type": "modified",
+      "additions": 29,
+      "deletions": 26
+    },
+    {
+      "id": "file-038",
+      "type": "file",
+      "path": "tests/test_finalize.py",
+      "change_type": "modified",
+      "additions": 67,
+      "deletions": 25
+    },
+    {
+      "id": "file-039",
+      "type": "file",
+      "path": "tests/test_fix_verification.py",
+      "change_type": "added",
+      "additions": 268,
+      "deletions": 0
+    },
+    {
+      "id": "file-040",
+      "type": "file",
+      "path": "tests/test_fix_verification_flow.py",
+      "change_type": "added",
+      "additions": 716,
+      "deletions": 0
+    },
+    {
+      "id": "file-041",
+      "type": "file",
+      "path": "tests/test_package_resources.py",
+      "change_type": "modified",
+      "additions": 7,
+      "deletions": 7
+    },
+    {
+      "id": "file-042",
+      "type": "file",
+      "path": "tests/test_prepare.py",
+      "change_type": "modified",
+      "additions": 8,
+      "deletions": 3
+    },
+    {
+      "id": "file-043",
+      "type": "file",
+      "path": "tests/test_renderer.py",
+      "change_type": "modified",
+      "additions": 181,
+      "deletions": 38
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-001",
+      "type": "contains_change",
+      "from": "run-ab40720178764edabef3a7553cc6b571",
+      "to": "change-001"
+    },
+    {
+      "id": "edge-002",
+      "type": "contains_change",
+      "from": "run-ab40720178764edabef3a7553cc6b571",
+      "to": "change-002"
+    },
+    {
+      "id": "edge-003",
+      "type": "contains_change",
+      "from": "run-ab40720178764edabef3a7553cc6b571",
+      "to": "change-003"
+    },
+    {
+      "id": "edge-004",
+      "type": "contains_change",
+      "from": "run-ab40720178764edabef3a7553cc6b571",
+      "to": "change-004"
+    },
+    {
+      "id": "edge-005",
+      "type": "contains_change",
+      "from": "run-ab40720178764edabef3a7553cc6b571",
+      "to": "change-005"
+    },
+    {
+      "id": "edge-006",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-001"
+    },
+    {
+      "id": "edge-007",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-002"
+    },
+    {
+      "id": "edge-008",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-003"
+    },
+    {
+      "id": "edge-009",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-004"
+    },
+    {
+      "id": "edge-010",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-005"
+    },
+    {
+      "id": "edge-011",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-006"
+    },
+    {
+      "id": "edge-012",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-007"
+    },
+    {
+      "id": "edge-013",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-008"
+    },
+    {
+      "id": "edge-014",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-009"
+    },
+    {
+      "id": "edge-015",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-010"
+    },
+    {
+      "id": "edge-016",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-011"
+    },
+    {
+      "id": "edge-017",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-012"
+    },
+    {
+      "id": "edge-018",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-013"
+    },
+    {
+      "id": "edge-019",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-014"
+    },
+    {
+      "id": "edge-020",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-015"
+    },
+    {
+      "id": "edge-021",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-016"
+    },
+    {
+      "id": "edge-022",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-017"
+    },
+    {
+      "id": "edge-023",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-018"
+    },
+    {
+      "id": "edge-024",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-019"
+    },
+    {
+      "id": "edge-025",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-020"
+    },
+    {
+      "id": "edge-026",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-021"
+    },
+    {
+      "id": "edge-027",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-022"
+    },
+    {
+      "id": "edge-028",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-023"
+    },
+    {
+      "id": "edge-029",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-024"
+    },
+    {
+      "id": "edge-030",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-025"
+    },
+    {
+      "id": "edge-031",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-026"
+    },
+    {
+      "id": "edge-032",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-027"
+    },
+    {
+      "id": "edge-033",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-028"
+    },
+    {
+      "id": "edge-034",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-029"
+    },
+    {
+      "id": "edge-035",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-030"
+    },
+    {
+      "id": "edge-036",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-031"
+    },
+    {
+      "id": "edge-037",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-032"
+    },
+    {
+      "id": "edge-038",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-033"
+    },
+    {
+      "id": "edge-039",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-034"
+    },
+    {
+      "id": "edge-040",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-035"
+    },
+    {
+      "id": "edge-041",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-036"
+    },
+    {
+      "id": "edge-042",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-037"
+    },
+    {
+      "id": "edge-043",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-038"
+    },
+    {
+      "id": "edge-044",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-039"
+    },
+    {
+      "id": "edge-045",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-040"
+    },
+    {
+      "id": "edge-046",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-041"
+    },
+    {
+      "id": "edge-047",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-042"
+    },
+    {
+      "id": "edge-048",
+      "type": "changes_file",
+      "from": "change-001",
+      "to": "file-043"
+    }
+  ],
+  "summary": {
+    "review_status": "complete",
+    "verdict": "pass_candidate",
+    "overall_severity": null,
+    "finding_count": 0,
+    "open_finding_count": 0,
+    "fix_count": 0,
+    "fix_done_count": 0,
+    "summary_audit_status": "not_audited",
+    "basis": "model_review",
+    "extensions": {
+      "evidentloop": {
+        "review_diagnostics": {
+          "intent_coverage": "covered",
+          "files_reviewed": 43,
+          "files_total": 43,
+          "pack_completeness": 0.75,
+          "raw_findings_count": 0,
+          "emitted_findings_count": 0,
+          "reviewer_failure_reason": null,
+          "advisory_verdict": "pass_candidate",
+          "advisory_rationale": "no findings and pack completeness is sufficient for advisory pass"
+        }
+      }
+    }
+  },
+  "extensions": {
+    "evidentloop": {
+      "profile": "code_diff",
+      "run_id": "run-ab40720178764edabef3a7553cc6b571",
+      "adapter": "gitdiff/v0",
+      "diff_version": "sha256:055235edb0ef8f0c3f89a5e4c88aca5fd06e6e842483d48583b5f21508080f2d",
+      "reviewer_prompt": {
+        "source": "product",
+        "version": "v0.7",
+        "sha256": "sha256:f4fd9ac2e4ffa2b26556e871ec4e5fcce682938459fb3f7e193004e0c2a8f380"
+      }
+    }
+  }
+}

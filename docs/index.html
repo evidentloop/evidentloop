@@ -3,35 +3,149 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EvidentLoop Alpha</title>
-  <style>
-    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #172033; background: #f7f8fb; }
-    body { margin: 0; }
-    main { max-width: 960px; margin: 0 auto; padding: 64px 24px 80px; }
-    h1 { margin: 0 0 12px; font-size: clamp(2.4rem, 7vw, 4.8rem); letter-spacing: -0.04em; }
-    p { max-width: 720px; color: #536077; line-height: 1.7; }
-    nav { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 44px; }
-    a { color: #1d4ed8; }
-    nav a { padding: 10px 16px; border: 1px solid #b9c4d8; border-radius: 999px; background: #fff; text-decoration: none; font-weight: 650; }
-    figure { margin: 0; padding: 18px; border: 1px solid #d9dfeb; border-radius: 18px; background: #fff; }
-    img { display: block; width: 100%; height: auto; }
-    code { padding: 2px 6px; border-radius: 5px; background: #e9edf5; }
-  </style>
+  <title>EvidentLoop — Inspectable audit trails for local Git diffs</title>
+  <meta name="description" content="Turn a local Git diff into a validated, self-contained audit report with traceable human decisions and explicit fix verification.">
+  <meta name="theme-color" content="#f3f6f9">
+  <link rel="canonical" href="https://evidentloop.github.io/evidentloop/">
+  <link rel="alternate" hreflang="en" href="https://evidentloop.github.io/evidentloop/">
+  <link rel="alternate" hreflang="zh-CN" href="https://evidentloop.github.io/evidentloop/zh-CN.html">
+  <link rel="alternate" hreflang="x-default" href="https://evidentloop.github.io/evidentloop/">
+  <link rel="stylesheet" href="./assets/site.css">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="EvidentLoop — Inspectable audit trails for local Git diffs">
+  <meta property="og:description" content="Review the complete diff, validate the report, and keep later decisions linked to evidence.">
+  <meta property="og:url" content="https://evidentloop.github.io/evidentloop/">
+  <meta property="og:image" content="https://evidentloop.github.io/evidentloop/assets/evidentloop-report-loop.png">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
 </head>
 <body>
-  <main>
-    <h1>EvidentLoop</h1>
-    <p>Turn a local Git diff into one HTML report. Findings link to real changed lines, and human decisions can update the same report without re-reviewing code.</p>
-    <nav aria-label="Primary">
-      <a href="./examples/evidentloop-demo-v04/audit.html">Open the schema 0.4 demo</a>
-      <a href="https://pypi.org/project/evidentloop/">Install from PyPI</a>
-      <a href="https://github.com/evidentloop/evidentloop">View source</a>
-      <a href="https://github.com/evidentloop/evidentloop/blob/main/README.zh-CN.md">简体中文</a>
+  <a class="skip-link" href="#content">Skip to content</a>
+
+  <header class="site-header">
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a class="brand" href="./">EvidentLoop</a>
+      <div class="nav-links">
+        <a href="#proof">Real report</a>
+        <a href="#how">How it works</a>
+        <a href="#start">Install</a>
+        <a href="./zh-CN.html" lang="zh-CN">简体中文</a>
+      </div>
     </nav>
-    <figure>
-      <img src="./assets/evidentloop-cover.png" alt="EvidentLoop product path from Git diff to human decisions">
-    </figure>
-    <p>The demo uses a bundled synthetic fixture and frozen replay, not a live AI review. Install the CLI and Skill for a real audit; publish only redacted reports you intend to share.</p>
+
+    <div class="hero">
+      <p class="eyebrow">Open source · Local Git diff audits</p>
+      <h1>Turn a local Git diff into an audit trail you can inspect</h1>
+      <p class="lead">Your coding agent reviews the complete diff. EvidentLoop validates the result against that diff, renders one self-contained report, and keeps human decisions traceable.</p>
+
+      <figure class="hero-visual">
+        <img src="./assets/evidentloop-hero-sketch.jpg" width="1915" height="821" alt="A handdrawn local Git diff being inspected and turned into an audit report with a human decision">
+      </figure>
+
+      <div class="actions">
+        <a class="button" href="./examples/evidentloop-dogfood-v05/audit.html">Open the real audit report</a>
+        <a class="button button-secondary" href="#start">Install the Skill</a>
+      </div>
+      <p class="version-note">Alpha · Python 3.10+ · audit schema 0.5</p>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="page-section" id="proof" aria-labelledby="proof-title">
+      <p class="eyebrow">Interaction and evidence</p>
+      <h2 id="proof-title">See the workflow, then inspect the real run</h2>
+      <p class="section-intro">The short animation shows how to open a finding, inspect its complete diff, and record a browser-local decision and comment.</p>
+      <figure class="media-frame">
+        <picture>
+          <source media="(prefers-reduced-motion: reduce)" srcset="./assets/evidentloop-report-loop.png">
+          <img src="./assets/evidentloop-report-loop.gif" width="1280" height="720" loading="lazy" alt="A representative EvidentLoop report showing a finding, complete diff, browser-local false-positive decision, and comment">
+        </picture>
+        <figcaption>Representative schema 0.5 report · finding → diff → local decision and comment.</figcaption>
+      </figure>
+      <div class="evidence-note">
+        <p><strong>Real audit evidence:</strong> inspect the <a href="./examples/evidentloop-dogfood-v05/audit.html">43/43-file self-audit report</a> and its <a href="./examples/evidentloop-dogfood-v05/audit.json">validated JSON</a>. The result is <code>complete / pass_candidate</code> with 0 findings.</p>
+      </div>
+    </section>
+
+    <section class="page-section" id="how" aria-labelledby="how-title">
+      <p class="eyebrow">One traceable lifecycle</p>
+      <h2 id="how-title">Keep each decision attached to evidence</h2>
+      <p class="section-intro">The first review, a human decision, and a later fix check have different meanings. EvidentLoop keeps those boundaries visible.</p>
+      <figure class="media-frame lifecycle-frame">
+        <img src="./assets/evidentloop-lifecycle.svg" width="1440" height="860" loading="lazy" alt="EvidentLoop report creation, report reading order, same-diff decision loop, and explicit next-diff fix verification">
+        <figcaption>Report structure, same-diff decisions, and explicit later-diff verification. On smaller screens, scroll sideways or <a href="./assets/evidentloop-lifecycle.svg">open the full-size diagram</a>.</figcaption>
+      </figure>
+      <ol class="steps">
+        <li>
+          <span class="step-number" aria-hidden="true">01</span>
+          <h3>Review one complete diff</h3>
+          <p>Your coding agent makes the judgment. EvidentLoop validates file identities, changed-line anchors, and completeness, then produces the HTML report with its JSON record.</p>
+        </li>
+        <li>
+          <span class="step-number" aria-hidden="true">02</span>
+          <h3>Revise the report, not the code</h3>
+          <p>Human decisions update the report lineage without running another model review or changing business files.</p>
+        </li>
+        <li>
+          <span class="step-number" aria-hidden="true">03</span>
+          <h3>Verify a later diff explicitly</h3>
+          <p>A source report, a chosen finding, and a claim start a new full-diff review. EvidentLoop never guesses the match.</p>
+        </li>
+      </ol>
+      <p class="lifecycle-note">Old reports remain unchanged. A missing line or finding is never treated as proof that an issue was fixed.</p>
+    </section>
+
+    <section class="page-section" id="start" aria-labelledby="start-title">
+      <p class="eyebrow">Start locally</p>
+      <h2 id="start-title">Run it in the repository you want to inspect</h2>
+      <p class="section-intro">EvidentLoop uses the model already available in your coding agent. It does not execute commands found in a diff or in model output.</p>
+      <div class="start-grid">
+        <div>
+          <div class="command-card">
+            <h3>Install the CLI and Skill</h3>
+            <pre><code># Try the bundled offline demo
+uvx evidentloop demo
+
+# Install for real audits
+uv tool install evidentloop
+npx skills@latest add evidentloop/evidentloop --skill evidentloop -g
+evidentloop doctor</code></pre>
+          </div>
+          <p class="prompt">Then ask your coding agent: <q>Use EvidentLoop to audit my staged changes and generate the HTML report.</q></p>
+        </div>
+        <aside class="boundary-card" aria-labelledby="boundaries-title">
+          <h3 id="boundaries-title">What stays explicit</h3>
+          <ul>
+            <li><code>complete</code> means the host returned a valid complete review, not that the code is formally proven safe.</li>
+            <li>Pending feedback stays in the browser until you copy or download it.</li>
+            <li>No automatic fixes, command execution, finding matching, or silent stale-feedback merging.</li>
+          </ul>
+          <p><a href="https://github.com/evidentloop/evidentloop/blob/main/docs/ai-host-integration.md">Integrate another AI host</a> or read the <a href="https://github.com/evidentloop/evidentloop/blob/main/docs/data-model.md">data model</a>.</p>
+        </aside>
+      </div>
+
+      <div class="quick-answers" aria-labelledby="answers-title">
+        <h3 id="answers-title">Quick answers</h3>
+        <details>
+          <summary>Can I share an audit report?</summary>
+          <p>Yes. The HTML is self-contained and works on static hosting. Redact anything sensitive first; browser-local decisions are not uploaded automatically.</p>
+        </details>
+        <details>
+          <summary>Will feedback trigger another review or change my code?</summary>
+          <p>No—not automatically. Feedback on the same diff only revises the report. Your coding agent changes code or starts a later-diff verification only when you explicitly ask.</p>
+        </details>
+      </div>
+    </section>
   </main>
+
+  <footer class="site-footer">
+    <p>EvidentLoop is open source under the MIT License.</p>
+    <nav class="footer-links" aria-label="Project links">
+      <a href="https://github.com/evidentloop/evidentloop">GitHub</a>
+      <a href="https://pypi.org/project/evidentloop/">PyPI</a>
+      <a href="https://github.com/evidentloop/evidentloop/blob/main/docs/v0-scope.md">Alpha scope</a>
+      <a href="https://github.com/evidentloop/evidentloop/issues">Feedback</a>
+    </nav>
+  </footer>
 </body>
 </html>

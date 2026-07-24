@@ -10,10 +10,11 @@ from typing import Any, Iterable, Mapping
 from jsonschema import Draft202012Validator
 
 from .renderers.hunk import HunkParseError, parse_hunk
+from .review.claims import aggregate_claim_status
 from .versions import is_content_version
 
 
-SCHEMA_VERSION = "0.4"
+SCHEMA_VERSION = "0.5"
 
 
 @dataclass(frozen=True)
@@ -102,31 +103,39 @@ def _claims_for(entity: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
     }
 
 
+_SEVERITY_ORDER = {"high": 4, "medium": 3, "low": 2, "note": 1}
+
+
+def _overall_severity(open_findings: list[Mapping[str, Any]]) -> str | None:
+    if not open_findings:
+        return None
+    return max(
+        (str(f["severity"]) for f in open_findings),
+        key=lambda s: _SEVERITY_ORDER.get(s, 0),
+    )
+
+
 def _validate_summary(
     data: Mapping[str, Any],
     nodes: list[Mapping[str, Any]],
     issues: list[ValidationIssue],
 ) -> None:
+    from .audit.summary import needs_human_triage
+
     summary = data["summary"]
     findings = [node for node in nodes if node["type"] == "finding"]
     fixes = [node for node in nodes if node["type"] == "fix"]
     open_findings = [node for node in findings if node["status"] == "open"]
     done_fixes = [node for node in fixes if node["status"] == "done"]
-    unscored = [
-        node
-        for node in open_findings
-        if isinstance(node.get("extensions"), Mapping)
-        and isinstance(node["extensions"].get("evidentloop"), Mapping)
-        and (
-            node["extensions"]["evidentloop"].get("downgraded_from") == "bug"
-            or node["extensions"]["evidentloop"].get("unscored") is True
-        )
-    ]
+    trusted_finding_ids = {
+        str(edge["from"])
+        for edge in data["edges"]
+        if edge["type"] == "finding_in_file"
+    }
 
     expected_counts = {
         "finding_count": len(findings),
         "open_finding_count": len(open_findings),
-        "unscored_finding_count": len(unscored),
         "fix_count": len(fixes),
     }
     if "fix_done_count" in summary:
@@ -142,7 +151,6 @@ def _validate_summary(
 
     status = summary["review_status"]
     verdict = summary["verdict"]
-    score = summary["risk_score"]
     if status in {"not_reviewed", "partial", "failed"}:
         if verdict != "inconclusive":
             _issue(
@@ -151,49 +159,62 @@ def _validate_summary(
                 "/summary/verdict",
                 f"{status} review must be inconclusive",
             )
-        if score is not None:
-            _issue(
-                issues,
-                "summary.invalid_risk_score",
-                "/summary/risk_score",
-                f"{status} review must not have a numeric risk score",
-            )
     elif verdict == "pass_candidate":
-        if open_findings or score != 0:
+        if open_findings:
             _issue(
                 issues,
                 "summary.invalid_pass_candidate",
                 "/summary",
-                "pass_candidate requires zero open findings and risk_score 0",
+                "pass_candidate requires zero open findings",
             )
     elif verdict == "concerns":
-        if not open_findings or score is None:
+        if not open_findings:
             _issue(
                 issues,
                 "summary.invalid_concerns",
                 "/summary",
-                "concerns requires open findings and a numeric risk score",
+                "concerns requires open findings",
+            )
+        elif all(
+            needs_human_triage(
+                finding,
+                has_trusted_file_association=str(finding["id"])
+                in trusted_finding_ids,
+            )
+            for finding in open_findings
+        ):
+            _issue(
+                issues,
+                "summary.invalid_concerns",
+                "/summary",
+                "concerns requires at least one open finding that does not need triage",
             )
     elif verdict == "needs_human_triage":
-        if (
-            not open_findings
-            or len(unscored) != len(open_findings)
-            or score is not None
+        if not open_findings or not all(
+            needs_human_triage(
+                finding,
+                has_trusted_file_association=str(finding["id"])
+                in trusted_finding_ids,
+            )
+            for finding in open_findings
         ):
             _issue(
                 issues,
                 "summary.invalid_human_triage",
                 "/summary",
-                "needs_human_triage requires only unscored open findings and null score",
+                "needs_human_triage requires all open findings to need triage",
             )
-    elif verdict == "inconclusive":
-        if score is not None:
-            _issue(
-                issues,
-                "summary.invalid_inconclusive_score",
-                "/summary/risk_score",
-                "inconclusive verdict must not have a numeric risk score",
-            )
+
+    expected_severity = (
+        _overall_severity(open_findings) if status == "complete" else None
+    )
+    if summary.get("overall_severity") != expected_severity:
+        _issue(
+            issues,
+            "summary.invalid_overall_severity",
+            "/summary/overall_severity",
+            f"expected {expected_severity!r}, got {summary.get('overall_severity')!r}",
+        )
 
 
 def _revision_event_state(
@@ -271,9 +292,8 @@ def _validate_revisions(
                 "a report without feedback revision runs must use model_review basis",
             )
         human_summary_fields = {
-            "risk_delta",
             "model_verdict",
-            "model_risk_score",
+            "model_overall_severity",
             "notice",
         }
         orphan_fields = sorted(human_summary_fields.intersection(summary))
@@ -317,12 +337,13 @@ def _validate_revisions(
             "/runs",
             "model review runs cannot follow feedback revision runs",
         )
-    first_snapshot = revision_runs[0][1]["revision"]["source_summary"]
-    expected_source_summary = first_snapshot
+    model_snapshot = revision_runs[0][1]["revision"]["source_summary"]
+    expected_source_summary = model_snapshot
     empty_verdict = (
         "pass_candidate"
-        if first_snapshot["review_status"] == "complete"
-        and first_snapshot["verdict"] in {"pass_candidate", "concerns"}
+        if model_snapshot["review_status"] == "complete"
+        and model_snapshot["verdict"]
+        in {"pass_candidate", "concerns", "needs_human_triage"}
         else "inconclusive"
     )
     fixes = [node for node in nodes if node["type"] == "fix"]
@@ -436,9 +457,8 @@ def _validate_revisions(
                 for field in (
                     "review_status",
                     "verdict",
-                    "risk_score",
+                    "overall_severity",
                     "finding_count",
-                    "unscored_finding_count",
                     "open_finding_count",
                     "fix_count",
                     "fix_done_count",
@@ -449,28 +469,27 @@ def _validate_revisions(
             calculated = build_summary(
                 projected,
                 fixes,
-                review_status=first_snapshot["review_status"],
+                review_status=model_snapshot["review_status"],
                 empty_verdict=empty_verdict,
+                trusted_finding_ids={
+                    str(edge["from"])
+                    for edge in edges
+                    if edge["type"] == "finding_in_file"
+                },
             )
-        calculated["summary_audit_status"] = first_snapshot.get(
+        calculated["summary_audit_status"] = model_snapshot.get(
             "summary_audit_status", "not_audited"
-        )
-        calculated["risk_delta"] = (
-            calculated["risk_score"] - expected_source_summary["risk_score"]
-            if calculated["risk_score"] is not None
-            and expected_source_summary["risk_score"] is not None
-            else None
         )
         calculated.update(
             {
                 "basis": "human_adjudication",
-                "model_verdict": first_snapshot["verdict"],
-                "model_risk_score": first_snapshot["risk_score"],
-                "notice": "基于人工裁定，未重新审查代码",
+                "model_verdict": model_snapshot["verdict"],
+                "model_overall_severity": model_snapshot.get("overall_severity"),
+                "notice": "报告已按人工裁定更新；未重新审查代码，模型原判断仍保留。",
             }
         )
-        if "extensions" in first_snapshot:
-            calculated["extensions"] = first_snapshot["extensions"]
+        if "extensions" in model_snapshot:
+            calculated["extensions"] = model_snapshot["extensions"]
         expected_source_summary = calculated
         prior_effective = current_effective
         if run["status"] != calculated["verdict"]:
@@ -504,6 +523,245 @@ def _validate_revisions(
             "revision.summary_mismatch",
             "/summary",
             "summary does not match replayed feedback",
+        )
+
+
+_FIX_VERIFICATION_KEYS = {
+    "version",
+    "source_report_version",
+    "source_diff_version",
+    "targets",
+}
+_FIX_VERIFICATION_TARGET_KEYS = {
+    "claim_id",
+    "finding_id",
+    "fingerprint",
+    "source_title",
+    "claim",
+}
+
+
+def fix_verification_context_problems(value: object) -> list[str]:
+    """Return strict problems for frozen one-hop fix-verification provenance."""
+    if not isinstance(value, Mapping):
+        return ["fix verification provenance must be an object"]
+    problems: list[str] = []
+    unknown = set(value) - _FIX_VERIFICATION_KEYS
+    missing = _FIX_VERIFICATION_KEYS - set(value)
+    if unknown:
+        problems.append("unknown fields: " + ", ".join(sorted(unknown)))
+    if missing:
+        problems.append("missing fields: " + ", ".join(sorted(missing)))
+    if value.get("version") != 1:
+        problems.append("version must be exactly 1")
+    for key in ("source_report_version", "source_diff_version"):
+        if not is_content_version(value.get(key)):
+            problems.append(f"{key} must use sha256:<64 lowercase hex>")
+    targets = value.get("targets")
+    if not isinstance(targets, list) or not targets:
+        problems.append("targets must be a non-empty list")
+        return problems
+
+    claim_ids: set[str] = set()
+    finding_ids: set[str] = set()
+    for index, target in enumerate(targets, start=1):
+        prefix = f"target {index}"
+        if not isinstance(target, Mapping):
+            problems.append(f"{prefix} must be an object")
+            continue
+        unknown_target = set(target) - _FIX_VERIFICATION_TARGET_KEYS
+        missing_target = _FIX_VERIFICATION_TARGET_KEYS - set(target)
+        if unknown_target:
+            problems.append(
+                f"{prefix} has unknown fields: " + ", ".join(sorted(unknown_target))
+            )
+        if missing_target:
+            problems.append(
+                f"{prefix} is missing fields: " + ", ".join(sorted(missing_target))
+            )
+        for key in _FIX_VERIFICATION_TARGET_KEYS:
+            field = target.get(key)
+            if not isinstance(field, str) or not field.strip():
+                problems.append(f"{prefix} field {key} must be a non-empty string")
+        if not is_content_version(target.get("fingerprint")):
+            problems.append(f"{prefix} fingerprint must use sha256:<64 lowercase hex>")
+        claim_id = target.get("claim_id")
+        if isinstance(claim_id, str):
+            if claim_id in claim_ids:
+                problems.append(f"duplicate claim_id: {claim_id}")
+            claim_ids.add(claim_id)
+        finding_id = target.get("finding_id")
+        if isinstance(finding_id, str):
+            if finding_id in finding_ids:
+                problems.append(f"duplicate finding_id: {finding_id}")
+            finding_ids.add(finding_id)
+    return problems
+
+
+def _validate_claim_consistency(
+    data: Mapping[str, Any],
+    runs: list[Mapping[str, Any]],
+    nodes: list[Mapping[str, Any]],
+    edges: list[Mapping[str, Any]],
+    issues: list[ValidationIssue],
+) -> None:
+    edge_counts: dict[tuple[str, str], list[int]] = {}
+    for edge in edges:
+        claim_id = edge.get("claim_id")
+        edge_type = str(edge["type"])
+        if edge_type not in {"supports_claim", "challenges_claim"} or not isinstance(
+            claim_id, str
+        ):
+            continue
+        counts = edge_counts.setdefault((str(edge["to"]), claim_id), [0, 0])
+        counts[0 if edge_type == "supports_claim" else 1] += 1
+
+    claim_owners = [
+        ("runs", index, run)
+        for index, run in enumerate(runs)
+    ] + [
+        ("nodes", index, node)
+        for index, node in enumerate(nodes)
+        if node.get("type") == "change"
+    ]
+    for collection, index, owner in claim_owners:
+        claims = _claims_for(owner)
+        for claim_id, claim in claims.items():
+            supports, challenges = edge_counts.get(
+                (str(owner["id"]), claim_id), (0, 0)
+            )
+            if supports and not challenges:
+                expected = "supported"
+            elif challenges and not supports:
+                expected = "challenged"
+            elif supports and challenges:
+                expected = "partial"
+            else:
+                expected = "unknown"
+            if claim.get("status") != expected:
+                _issue(
+                    issues,
+                    "claim.status_mismatch",
+                    f"/{collection}/{index}/summary_audit/claims",
+                    f"expected {expected} from claim edges, got {claim.get('status')!r}",
+                    str(owner["id"]),
+                    claim_id,
+                )
+        summary_audit = owner.get("summary_audit")
+        if isinstance(summary_audit, Mapping):
+            expected_status = aggregate_claim_status(
+                [str(claim.get("status")) for claim in claims.values()]
+            )
+            if summary_audit.get("status") != expected_status:
+                _issue(
+                    issues,
+                    "claim.summary_status_mismatch",
+                    f"/{collection}/{index}/summary_audit/status",
+                    (
+                        f"expected {expected_status} from claim results, "
+                        f"got {summary_audit.get('status')!r}"
+                    ),
+                    str(owner["id"]),
+                )
+
+    model_runs = [run for run in runs if run.get("kind") == "model_review"]
+    expected_summary_status = (
+        aggregate_claim_status(
+            [
+                str(claim.get("status"))
+                for claim in _claims_for(model_runs[-1]).values()
+            ]
+        )
+        if model_runs
+        else "not_audited"
+    )
+    if data["summary"].get("summary_audit_status") != expected_summary_status:
+        _issue(
+            issues,
+            "claim.report_status_mismatch",
+            "/summary/summary_audit_status",
+            (
+                f"expected {expected_summary_status} from the current model review, "
+                f"got {data['summary'].get('summary_audit_status')!r}"
+            ),
+        )
+
+    provenance: object | None = None
+    current_diff_version: object | None = None
+    extensions = data.get("extensions")
+    if isinstance(extensions, Mapping):
+        evidentloop = extensions.get("evidentloop")
+        if isinstance(evidentloop, Mapping):
+            current_diff_version = evidentloop.get("diff_version")
+            candidate = evidentloop.get("fix_verification")
+            if candidate is not None:
+                provenance = candidate
+    if provenance is None:
+        return
+    provenance_problems = fix_verification_context_problems(provenance)
+    for problem in provenance_problems:
+        _issue(
+            issues,
+            "fix_verification.invalid_provenance",
+            "/extensions/evidentloop/fix_verification",
+            problem,
+        )
+    if provenance_problems or not isinstance(provenance, Mapping):
+        return
+    if current_diff_version is None:
+        _issue(
+            issues,
+            "fix_verification.missing_current_diff",
+            "/extensions/evidentloop/diff_version",
+            "fix verification requires the current diff_version",
+        )
+    elif (
+        is_content_version(current_diff_version)
+        and current_diff_version == provenance.get("source_diff_version")
+    ):
+        _issue(
+            issues,
+            "fix_verification.same_diff",
+            "/extensions/evidentloop/diff_version",
+            "fix verification requires a different current diff",
+        )
+    current_claims = _claims_for(model_runs[-1]) if model_runs else {}
+    # Partial/failed reviews may preserve valid source provenance without
+    # materializing claim results; the completion gate already marks them incomplete.
+    if not current_claims and data["summary"]["review_status"] != "complete":
+        return
+    targets = provenance.get("targets")
+    assert isinstance(targets, list)
+    target_ids: list[str] = []
+    for target in targets:
+        if not isinstance(target, Mapping):
+            continue
+        claim_id = str(target.get("claim_id"))
+        target_ids.append(claim_id)
+        claim = current_claims.get(claim_id)
+        if claim is None:
+            _issue(
+                issues,
+                "claim.target_mismatch",
+                "/extensions/evidentloop/fix_verification/targets",
+                f"provenance target {claim_id} has no claim in the model review run",
+                claim_id,
+            )
+        elif str(claim.get("text")) != str(target.get("claim")):
+            _issue(
+                issues,
+                "claim.target_mismatch",
+                "/runs/summary_audit/claims",
+                "claim text does not match the frozen target claim",
+                claim_id,
+            )
+    for claim_id in sorted(set(current_claims) - set(target_ids)):
+        _issue(
+            issues,
+            "claim.target_mismatch",
+            "/runs/summary_audit/claims",
+            f"claim {claim_id} has no provenance target",
+            claim_id,
         )
 
 
@@ -800,6 +1058,7 @@ def validate_semantics(data: Mapping[str, Any]) -> list[ValidationIssue]:
                 edge_target,
             )
 
+    _validate_claim_consistency(data, runs, nodes, edges, issues)
     _validate_summary(data, nodes, issues)
     _validate_revisions(data, nodes, edges, issues)
     if runs and runs[-1]["status"] != data["summary"]["verdict"]:

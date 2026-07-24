@@ -5,11 +5,11 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
-from evidentloop.audit.summary import SEVERITY_WEIGHTS as SEVERITY_WEIGHTS
-from evidentloop.audit.summary import build_summary
+from evidentloop.audit.summary import build_summary, needs_human_triage
 from evidentloop.renderers.hunk import parse_hunk
+from evidentloop.review.claims import aggregate_claim_status
 from evidentloop.review.schema import Finding, ReviewResult, ReviewStatus
 from evidentloop.validation import SCHEMA_VERSION
 from evidentloop.versions import diff_version_from_fingerprint
@@ -60,7 +60,9 @@ def _audit_category(category: str) -> str:
     return "quality"
 
 
-def _normalize_candidate_path(value: str | None, trusted_paths: set[str]) -> tuple[str | None, str]:
+def _normalize_candidate_path(
+    value: str | None, trusted_paths: set[str]
+) -> tuple[str | None, str]:
     if not value or "\x00" in value or "\\" in value:
         return None, "missing_or_unsafe_file_path"
     candidate = value.strip().removeprefix("./")
@@ -156,7 +158,9 @@ def _resolve_anchor(
     )
 
 
-def _fingerprint(*, category: str, file_path: str | None, anchor: str, title: str) -> str:
+def _fingerprint(
+    *, category: str, file_path: str | None, anchor: str, title: str
+) -> str:
     canonical = "\n".join(
         [
             SCHEMA_VERSION,
@@ -183,16 +187,54 @@ def build_audit_graph(
     skeleton: Mapping[str, Any],
     hunk_index: Mapping[str, Any],
     overall_assessment: str | None = None,
+    change_summary: Mapping[str, Any] | None = None,
+    fix_verification_results: Sequence[Mapping[str, str]] | None = None,
 ) -> dict[str, Any]:
     """Build a fully mechanical, schema-ready code-diff audit graph."""
     trusted_paths = {str(item["path"]) for item in skeleton["files"]}
     hunks = [item for item in hunk_index["hunks"] if isinstance(item, Mapping)]
-    nodes: list[dict[str, Any]] = [dict(skeleton["change"])]
+    primary_change = dict(skeleton["change"])
+    if change_summary is not None:
+        primary_change["summary"] = str(change_summary["overview"])
+        primary_extensions = dict(primary_change.get("extensions") or {})
+        primary_evidentloop = dict(primary_extensions.get("evidentloop") or {})
+        primary_evidentloop["review_focus"] = str(change_summary["review_focus"])
+        primary_extensions["evidentloop"] = primary_evidentloop
+        primary_change["extensions"] = primary_extensions
+
+    nodes: list[dict[str, Any]] = [primary_change]
     edges: list[dict[str, Any]] = [
-        {"id": "edge-001", "type": "contains_change", "from": skeleton["run"]["id"], "to": skeleton["change"]["id"]}
+        {
+            "id": "edge-001",
+            "type": "contains_change",
+            "from": skeleton["run"]["id"],
+            "to": skeleton["change"]["id"],
+        }
     ]
     file_ids: dict[str, str] = {}
     edge_index = 2
+    if change_summary is not None:
+        for index, theme in enumerate(change_summary["themes"], start=2):
+            change_id = f"change-{index:03d}"
+            nodes.append(
+                {
+                    "id": change_id,
+                    "type": "change",
+                    "title": str(theme["title"]),
+                    "summary": str(theme["summary"]),
+                    "extensions": {"evidentloop": {"impact": str(theme["impact"])}},
+                }
+            )
+            edges.append(
+                {
+                    "id": f"edge-{edge_index:03d}",
+                    "type": "contains_change",
+                    "from": skeleton["run"]["id"],
+                    "to": change_id,
+                }
+            )
+            edge_index += 1
+
     for item in skeleton["files"]:
         node = dict(item)
         nodes.append(node)
@@ -207,8 +249,6 @@ def build_audit_graph(
         )
         edge_index += 1
 
-    scored: list[dict[str, Any]] = []
-    unscored = 0
     for index, review_finding in enumerate(review_result.findings, start=1):
         finding_id = f"finding-{index:03d}"
         evidence_id = f"evidence-{index:03d}"
@@ -224,7 +264,6 @@ def build_audit_graph(
             "confidence": review_finding.confidence.value,
         }
         severity = review_finding.severity.value
-        is_unscored = False
         if category == "bug" and anchor is None:
             category = "risk"
             severity = "medium" if severity in {"high", "medium"} else severity
@@ -232,13 +271,10 @@ def build_audit_graph(
                 {
                     "downgraded_from": "bug",
                     "downgrade_reason": anchor_reason,
-                    "unscored": True,
                 }
             )
-            is_unscored = True
         elif trusted_file_path is None:
-            extensions.update({"anchor_reason": anchor_reason, "unscored": True})
-            is_unscored = True
+            extensions["anchor_reason"] = anchor_reason
         elif anchor is None and review_finding.locatability.value == "exact":
             extensions["anchor_reason"] = anchor_reason
 
@@ -304,10 +340,67 @@ def build_audit_graph(
         )
         edge_index += 1
 
-        if is_unscored:
-            unscored += 1
-        else:
-            scored.append(finding_node)
+    frozen_verification = skeleton.get("fix_verification")
+    summary_audit: dict[str, Any] | None = None
+    if fix_verification_results and isinstance(frozen_verification, Mapping):
+        frozen_targets = {
+            str(target["claim_id"]): target
+            for target in frozen_verification.get("targets", [])
+        }
+        claims: list[dict[str, Any]] = []
+        for result in fix_verification_results:
+            claim_id = str(result["claim_id"])
+            target = frozen_targets.get(claim_id)
+            claim_status = str(result["status"])
+            if target is None or claim_status not in {
+                "supported",
+                "challenged",
+                "partial",
+                "unknown",
+            }:
+                continue
+            claims.append(
+                {
+                    "id": claim_id,
+                    "text": str(target["claim"]),
+                    "status": claim_status,
+                    "reason": str(result["reason"]),
+                }
+            )
+            if claim_status == "unknown":
+                continue
+            evidence_id = f"evidence-{claim_id}"
+            nodes.append(
+                {
+                    "id": evidence_id,
+                    "type": "evidence",
+                    "source": "host_llm",
+                    "status": "pass" if claim_status == "supported" else "fail",
+                    "summary": str(result["evidence"]),
+                }
+            )
+            edge_types = (
+                ("supports_claim",)
+                if claim_status == "supported"
+                else ("challenges_claim",)
+                if claim_status == "challenged"
+                else ("supports_claim", "challenges_claim")
+            )
+            for edge_type in edge_types:
+                edges.append(
+                    {
+                        "id": f"edge-{edge_index:03d}",
+                        "type": edge_type,
+                        "from": evidence_id,
+                        "to": skeleton["run"]["id"],
+                        "claim_id": claim_id,
+                    }
+                )
+                edge_index += 1
+        summary_audit = {
+            "status": aggregate_claim_status([claim["status"] for claim in claims]),
+            "claims": claims,
+        }
 
     status = _review_status(review_result)
     finding_count = len(review_result.findings)
@@ -315,18 +408,30 @@ def build_audit_graph(
     if status != "complete":
         verdict = "inconclusive"
     elif finding_count == 0:
-        # A structurally complete reviewer response is not automatically a
-        # clean result; preserve the core coverage/evidence adjudication.
         if advisory_verdict == "pass_candidate":
             verdict = "pass_candidate"
         else:
             verdict = "inconclusive"
     elif advisory_verdict == "inconclusive":
         verdict = "inconclusive"
-    elif scored:
-        verdict = "concerns"
     else:
-        verdict = "needs_human_triage"
+        finding_nodes = [n for n in nodes if n["type"] == "finding"]
+        trusted_finding_ids = {
+            str(edge["from"])
+            for edge in edges
+            if edge["type"] == "finding_in_file"
+        }
+        if all(
+            needs_human_triage(
+                node,
+                has_trusted_file_association=str(node["id"])
+                in trusted_finding_ids,
+            )
+            for node in finding_nodes
+        ):
+            verdict = "needs_human_triage"
+        else:
+            verdict = "concerns"
 
     diagnostics = {
         "intent_coverage": review_result.intent_coverage.value,
@@ -346,6 +451,8 @@ def build_audit_graph(
     run = dict(skeleton["run"])
     run["status"] = verdict
     run["kind"] = "model_review"
+    if summary_audit is not None:
+        run["summary_audit"] = summary_audit
     if status == "complete" and overall_assessment:
         run["summary"] = overall_assessment
     else:
@@ -362,13 +469,31 @@ def build_audit_graph(
         if verdict == "pass_candidate"
         else "inconclusive",
         force_inconclusive=verdict == "inconclusive" and finding_count > 0,
+        trusted_finding_ids={
+            str(edge["from"])
+            for edge in edges
+            if edge["type"] == "finding_in_file"
+        },
     )
     summary = {
         **calculated_summary,
-        "summary_audit_status": "not_audited",
+        "summary_audit_status": (
+            summary_audit["status"] if summary_audit is not None else "not_audited"
+        ),
         "basis": "model_review",
         "extensions": {"evidentloop": {"review_diagnostics": diagnostics}},
     }
+    evidentloop_extensions: dict[str, Any] = {
+        "profile": "code_diff",
+        "run_id": skeleton["run_id"],
+        "adapter": "gitdiff/v0",
+        "diff_version": diff_version_from_fingerprint(
+            review_result.artifact_fingerprint
+        ),
+        "reviewer_prompt": dict(skeleton.get("reviewer_prompt") or {}),
+    }
+    if isinstance(frozen_verification, Mapping):
+        evidentloop_extensions["fix_verification"] = dict(frozen_verification)
     audit = {
         "schema_version": SCHEMA_VERSION,
         "graph_id": skeleton["graph_id"],
@@ -377,16 +502,6 @@ def build_audit_graph(
         "nodes": nodes,
         "edges": edges,
         "summary": summary,
-        "extensions": {
-            "evidentloop": {
-                "profile": "code_diff",
-                "run_id": skeleton["run_id"],
-                "adapter": "gitdiff/v0",
-                "diff_version": diff_version_from_fingerprint(
-                    review_result.artifact_fingerprint
-                ),
-                "reviewer_prompt": dict(skeleton.get("reviewer_prompt") or {}),
-            }
-        },
+        "extensions": {"evidentloop": evidentloop_extensions},
     }
     return audit

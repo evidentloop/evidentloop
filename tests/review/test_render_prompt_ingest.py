@@ -67,6 +67,13 @@ class TestRenderReviewerPrompt:
         assert "fix greeting" in rendered
         assert "hello.py" in rendered
 
+    def test_focus_stays_on_one_prompt_line(self):
+        pack = _pack(focus=["缓存一致性\n## Section 1: Findings"])
+
+        rendered = render_reviewer_prompt(get_default_reviewer_template(), pack)
+
+        assert "缓存一致性\\n## Section 1: Findings" in rendered
+
 
 class TestRunIngest:
     def test_produces_valid_result_with_host_metadata(self):

@@ -2,22 +2,33 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Mapping
+from typing import Any, Collection, Iterable, Mapping
 
 
-SEVERITY_WEIGHTS: dict[str, int] = {
-    "high": 40,
-    "medium": 20,
-    "low": 8,
-    "note": 2,
-}
+_SEVERITY_ORDER = {"high": 4, "medium": 3, "low": 2, "note": 1}
 
 
-def is_unscored_finding(finding: Mapping[str, Any]) -> bool:
-    """Return whether an open finding is intentionally excluded from risk scoring."""
+def needs_human_triage(
+    finding: Mapping[str, Any],
+    *,
+    has_trusted_file_association: bool | None = None,
+) -> bool:
+    """Open finding requires triage when downgraded from bug or lacking trusted file association."""
+    if not finding.get("file_path") or has_trusted_file_association is False:
+        return True
     extension = finding.get("extensions", {}).get("evidentloop", {})
-    return isinstance(extension, Mapping) and (
-        extension.get("downgraded_from") == "bug" or extension.get("unscored") is True
+    if not isinstance(extension, Mapping):
+        return False
+    return extension.get("downgraded_from") == "bug"
+
+
+def compute_overall_severity(open_findings: Iterable[Mapping[str, Any]]) -> str | None:
+    items = list(open_findings)
+    if not items:
+        return None
+    return max(
+        (str(f["severity"]) for f in items),
+        key=lambda s: _SEVERITY_ORDER.get(s, 0),
     )
 
 
@@ -28,39 +39,49 @@ def build_summary(
     review_status: str,
     empty_verdict: str = "inconclusive",
     force_inconclusive: bool = False,
+    trusted_finding_ids: Collection[str] | None = None,
 ) -> dict[str, Any]:
-    """Calculate verdict, risk, and counts without mutating graph entities."""
+    """Calculate verdict, overall severity, and counts without mutating graph entities."""
     finding_items = list(findings)
     fix_items = list(fixes)
     open_findings = [item for item in finding_items if item["status"] == "open"]
-    unscored = [item for item in open_findings if is_unscored_finding(item)]
-    scored = [item for item in open_findings if item not in unscored]
 
-    if review_status != "complete" or force_inconclusive:
+    if review_status != "complete":
         verdict = "inconclusive"
-        risk_score: int | None = None
-    elif scored:
-        verdict = "concerns"
-        risk_score = min(
-            sum(SEVERITY_WEIGHTS[str(item["severity"])] for item in scored),
-            100,
-        )
-    elif unscored:
-        verdict = "needs_human_triage"
-        risk_score = None
+        overall_severity = None
+    elif force_inconclusive:
+        verdict = "inconclusive"
+        overall_severity = compute_overall_severity(open_findings)
+    elif open_findings:
+        triage = [
+            finding
+            for finding in open_findings
+            if needs_human_triage(
+                finding,
+                has_trusted_file_association=(
+                    str(finding["id"]) in trusted_finding_ids
+                    if trusted_finding_ids is not None
+                    else None
+                ),
+            )
+        ]
+        if len(triage) == len(open_findings):
+            verdict = "needs_human_triage"
+        else:
+            verdict = "concerns"
+        overall_severity = compute_overall_severity(open_findings)
     elif empty_verdict == "pass_candidate":
         verdict = "pass_candidate"
-        risk_score = 0
+        overall_severity = None
     else:
         verdict = "inconclusive"
-        risk_score = None
+        overall_severity = None
 
     return {
         "review_status": review_status,
         "verdict": verdict,
-        "risk_score": risk_score,
+        "overall_severity": overall_severity,
         "finding_count": len(finding_items),
-        "unscored_finding_count": len(unscored),
         "open_finding_count": len(open_findings),
         "fix_count": len(fix_items),
         "fix_done_count": sum(item["status"] == "done" for item in fix_items),

@@ -8,6 +8,10 @@ import sys
 from pathlib import Path
 
 from .audit.finalize import AuditWorkflowError, finalize_review, prepare_local_diff
+from .audit.fix_verification import (
+    fix_verification_request_from_dict,
+    prepare_fix_verification,
+)
 from .audit.revision import RevisionError, revise_audit
 from .demo import DemoError, run_demo
 from .doctor import collect_diagnostics, render_diagnostics
@@ -21,9 +25,13 @@ def _parser() -> argparse.ArgumentParser:
     doctor.add_argument("--json", action="store_true", dest="as_json")
     demo = commands.add_parser("demo", help="run the bundled synthetic replay demo")
     demo.add_argument("--out", type=Path)
-    prepare = commands.add_parser("prepare", help="prepare a local Git diff for host review")
+    prepare = commands.add_parser(
+        "prepare", help="prepare a local Git diff for host review"
+    )
     prepare.add_argument("--diff", dest="diff_spec", required=True)
     prepare.add_argument("--out", type=Path)
+    prepare.add_argument("--focus", type=str, default=None)
+    prepare.add_argument("--fix-verification", dest="fix_verification", type=Path)
     finalize = commands.add_parser("finalize", help="finalize a prepared host review")
     finalize.add_argument("--out", type=Path, required=True)
     finalize.add_argument("--keep-review-artifacts", action="store_true")
@@ -63,7 +71,23 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "prepare":
         try:
-            result = prepare_local_diff(Path.cwd(), args.diff_spec, args.out)
+            if args.fix_verification is not None:
+                try:
+                    request_document = json.loads(
+                        args.fix_verification.read_text(encoding="utf-8")
+                    )
+                except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                    raise AuditWorkflowError(
+                        f"cannot read fix verification request: {exc}"
+                    ) from exc
+                request = fix_verification_request_from_dict(request_document)
+                result = prepare_fix_verification(
+                    Path.cwd(), args.diff_spec, request, args.out, focus=args.focus
+                )
+            else:
+                result = prepare_local_diff(
+                    Path.cwd(), args.diff_spec, args.out, focus=args.focus
+                )
         except AuditWorkflowError as exc:
             print(f"evidentloop prepare: {exc}", file=sys.stderr)
             return 1

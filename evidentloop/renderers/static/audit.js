@@ -220,6 +220,16 @@
     const hasPending = state.disposition || state.comment_changed || state.severity_changed;
     const hasApplied = applied.disposition || applied.comment || applied.severity_override;
     badge.textContent = hasPending ? "有待更新裁定" : hasApplied ? "已应用" : "待决策";
+    const pendingSummary = panel.ownerDocument.querySelector(
+      `[data-feedback-pending-for="${panel.dataset.feedbackFor}"]`,
+    );
+    if (pendingSummary) {
+      const labels = [];
+      if (state.disposition) labels.push(state.disposition === "accept" ? "确认有效" : "标记误报");
+      if (state.comment_changed) labels.push(state.comment ? "更新评论" : "删除评论");
+      if (state.severity_changed) labels.push(state.severity_override ? "调整严重度" : "恢复模型严重度");
+      pendingSummary.textContent = labels.length ? labels.join(" · ") : "无";
+    }
     if (syncInputs) {
       panel.querySelector("[data-feedback-comment]").value = state.comment_changed
         ? state.comment || ""
@@ -341,7 +351,7 @@
           await copyText(documentObject, rootObject, text);
           exportStatus.textContent = "已复制，请粘贴给 AI 更新报告";
         } catch (_error) {
-          exportStatus.textContent = "复制失败，请改用下载 JSONL";
+          exportStatus.textContent = "复制失败，数据仍在本地，请改用下载 JSONL";
         }
       });
     }

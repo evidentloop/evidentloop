@@ -12,7 +12,7 @@ Design decisions:
     the normalizer at ingest time, not in the dataclass __post_init__.
 
 Note: SCHEMA_VERSION ("0.1-alpha") tracks the internal ReviewPack/ReviewResult
-schema. The current public audit.json schema version ("0.4") is defined separately in
+schema. The public audit.json schema version is defined separately in
 validation.py — they version different contracts.
 """
 
@@ -30,8 +30,10 @@ from typing import Any, Literal
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class ArtifactType(str, Enum):
     """v0 only supports code_diff. Plan/design/custom are schema placeholders."""
+
     CODE_DIFF = "code_diff"
 
 
@@ -63,9 +65,9 @@ class Severity(str, Enum):
 
 
 class Locatability(str, Enum):
-    EXACT = "exact"        # file + (line OR diff_hunk) within changed_files/diff
+    EXACT = "exact"  # file + (line OR diff_hunk) within changed_files/diff
     FILE_ONLY = "file_only"  # file present, no line or diff_hunk
-    NONE = "none"          # no file reference
+    NONE = "none"  # no file reference
 
 
 class Confidence(str, Enum):
@@ -100,9 +102,11 @@ class ReviewerFailureReason(str, Enum):
 # Sub-structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class FileMeta:
     """Metadata for a changed file. v0-scope.md uses list[FileMeta] in ReviewPack."""
+
     path: str
     language: str | None = None
 
@@ -110,6 +114,7 @@ class FileMeta:
 @dataclass
 class ContextFile:
     """Extra context file provided by the host. v0-scope.md §7 ReviewPack."""
+
     path: str
     content: str
     role: str | None = None  # e.g. "plan", "design", "related_source"
@@ -131,10 +136,11 @@ class GitDiffSource:
     ``captured_at`` is set only for ``staged`` and ``unstaged`` diffs (ISO-8601 UTC).
     Packs created before v05-09 have ``diff_source = None``.
     """
+
     type: Literal["committed", "staged", "unstaged", "range"]
-    base: str | None = None           # git ref for "committed"; left side of "range"
-    head: str | None = None           # "HEAD" for "committed"; right side of "range"
-    captured_at: str | None = None    # ISO-8601 UTC; set for staged/unstaged
+    base: str | None = None  # git ref for "committed"; left side of "range"
+    head: str | None = None  # "HEAD" for "committed"; right side of "range"
+    captured_at: str | None = None  # ISO-8601 UTC; set for staged/unstaged
 
 
 @dataclass
@@ -147,12 +153,13 @@ class ArtifactDiffSource:
 
     ``artifact_kind`` values (v1): ``"design_doc"``, ``"plan"``.
     """
+
     type: Literal["artifact_diff"]
-    artifact_kind: str                    # e.g. "design_doc", "plan"
-    artifact_id: str                      # stable identifier for the artifact
+    artifact_kind: str  # e.g. "design_doc", "plan"
+    artifact_id: str  # stable identifier for the artifact
     version_before: str | None = None
     version_after: str | None = None
-    captured_at: str | None = None        # ISO-8601 UTC
+    captured_at: str | None = None  # ISO-8601 UTC
 
 
 # Discriminated union — dispatch on the ``type`` field.
@@ -163,7 +170,8 @@ DiffSource = GitDiffSource | ArtifactDiffSource
 @dataclass
 class Evidence:
     """Deterministic evidence item. v0-scope.md §7 Evidence."""
-    source: str              # "npm test", "eslint", "pytest", ...
+
+    source: str  # "npm test", "eslint", "pytest", ...
     status: EvidenceStatus
     summary: str
     command: str | None = None
@@ -173,6 +181,7 @@ class Evidence:
 @dataclass
 class PackBudget:
     """Budget limits for pack/review. v0-scope.md §7 ReviewPack.budget."""
+
     max_files: int | None = None
     max_chars_total: int | None = None
     timeout_sec: int | None = None
@@ -181,6 +190,7 @@ class PackBudget:
 @dataclass
 class ResultBudget:
     """Budget consumption in ReviewResult. v0-scope.md §7 ReviewResult.budget."""
+
     status: BudgetStatus
     files_reviewed: int
     files_total: int
@@ -192,6 +202,7 @@ class ResultBudget:
 class AdvisoryVerdict:
     """Advisory verdict — v0 is advisory only, never blocks.
     v0-scope.md §7 ReviewResult.advisory_verdict."""
+
     verdict: Verdict
     rationale: str
 
@@ -199,6 +210,7 @@ class AdvisoryVerdict:
 @dataclass
 class LocalizabilityDistribution:
     """Finding locatability distribution. v0-scope.md §7 ReviewResult.quality_metrics."""
+
     exact_pct: float
     file_only_pct: float
     none_pct: float
@@ -208,27 +220,33 @@ class LocalizabilityDistribution:
 class QualityMetrics:
     """Runtime diagnostic metrics. Blocking release gates use eval-layer metrics,
     not these. v0-scope.md §7 ReviewResult.quality_metrics."""
-    pack_completeness: float       # [0, 1] — runtime heuristic
-    noise_count: int               # runtime heuristic noise count (excludes eval-layer unclear)
-    raw_findings_count: int        # pre-noise_cap finding count
-    emitted_findings_count: int    # post-noise_cap finding count
+
+    pack_completeness: float  # [0, 1] — runtime heuristic
+    noise_count: int  # runtime heuristic noise count (excludes eval-layer unclear)
+    raw_findings_count: int  # pre-noise_cap finding count
+    emitted_findings_count: int  # post-noise_cap finding count
     locatability_distribution: LocalizabilityDistribution
-    speculative_ratio: float       # speculative finding ratio
+    speculative_ratio: float  # speculative finding ratio
 
 
 @dataclass
 class ReviewerMeta:
     """Reviewer metadata. v0-scope.md §7 ReviewResult.reviewer."""
+
     type: Literal["host_llm"] = "host_llm"
     model: str = ""
-    session_isolated: bool | None = None  # optional host observation; not an artifact guarantee or verdict input
+    session_isolated: bool | None = (
+        None  # optional host observation; not an artifact guarantee or verdict input
+    )
     failure_reason: ReviewerFailureReason | None = None
-    raw_analysis: str | None = None    # audit trail — reviewer's free-form analysis text
+    raw_analysis: str | None = None  # audit trail — reviewer's free-form analysis text
     latency_sec: float | None = None
     input_tokens: int | None = None
     output_tokens: int | None = None
-    prompt_source: str | None = None   # e.g. "product" for the built-in prompt seam
-    prompt_version: str | None = None  # e.g. "v0.1"; optional for host-provided backends
+    prompt_source: str | None = None  # e.g. "product" for the built-in prompt seam
+    prompt_version: str | None = (
+        None  # e.g. "v0.1"; optional for host-provided backends
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -244,11 +262,12 @@ class Finding:
 
     category is str (not enum) — the set is not frozen yet.
     """
-    id: str                            # f-001, f-002, ...
+
+    id: str  # f-001, f-002, ...
     severity: Severity
     summary: str
     detail: str
-    category: str                      # str, not enum — see module docstring
+    category: str  # str, not enum — see module docstring
     locatability: Locatability
     confidence: Confidence
     evidence_related_file: bool = False
@@ -267,6 +286,7 @@ class ReviewPack:
     context_files and evidence are retained as optional fields with null/empty defaults;
     auto-selection logic is deferred, but the plumbing is ready for 1B.2 Evidence Collector.
     """
+
     schema_version: str = SCHEMA_VERSION
     artifact_type: ArtifactType = ArtifactType.CODE_DIFF
 
@@ -275,14 +295,16 @@ class ReviewPack:
     changed_files: list[FileMeta] = field(default_factory=list)
 
     # Fingerprints — computed or provided
-    artifact_fingerprint: str = ""     # diff hash / commit ref
-    pack_fingerprint: str = ""         # hash of pack content
+    artifact_fingerprint: str = ""  # diff hash / commit ref
+    pack_fingerprint: str = ""  # hash of pack content
 
     # Context (host-provided, all optional)
     intent: str | None = None
-    task_file: str | None = None       # --task CLI flag → task_file
-    focus: list[str] | None = None     # --focus CLI flag
-    context_files: list[ContextFile] | None = None  # --context (repeatable) → context_files
+    task_file: str | None = None  # --task CLI flag → task_file
+    focus: list[str] | None = None  # --focus CLI flag
+    context_files: list[ContextFile] | None = (
+        None  # --context (repeatable) → context_files
+    )
     evidence: list[Evidence] | None = None
 
     # Budget
@@ -299,6 +321,7 @@ class ReviewResult:
     Full shell built per v0-scope.md:503 — no custom "smaller subset".
     Nullable fields use None/defaults so 1B components plug in without schema changes.
     """
+
     schema_version: str = SCHEMA_VERSION
     artifact_fingerprint: str = ""
     pack_fingerprint: str = ""
@@ -356,6 +379,7 @@ def validate_category(category: str) -> bool:
 # ---------------------------------------------------------------------------
 # Pack / Result validation — "construct freely, validate before emission"
 # ---------------------------------------------------------------------------
+
 
 def validate_review_pack(pack: ReviewPack) -> list[str]:
     """Check a ReviewPack against v0-scope.md §7 required-field rules.
@@ -488,7 +512,11 @@ def validate_eval_review_result_contract(data: dict[str, Any]) -> list[str]:
         if len(findings_data) != emitted_count:
             violations.append("emitted_findings_count_mismatch")
 
-    if raw_count is not None and emitted_count is not None and raw_count < emitted_count:
+    if (
+        raw_count is not None
+        and emitted_count is not None
+        and raw_count < emitted_count
+    ):
         violations.append("raw_findings_count_lt_emitted_findings_count")
 
     if raw_findings_data is not None and findings_data is not None:
@@ -516,6 +544,7 @@ def validate_eval_review_result_contract(data: dict[str, Any]) -> list[str]:
 # Fingerprint helpers
 # ---------------------------------------------------------------------------
 
+
 def compute_fingerprint(content: str) -> str:
     """SHA-256 hex digest of content — used for artifact_fingerprint and pack_fingerprint."""
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -526,15 +555,9 @@ def to_serializable(obj: Any) -> Any:
     if isinstance(obj, Enum):
         return obj.value
     if hasattr(obj, "__dataclass_fields__"):
-        return {
-            f.name: to_serializable(getattr(obj, f.name))
-            for f in dc_fields(obj)
-        }
+        return {f.name: to_serializable(getattr(obj, f.name)) for f in dc_fields(obj)}
     if isinstance(obj, dict):
-        return {
-            key: to_serializable(value)
-            for key, value in obj.items()
-        }
+        return {key: to_serializable(value) for key, value in obj.items()}
     if isinstance(obj, list):
         return [to_serializable(item) for item in obj]
     return obj
@@ -546,12 +569,22 @@ def review_result_to_json(result: ReviewResult, *, indent: int = 2) -> str:
 
 
 def _findings_from_data(items: list[dict[str, Any]]) -> list[Finding]:
-    REQUIRED_KEYS = ("id", "severity", "summary", "detail", "category", "locatability", "confidence")
+    REQUIRED_KEYS = (
+        "id",
+        "severity",
+        "summary",
+        "detail",
+        "category",
+        "locatability",
+        "confidence",
+    )
     results: list[Finding] = []
     for idx, item in enumerate(items):
         missing = [k for k in REQUIRED_KEYS if k not in item]
         if missing:
-            raise ValueError(f"finding[{idx}] missing required keys: {', '.join(missing)}")
+            raise ValueError(
+                f"finding[{idx}] missing required keys: {', '.join(missing)}"
+            )
         results.append(
             Finding(
                 id=item["id"],
@@ -574,7 +607,9 @@ def _findings_from_data(items: list[dict[str, Any]]) -> list[Finding]:
 
 def review_pack_from_dict(data: dict[str, Any]) -> ReviewPack:
     """Construct a ReviewPack from parsed JSON data."""
-    artifact_type = ArtifactType(data.get("artifact_type", ArtifactType.CODE_DIFF.value))
+    artifact_type = ArtifactType(
+        data.get("artifact_type", ArtifactType.CODE_DIFF.value)
+    )
 
     changed_files = [
         FileMeta(
@@ -684,7 +719,9 @@ def review_result_from_dict(data: dict[str, Any]) -> ReviewResult:
         rationale=verdict_data.get("rationale", ""),
     )
 
-    loc_data = (data.get("quality_metrics") or {}).get("locatability_distribution") or {}
+    loc_data = (data.get("quality_metrics") or {}).get(
+        "locatability_distribution"
+    ) or {}
     quality_data = data.get("quality_metrics") or {}
     quality_metrics = QualityMetrics(
         pack_completeness=quality_data.get("pack_completeness", 0.0),
@@ -730,7 +767,9 @@ def review_result_from_dict(data: dict[str, Any]) -> ReviewResult:
         schema_version=data.get("schema_version", SCHEMA_VERSION),
         artifact_fingerprint=data.get("artifact_fingerprint", ""),
         pack_fingerprint=data.get("pack_fingerprint", ""),
-        review_status=ReviewStatus(data.get("review_status", ReviewStatus.COMPLETE.value)),
+        review_status=ReviewStatus(
+            data.get("review_status", ReviewStatus.COMPLETE.value)
+        ),
         intent_coverage=IntentCoverage(
             data.get("intent_coverage", IntentCoverage.UNKNOWN.value)
         ),

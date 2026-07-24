@@ -14,7 +14,9 @@ from evidentloop.cli import main
 from tests.git_helpers import initialized_repo, stage_simple_change
 
 
-def test_prepare_creates_only_hidden_staging_and_machine_locator(tmp_path: Path) -> None:
+def test_prepare_creates_only_hidden_staging_and_machine_locator(
+    tmp_path: Path,
+) -> None:
     repo = initialized_repo(tmp_path)
     stage_simple_change(repo, injection=True)
     final_dir = repo / "reports" / "sample"
@@ -44,6 +46,7 @@ def test_prepare_creates_only_hidden_staging_and_machine_locator(tmp_path: Path)
     assert "Simplified Chinese" in prompt
     assert "one directly causal changed line" in prompt
     assert "- **Where**: `<relative/path.py>`, line 42" in prompt
+    assert "`## Section 0: Change Summary`" in prompt
     assert "`## Section 1: Findings`" in prompt
     assert "`## Section 2: Observations`" in prompt
     assert "`## Section 3: Overall Assessment`" in prompt
@@ -56,7 +59,7 @@ def test_prepare_creates_only_hidden_staging_and_machine_locator(tmp_path: Path)
     assert "staged" not in skeleton["run"]["label"]
     assert skeleton["reviewer_prompt"] == {
         "source": "product",
-        "version": "v0.5",
+        "version": "v0.7",
         "sha256": "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
     }
     if os.name == "posix":
@@ -114,7 +117,9 @@ def test_prepare_fails_closed_if_canonical_prompt_loses_diff_placeholder(
         lambda: "broken prompt without the canonical diff block",
     )
 
-    with pytest.raises(AuditWorkflowError, match="exactly one diff placeholder") as error:
+    with pytest.raises(
+        AuditWorkflowError, match="exactly one diff placeholder"
+    ) as error:
         prepare_local_diff(repo, "staged", repo / "reports" / "broken")
 
     assert error.value.staging_dir is not None

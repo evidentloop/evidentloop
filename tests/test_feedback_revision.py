@@ -26,7 +26,7 @@ from evidentloop.audit.summary import build_summary
 from evidentloop.cli import main
 from evidentloop.renderers.html import render_audit_file
 from evidentloop.validation import assert_valid_audit, validate_audit
-from tests.audit_helpers import demo_audit, minimal_audit
+from tests.audit_helpers import demo_audit, minimal_audit, unanchored_finding_audit
 
 
 DIFF_VERSION = "sha256:" + "a" * 64
@@ -34,9 +34,9 @@ DIFF_VERSION = "sha256:" + "a" * 64
 
 def _versioned_audit() -> dict:
     audit = demo_audit()
-    audit.setdefault("extensions", {}).setdefault("evidentloop", {})[
-        "diff_version"
-    ] = DIFF_VERSION
+    audit.setdefault("extensions", {}).setdefault("evidentloop", {})["diff_version"] = (
+        DIFF_VERSION
+    )
     return audit
 
 
@@ -147,9 +147,8 @@ def test_summary_pure_function_preserves_initial_audit_result() -> None:
     )
     for field in (
         "verdict",
-        "risk_score",
+        "overall_severity",
         "finding_count",
-        "unscored_finding_count",
         "open_finding_count",
         "fix_count",
         "fix_done_count",
@@ -157,7 +156,7 @@ def test_summary_pure_function_preserves_initial_audit_result() -> None:
         assert calculated[field] == audit["summary"][field]
 
 
-def test_v04_revision_preserves_model_judgment() -> None:
+def test_revision_preserves_model_judgment() -> None:
     source = demo_audit()
     source_raw = (json.dumps(source, ensure_ascii=False, indent=2) + "\n").encode()
     source_hash = audit_sha256(source_raw)
@@ -173,14 +172,40 @@ def test_v04_revision_preserves_model_judgment() -> None:
         source_hash=source_hash,
     )
 
-    assert revised["schema_version"] == "0.4"
+    assert revised["schema_version"] == "0.5"
     assert revised["summary"]["verdict"] == "pass_candidate"
     assert revised["summary"]["model_verdict"] == "concerns"
-    assert revised["summary"]["notice"] == "基于人工裁定，未重新审查代码"
+    assert (
+        revised["summary"]["notice"]
+        == "报告已按人工裁定更新；未重新审查代码，模型原判断仍保留。"
+    )
     finding = next(node for node in revised["nodes"] if node["id"] == "finding-001")
     assert finding["status"] == "dismissed"
     assert finding["model_judgment"] == {"status": "open", "severity": "high"}
     assert finding["human_adjudication"]["disposition"] == "false_positive"
+    assert validate_audit(revised) == []
+
+
+def test_closing_last_triage_finding_becomes_pass_candidate() -> None:
+    source = unanchored_finding_audit()
+    source_raw = (json.dumps(source, ensure_ascii=False, indent=2) + "\n").encode()
+    source_hash = audit_sha256(source_raw)
+    events, _ = normalize_feedback(
+        [
+            _event(
+                source,
+                "finding-unanchored",
+                "false_positive",
+                source_hash=source_hash,
+            )
+        ]
+    )
+
+    revised = build_feedback_revision(source, events, source_hash=source_hash)
+
+    assert revised["summary"]["verdict"] == "pass_candidate"
+    assert revised["summary"]["overall_severity"] is None
+    assert revised["summary"]["model_verdict"] == "needs_human_triage"
     assert validate_audit(revised) == []
 
 
@@ -232,7 +257,7 @@ def test_clearing_the_only_current_human_value_removes_adjudication() -> None:
         first_events,
         source_hash=source_hash,
     )
-    assert first["summary"]["risk_score"] == source["summary"]["risk_score"]
+    assert first["summary"]["overall_severity"] == source["summary"]["overall_severity"]
     assert first["summary"]["verdict"] == source["summary"]["verdict"]
     second_events, _ = normalize_feedback(
         [_event(first, "finding-001", "comment", comment=None)]
@@ -251,7 +276,11 @@ def test_clearing_the_only_current_human_value_removes_adjudication() -> None:
 def test_incomplete_source_cannot_become_pass_candidate() -> None:
     source = demo_audit()
     source["summary"].update(
-        {"review_status": "partial", "verdict": "inconclusive", "risk_score": None}
+        {
+            "review_status": "partial",
+            "verdict": "inconclusive",
+            "overall_severity": None,
+        }
     )
     source["runs"][-1]["status"] = "inconclusive"
     source_hash = audit_sha256(json.dumps(source, sort_keys=True).encode())
@@ -269,7 +298,7 @@ def test_incomplete_source_cannot_become_pass_candidate() -> None:
     )
 
     assert revised["summary"]["verdict"] == "inconclusive"
-    assert revised["summary"]["risk_score"] is None
+    assert revised["summary"]["overall_severity"] is None
 
 
 def test_semantic_validation_detects_tampered_revision_state() -> None:
@@ -303,7 +332,6 @@ def test_semantic_validation_detects_tampered_feedback_hash() -> None:
 
 def test_model_only_report_rejects_human_summary_claims() -> None:
     audit = demo_audit()
-    audit["schema_version"] = "0.4"
     for run in audit["runs"]:
         run["kind"] = "model_review"
     for finding in (node for node in audit["nodes"] if node["type"] == "finding"):
@@ -317,10 +345,9 @@ def test_model_only_report_rejects_human_summary_claims() -> None:
     audit["summary"].update(
         {
             "basis": "human_adjudication",
-            "risk_delta": 0,
             "model_verdict": audit["summary"]["verdict"],
-            "model_risk_score": audit["summary"]["risk_score"],
-            "notice": "基于人工裁定，未重新审查代码",
+            "model_overall_severity": audit["summary"]["overall_severity"],
+            "notice": "报告已按人工裁定更新；未重新审查代码，模型原判断仍保留。",
         }
     )
 
@@ -373,10 +400,10 @@ def test_revise_updates_pair_in_place_and_explicit_out_preserves_source(
     assert copy_result["report_version"] == audit_sha256(
         (tmp_path / "copy" / "audit.json").read_bytes()
     )
-    assert json.loads((report / "audit.json").read_text())["schema_version"] == "0.4"
+    assert json.loads((report / "audit.json").read_text())["schema_version"] == "0.5"
     assert (
         json.loads((tmp_path / "copy" / "audit.json").read_text())["schema_version"]
-        == "0.4"
+        == "0.5"
     )
 
     in_place_result = revise_audit(report / "audit.json", feedback)
@@ -385,7 +412,7 @@ def test_revise_updates_pair_in_place_and_explicit_out_preserves_source(
     assert in_place_result["report_version"] == audit_sha256(
         (report / "audit.json").read_bytes()
     )
-    assert json.loads((report / "audit.json").read_text())["schema_version"] == "0.4"
+    assert json.loads((report / "audit.json").read_text())["schema_version"] == "0.5"
     assert (report / "audit.html").is_file()
     assert report.stat().st_ino == report_inode
     assert note.read_text(encoding="utf-8") == "keep me"
@@ -393,7 +420,7 @@ def test_revise_updates_pair_in_place_and_explicit_out_preserves_source(
     assert validate_audit(json.loads((report / "audit.json").read_text())) == []
 
 
-def test_revise_legacy_v04_report_returns_unknown_diff_version(
+def test_revise_report_without_diff_version_returns_unknown(
     tmp_path: Path,
 ) -> None:
     report = tmp_path / "report"
@@ -486,11 +513,7 @@ def test_two_round_report_revision_replays_only_the_new_delta(tmp_path: Path) ->
     html = (report / "audit.html").read_text(encoding="utf-8")
 
     assert first_result["revision_run_id"] != second_result["revision_run_id"]
-    assert (
-        first_result["diff_version"]
-        == second_result["diff_version"]
-        == DIFF_VERSION
-    )
+    assert first_result["diff_version"] == second_result["diff_version"] == DIFF_VERSION
     assert first_result["report_version"] != second_result["report_version"]
     assert second_result["report_version"] == audit_sha256(
         (report / "audit.json").read_bytes()
@@ -510,10 +533,13 @@ def test_two_round_report_revision_replays_only_the_new_delta(tmp_path: Path) ->
         second["runs"][-1]["revision"]["source_run_id"]
         == first_result["revision_run_id"]
     )
-    assert "第一轮依据" not in html
+    assert "更新评论：第一轮依据" in html
+    assert "删除评论" in html
+    assert "恢复模型严重度" in html
+    assert "恢复默认" not in html
     assert "模型原判断" in html
     assert "我的裁定" in html
-    assert "当前剩余问题" in html
+    assert "项待处理问题" in html
     assert f'data-run-id="{second_result["revision_run_id"]}"' in html
     assert validate_audit(second) == []
 

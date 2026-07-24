@@ -1,0 +1,1666 @@
+<!doctype html>
+<html lang="zh-CN" data-renderer-version="0.4">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Evidentloop 代码变更审计 · EvidentLoop</title>
+  <style>:root {
+  color-scheme: light;
+  --page: #f4f6f9;
+  --surface: #ffffff;
+  --surface-subtle: #f8fafc;
+  --text: #172033;
+  --muted: #5f6c80;
+  --line: #d6dee9;
+  --line-strong: #aebbc9;
+  --primary: #245f91;
+  --primary-soft: #edf6ff;
+  --success: #14733a;
+  --success-soft: #e8f6ed;
+  --danger: #b62932;
+  --danger-soft: #fff0f1;
+  --warning: #98600d;
+  --warning-soft: #fff5dc;
+  --focus: #0e7490;
+  --code-add: #e6f6e9;
+  --code-add-text: #125f2d;
+  --code-delete: #fdebec;
+  --code-delete-text: #8a1825;
+  --shadow: 0 10px 28px rgba(23, 32, 51, .08);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #e9edf3 0, var(--page) 260px);
+  color: var(--text);
+  font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+select,
+textarea { font: inherit; }
+
+h1,
+h2,
+h3,
+h4,
+p { margin-top: 0; }
+
+h1 {
+  max-width: 22ch;
+  margin-bottom: 8px;
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1.16;
+  letter-spacing: -.025em;
+}
+
+h2 { margin-bottom: 0; font-size: clamp(1.22rem, 2.4vw, 1.55rem); line-height: 1.3; }
+h3 { margin-bottom: 6px; font-size: 1.04rem; line-height: 1.4; }
+h4 { margin-bottom: 4px; font-size: 1rem; line-height: 1.4; }
+a { color: var(--primary); }
+small { color: var(--muted); }
+
+.skip-link {
+  position: fixed;
+  z-index: 20;
+  top: 8px;
+  left: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--text);
+  color: #fff;
+  transform: translateY(-160%);
+}
+
+.skip-link:focus { transform: translateY(0); }
+
+.report-shell {
+  display: grid;
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0 56px;
+  gap: 18px;
+}
+
+.panel,
+.hero {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(23, 32, 51, .04);
+}
+
+.panel { padding: 24px; }
+
+.hero {
+  padding: 28px;
+  border-top: 7px solid var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.hero.review-complete.verdict-pass_candidate { border-top-color: var(--success); }
+.hero.review-complete.verdict-concerns { border-top-color: var(--danger); }
+.hero.review-complete.verdict-needs_human_triage { border-top-color: var(--warning); }
+.hero.review-partial,
+.hero.review-failed,
+.hero.review-not_reviewed { border-top-color: var(--primary); }
+
+.hero-heading,
+.section-heading,
+.finding-header,
+.feedback-heading,
+.feedback-export {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.hero-heading > div,
+.section-heading > div,
+.finding-title-block,
+.feedback-heading > div,
+.feedback-export > div { min-width: 0; }
+
+.hero-heading > div { flex: 1; }
+
+.kicker,
+.eyebrow {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.hero-summary {
+  max-width: 72rem;
+  margin-bottom: 0;
+  color: var(--muted);
+  text-wrap: wrap;
+}
+
+.result-chip,
+.status-chip,
+.count-chip,
+.claim-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.result-chip { min-height: 40px; padding: 8px 14px; }
+.count-chip,
+.status-chip.neutral { color: var(--text); background: #edf1f6; }
+.result-chip.verdict-pass_candidate,
+.status-chip.status-supported,
+.status-chip.state-fixed,
+.status-chip.severity-low,
+.status-chip.severity-note,
+.change-claim.status-supported .claim-status,
+.verification-card.status-supported .claim-status { color: var(--success); background: var(--success-soft); }
+.result-chip.verdict-concerns,
+.status-chip.status-challenged,
+.status-chip.state-open,
+.status-chip.severity-high,
+.change-claim.status-challenged .claim-status,
+.verification-card.status-challenged .claim-status { color: var(--danger); background: var(--danger-soft); }
+.result-chip.verdict-needs_human_triage,
+.status-chip.status-partial,
+.status-chip.severity-medium,
+.change-claim.status-partial .claim-status,
+.verification-card.status-partial .claim-status { color: var(--warning); background: var(--warning-soft); }
+.result-chip.verdict-inconclusive,
+.status-chip.status-unknown,
+.verification-card.status-unknown .claim-status { color: var(--primary); background: var(--primary-soft); }
+.status-chip.state-dismissed,
+.status-chip.state-deferred,
+.status-chip.state-wont_fix { color: var(--muted); background: #edf1f6; }
+
+.truth-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 24px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.truth-item {
+  min-width: 0;
+  min-height: 112px;
+  padding: 18px;
+  border-right: 1px solid var(--line);
+  background: var(--surface-subtle);
+  overflow-wrap: anywhere;
+}
+
+.truth-item:last-child { border-right: 0; }
+.truth-item > span { display: block; margin-bottom: 8px; color: var(--muted); font-size: .8rem; font-weight: 750; }
+.truth-item strong { display: block; font-size: 1.12rem; line-height: 1.35; }
+.truth-item small { display: block; margin-top: 4px; }
+
+.status-note {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #bdd5ea;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  overflow-wrap: anywhere;
+}
+
+.demo-note { border-color: #e5c98d; background: var(--warning-soft); }
+
+.section-heading {
+  align-items: center;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.section-intro { max-width: 75ch; color: var(--muted); }
+.change-summary { max-width: none; }
+.change-summary p { margin-bottom: 0; color: #344054; }
+.change-lead {
+  max-width: 76rem;
+  font-size: 1.06rem;
+  line-height: 1.7;
+  text-wrap: wrap;
+}
+.change-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+.change-theme {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+.change-theme-index {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  font-size: .78rem;
+  font-weight: 850;
+}
+.change-theme h3 { margin: 2px 0 6px; font-size: 1rem; }
+.change-theme p { font-size: .9rem; line-height: 1.6; }
+.change-impact {
+  margin-top: 8px !important;
+  color: var(--muted) !important;
+}
+.change-impact strong { color: var(--text); }
+.change-attention {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--warning);
+  border-radius: 8px;
+  background: var(--warning-soft);
+}
+.change-attention p { color: var(--text); }
+.change-stats {
+  margin-top: 12px !important;
+  color: var(--muted) !important;
+  font-size: .86rem;
+}
+.change-stats strong { color: var(--text); }
+
+.change-claims,
+.verification-list,
+.finding-stack { display: grid; gap: 14px; margin-top: 18px; }
+
+.change-claim {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--primary);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+}
+
+.change-claim > .claim-status { align-self: start; }
+.change-claim.status-supported { border-left-color: var(--success); }
+.change-claim.status-challenged { border-left-color: var(--danger); }
+.change-claim.status-partial { border-left-color: var(--warning); }
+.change-claim.related-dismissed,
+.change-claim.related-fixed,
+.change-claim.related-handled { border-left-color: var(--line-strong); }
+.change-claim.related-dismissed .claim-status,
+.change-claim.related-fixed .claim-status,
+.change-claim.related-handled .claim-status {
+  color: var(--muted);
+  background: #edf1f6;
+}
+.change-claim p { margin: 4px 0 0; color: var(--muted); }
+.change-claim .claim-current-state { color: var(--text); font-weight: 750; }
+
+.file-list-details { margin-top: 18px; }
+.file-list-details > summary,
+.report-identity > summary,
+.feedback-more > summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.file-list-details > summary { display: flex; align-items: center; }
+.file-list { display: grid; margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.file-list-details .file-list { margin-top: 10px; }
+
+.file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  min-height: 60px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.file-row:last-child { border-bottom: 0; }
+.file-path { display: block; overflow-wrap: anywhere; }
+.file-meta { display: block; color: var(--muted); font-size: .82rem; }
+.add { color: var(--success); font-weight: 800; }
+.del { color: var(--danger); font-weight: 800; }
+.issue-link { min-height: 44px; display: inline-flex; align-items: center; font-weight: 750; }
+.no-issue { color: var(--muted); font-size: .82rem; }
+
+.status-counts,
+.badge-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.finding-position {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.verification-card { border: 1px solid var(--line); border-left: 6px solid var(--primary); border-radius: 12px; overflow: hidden; }
+.verification-card.status-supported { border-left-color: var(--success); }
+.verification-card.status-challenged { border-left-color: var(--danger); }
+.verification-card.status-partial { border-left-color: var(--warning); }
+.verification-source,
+.verification-claim,
+.verification-reason { padding: 16px 18px; }
+.verification-source { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; background: var(--surface-subtle); }
+.verification-source h3 { margin-bottom: 0; }
+.verification-claim,
+.verification-reason { border-top: 1px solid var(--line); }
+.label { margin-bottom: 4px; color: var(--muted); font-size: .78rem; font-weight: 800; }
+.technical-id { margin: 4px 0 0; color: var(--muted); font: .78rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+.evidence-list { margin: 12px 0 0; padding-left: 20px; }
+.evidence-list li { margin-top: 6px; overflow-wrap: anywhere; }
+.evidence-list li span { margin-right: 6px; color: var(--muted); font-size: .76rem; font-weight: 800; }
+.evidence-list.compact { margin-top: 8px; }
+.evidence-none { margin-bottom: 0; color: var(--muted); }
+
+.finding-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-left: 7px solid var(--warning);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.finding-card.severity-high { border-left-color: var(--danger); }
+.finding-card.severity-low,
+.finding-card.severity-note { border-left-color: var(--success); }
+.finding-card.state-dismissed { border-left-color: var(--line-strong); }
+.finding-card.state-dismissed .badge-row .status-chip {
+  color: var(--muted);
+  background: #edf1f6;
+}
+.finding-card.state-dismissed .finding-fixes {
+  border-left-color: var(--line-strong);
+  background: var(--surface-subtle);
+}
+.finding-card.state-dismissed .finding-fix + .finding-fix { border-top-color: var(--line); }
+
+.finding-header {
+  min-height: 44px;
+  padding: 18px 20px;
+  list-style: none;
+  background: var(--surface-subtle);
+  cursor: pointer;
+}
+.finding-header::-webkit-details-marker { display: none; }
+.finding-title-block { display: block; }
+.finding-title { display: block; margin-top: 10px; font-size: 1.12rem; font-weight: 800; line-height: 1.4; }
+.location { display: block; margin-bottom: 0; color: var(--primary); font: .82rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+.finding-summary-meta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.finding-toggle-label {
+  color: var(--primary);
+  font-size: .78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.finding-toggle-open { display: none; }
+.finding-card[open] .finding-toggle-closed { display: none; }
+.finding-card[open] .finding-toggle-open { display: inline; }
+.finding-card[open] > .finding-header .details-chevron { transform: rotate(180deg); }
+.finding-content { display: grid; gap: 14px; padding: 20px; }
+
+.problem-explanation {
+  padding: 15px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+}
+
+.problem-explanation.unanchored { border-color: #e5c98d; background: var(--warning-soft); }
+.problem-explanation p { max-width: 80ch; margin: 5px 0 0; }
+
+.finding-fixes {
+  padding: 14px 16px;
+  border-left: 4px solid var(--primary);
+  border-radius: 0 8px 8px 0;
+  background: var(--primary-soft);
+}
+
+.finding-fix-list { display: grid; gap: 10px; margin-top: 8px; }
+.finding-fix + .finding-fix { padding-top: 10px; border-top: 1px solid #cfe0ef; }
+.finding-fix p { max-width: 80ch; margin-bottom: 0; color: var(--muted); }
+
+.adjudication-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.adjudication-strip > div { min-width: 0; min-height: 96px; padding: 14px; border-right: 1px solid var(--line); overflow-wrap: anywhere; }
+.adjudication-strip > div:last-child { border-right: 0; background: var(--primary-soft); }
+.adjudication-strip span { display: block; margin-bottom: 4px; color: var(--muted); font-size: .76rem; font-weight: 800; }
+.adjudication-strip strong,
+.adjudication-strip small { display: block; }
+
+.diff-block { min-width: 0; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; background: #fff; }
+.diff-file-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 14px; background: #f7f9fc; }
+.diff-file-header strong,
+.diff-file-header span { min-width: 0; overflow-wrap: anywhere; }
+.diff-file-header span { color: var(--muted); font: .78rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.diff-caption { padding: 8px 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .78rem; }
+.hunk-scroll { max-width: 100%; max-height: 480px; overflow: auto; border-top: 1px solid var(--line); overscroll-behavior-x: contain; }
+.hunk-scroll:focus-visible { outline: 3px solid rgba(14, 116, 144, .35); outline-offset: -3px; }
+.hunk-table { width: max-content; min-width: 100%; border-collapse: collapse; }
+.hunk-table th,
+.hunk-table td { padding: 3px 10px; border: 0; text-align: left; vertical-align: top; }
+.hunk-table th { position: sticky; top: 0; z-index: 1; color: var(--muted); background: #edf1f6; font-size: .72rem; }
+.hunk-stripe { width: 5px; padding: 0 !important; }
+.hunk-line-active .hunk-stripe { background: #f59e0b; }
+.hunk-num { width: 58px; border-right: 1px solid var(--line) !important; color: #69768a; background: #f7f9fc; font: .76rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-align: right !important; user-select: none; }
+.hunk-code { color: #273244; font: .8rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
+.hunk-add .hunk-code { color: var(--code-add-text); background: var(--code-add); }
+.hunk-delete .hunk-code { color: var(--code-delete-text); background: var(--code-delete); }
+.hunk-meta .hunk-code { color: var(--muted); background: #f7f9fc; font-style: italic; }
+.hunk-omitted td { color: var(--muted); background: #edf1f6; font: .74rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-align: center; }
+
+.feedback-panel {
+  padding: 14px;
+  border: 1px solid #b9d5ee;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  font-size: .9rem;
+  line-height: 1.5;
+}
+.feedback-heading { gap: 14px; }
+.feedback-heading p { margin: 2px 0 0; color: var(--muted); }
+.feedback-actions,
+.feedback-export-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.feedback-actions { gap: 8px; margin-top: 10px; }
+.feedback-export-actions { gap: 10px; margin-top: 14px; }
+.button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--text);
+  font-weight: 750;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+.button:hover { border-color: var(--primary); background: #f5faff; }
+.button[aria-pressed="true"],
+.button.primary { border-color: var(--primary); background: var(--primary); color: #fff; }
+.button.primary:hover { background: #194e78; }
+.button.secondary { justify-self: start; }
+
+.button:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 3px solid rgba(14, 116, 144, .35);
+  outline-offset: 2px;
+}
+
+.feedback-more { margin-top: 8px; }
+.feedback-more > summary { display: inline-flex; align-items: center; gap: 6px; list-style: none; }
+.feedback-more > summary::-webkit-details-marker { display: none; }
+.details-chevron {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  transition: transform 160ms ease;
+}
+.feedback-more[open] .details-chevron { transform: rotate(180deg); }
+.feedback-controls {
+  display: grid;
+  grid-template-columns: minmax(14rem, .35fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px 16px;
+  margin-top: 10px;
+}
+.feedback-controls label { display: grid; gap: 5px; color: var(--muted); font-size: .82rem; font-weight: 750; }
+.feedback-controls select,
+.feedback-controls textarea { width: 100%; min-height: 44px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--text); }
+.feedback-controls select {
+  padding: 7px 40px 7px 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%23245f91' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  font-weight: 650;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.feedback-controls select:open {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4 10 4-4 4 4' fill='none' stroke='%23245f91' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75'/%3E%3C/svg%3E");
+}
+.feedback-controls textarea { min-height: 96px; padding: 10px; font-weight: 400; resize: vertical; }
+.feedback-controls textarea::placeholder { color: var(--muted); opacity: 1; }
+.feedback-comment-actions { display: flex; grid-column: 2; align-items: center; justify-content: flex-start; gap: 12px; }
+.feedback-comment-actions span { color: var(--muted); font-size: .82rem; }
+
+.feedback-export { align-items: center; }
+.feedback-export p { max-width: 68ch; margin-bottom: 6px; color: var(--muted); }
+.feedback-summary { font-weight: 750; }
+.storage-status { font-size: .82rem; }
+.feedback-export-control { flex: 0 0 360px; }
+.feedback-export-actions { margin-top: 0; }
+.export-status { display: block; margin-top: 8px; color: var(--muted); font-size: .82rem; text-align: right; }
+
+.history-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; counter-reset: history; }
+.history-list > li { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 20px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; counter-increment: history; }
+.history-summary > strong::before { content: counter(history) ". "; color: var(--muted); }
+.history-list p { margin: 4px 0 0; color: var(--muted); }
+.history-actions { min-width: 0; padding-left: 20px; border-left: 1px solid var(--line); }
+.history-actions-title { display: block; margin-bottom: 4px; color: var(--muted); font-size: .75rem; }
+.history-actions ul { display: grid; margin: 0; padding: 0; list-style: none; }
+.history-event { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: start; padding: 4px 0; }
+.history-event + .history-event { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--line); }
+.history-event-target { min-width: 0; color: var(--primary); font-weight: 750; overflow-wrap: anywhere; }
+.history-event-action { max-width: 28rem; font-weight: 650; text-align: right; overflow-wrap: anywhere; }
+
+.report-identity { padding: 0; }
+.report-identity > summary { display: flex; align-items: center; padding: 16px 20px; }
+.report-identity[open] > summary { border-bottom: 1px solid var(--line); }
+.report-identity dl { display: grid; gap: 0; margin: 0; padding: 8px 20px 18px; }
+.report-identity dl > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.report-identity dl > div:last-child { border-bottom: 0; }
+.report-identity dt { color: var(--muted); font-weight: 750; }
+.report-identity dd { min-width: 0; margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .8rem; overflow-wrap: anywhere; user-select: all; }
+
+@media (max-width: 780px) {
+  .report-shell { width: min(100% - 24px, 1240px); padding-top: 16px; }
+  .panel { padding: 18px; }
+  .hero { padding: 20px; }
+  .hero-heading,
+  .section-heading,
+  .feedback-export { align-items: flex-start; }
+  .truth-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .truth-item:nth-child(2) { border-right: 0; }
+  .truth-item:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+  .adjudication-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adjudication-strip > div:nth-child(2) { border-right: 0; }
+  .adjudication-strip > div:last-child { grid-column: 1 / -1; border-top: 1px solid var(--line); }
+  .feedback-export-control { flex-basis: 320px; }
+  .history-list > li { grid-template-columns: minmax(0, 1fr); }
+  .history-actions { padding: 12px 0 0; border-top: 1px solid var(--line); border-left: 0; }
+  .change-theme-grid,
+  .change-attention { grid-template-columns: minmax(0, 1fr); }
+  .change-attention { gap: 4px; }
+}
+
+@media (max-width: 640px) {
+  .hero-heading,
+  .section-heading,
+  .feedback-export,
+  .feedback-heading,
+  .feedback-comment-actions { flex-direction: column; }
+  .feedback-controls { grid-template-columns: minmax(0, 1fr); }
+  .feedback-comment-actions { grid-column: 1; }
+  .history-event { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .history-event-action { max-width: none; text-align: left; }
+  .result-chip { align-self: flex-start; }
+  h1,
+  .hero-summary,
+  .result-chip { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+  .finding-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; row-gap: 8px; }
+  .finding-title-block { grid-column: 1 / -1; }
+  .finding-summary-meta { grid-column: 1 / -1; justify-self: end; }
+  .file-row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .issue-link { justify-self: start; }
+  .feedback-export-control { width: 100%; flex-basis: auto; }
+  .export-status { text-align: left; }
+  .report-identity dl > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .diff-file-header { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 390px) {
+  .report-shell { width: min(100% - 16px, 1240px); }
+  .panel { padding: 15px; }
+  .hero { padding: 16px; }
+  .truth-item { min-height: 104px; padding: 13px; }
+  .truth-item strong { font-size: 1rem; }
+  .finding-content { padding: 14px; }
+  .finding-header { padding: 15px; }
+  .adjudication-strip > div { min-height: 92px; padding: 11px; }
+  .verification-source,
+  .verification-claim,
+  .verification-reason { padding: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#report-content">跳到报告正文</a>
+  <main id="report-content" class="report-shell" data-graph-id="audit:run-ab40720178764edabef3a7553cc6b571" data-audit-sha256="sha256:38e425a6bd2f860f0b3f737ca030b2e05b5c00b03a4a4ab428c6fbfe0bfd18cf" data-run-id="run-ab40720178764edabef3a7553cc6b571">
+    <header class="hero review-complete verdict-pass_candidate" data-node-id="run-ab40720178764edabef3a7553cc6b571" data-node-type="run">
+      <div class="hero-heading">
+        <div>
+          <p class="kicker">EvidentLoop · 代码变更审计</p>
+          <h1>Evidentloop 代码变更审计</h1>
+<p class="hero-summary">未发现可由当前 diff 直接验证的问题。schema 断点、显式修复验证来源、输出完成门和报告呈现形成了边界清楚的闭环，新增测试覆盖了语义变更摘要缺失时不得标记为完整的路径。</p>        </div>
+        <span class="result-chip verdict-pass_candidate">无待处理问题</span>
+      </div>
+
+      <div class="truth-grid" aria-label="报告结论">
+        <div class="truth-item">
+          <span>审查状态</span>
+          <strong>输出完整</strong>
+        </div>
+        <div class="truth-item">
+          <span>当前结论</span>
+          <strong>无待处理问题</strong>
+          <small>0 项待处理问题</small>
+        </div>
+        <div class="truth-item">
+          <span>严重程度</span>
+          <strong>不适用</strong>
+        </div>
+        <div class="truth-item">
+          <span>旧问题验证</span>
+          <strong>本轮未验证</strong>
+        </div>
+      </div>
+
+    </header>
+
+    <section class="panel change-section" data-node-id="change-001" data-node-type="change">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">先看业务变化</p>
+          <h2>变更摘要</h2>
+        </div>
+        <span class="count-chip">43 个文件</span>
+      </div>
+      <article class="change-summary semantic-change-summary" data-node-id="change-001" data-node-type="change" data-edge-id="edge-001">
+        <p class="change-lead">本次改动将 EvidentLoop 从单次审查报告推进为可追溯的审计闭环：统一新版报告契约，支持显式关联旧问题验证新代码，并重建面向阅读与裁定的报告页面。</p>
+
+        <div class="change-theme-grid" aria-label="核心实现变化">
+          <section class="change-theme" data-node-id="change-002" data-node-type="change" data-edge-id="edge-002">
+            <span class="change-theme-index" aria-hidden="true">01</span>
+            <div>
+              <h3>统一报告结论与严重程度契约</h3>
+              <p>公开报告升级到 schema 0.5，删除风险分及其派生字段，改由 finding 严重度聚合报告级严重程度，并保留人工裁定前后的模型原判断。</p>
+<p class="change-impact"><strong>影响范围：</strong>审计 schema、摘要计算、反馈修订、语义校验和技术文档。</p>            </div>
+          </section>
+          <section class="change-theme" data-node-id="change-003" data-node-type="change" data-edge-id="edge-003">
+            <span class="change-theme-index" aria-hidden="true">02</span>
+            <div>
+              <h3>建立显式的旧问题修复验证链路</h3>
+              <p>用户可用旧报告版本、具体 finding 和修复声明发起新 diff 审查；系统冻结一跳来源，要求模型逐项给出支持状态、原因和证据，同时独立审查完整新 diff。</p>
+<p class="change-impact"><strong>影响范围：</strong>Python API、CLI、来源预校验、review prompt、claim parser、完成门和审计图。</p>            </div>
+          </section>
+          <section class="change-theme" data-node-id="change-004" data-node-type="change" data-edge-id="edge-004">
+            <span class="change-theme-index" aria-hidden="true">03</span>
+            <div>
+              <h3>让变更摘要按实现逻辑呈现</h3>
+              <p>reviewer 新增语义化 Change Summary 输出，parser 将模型选择的少量逻辑主题写入现有 change 节点；finalize 也把有效摘要纳入完整性门禁，避免正式报告静默退回纯文件统计。</p>
+<p class="change-impact"><strong>影响范围：</strong>reviewer prompt、变更摘要解析、完成门、audit graph 和报告首屏。</p>            </div>
+          </section>
+          <section class="change-theme" data-node-id="change-005" data-node-type="change" data-edge-id="edge-005">
+            <span class="change-theme-index" aria-hidden="true">04</span>
+            <div>
+              <h3>重建报告阅读与裁定体验</h3>
+              <p>HTML 报告改为结果优先、问题逐卡展开、单栏 diff、状态化反馈与复审历史，并使用同一 DOM 适配桌面和移动端。</p>
+<p class="change-impact"><strong>影响范围：</strong>renderer context、HTML 模板、自包含样式与脚本、官方 Skill 和回归测试。</p>            </div>
+          </section>
+        </div>
+
+        <aside class="change-attention" aria-label="本次审计重点">
+          <strong>本次审计重点</strong>
+          <p>重点核验模型输出契约、跨报告来源身份与最终报告展示是否在缺失或异常输入下保持一致。</p>
+        </aside>
+
+        <p class="change-stats">
+          <strong>变更规模：</strong>43 个文件，新增 4454 行、删除 1969 行，其中 1 个二进制文件。下方保留完整文件清单和问题关联。
+        </p>
+      </article>
+
+
+<details class="file-list-details"><summary>查看全部 43 个变更文件</summary>      <div class="file-list">
+        <div class="file-row" data-node-id="file-001" data-node-type="file" data-edge-id="edge-006">
+          <div>
+            <strong class="file-path">.sopify/plan/20260722_audit_lifecycle_remediation_pages/assets/audit-report-concept-review.md</strong>
+            <span class="file-meta">
+              <span class="add">+10</span>
+              <span class="del">−10</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-002" data-node-type="file" data-edge-id="edge-007">
+          <div>
+            <strong class="file-path">.sopify/plan/20260722_audit_lifecycle_remediation_pages/assets/audit-report-concept.html</strong>
+            <span class="file-meta">
+              <span class="add">+8</span>
+              <span class="del">−7</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-003" data-node-type="file" data-edge-id="edge-008">
+          <div>
+            <strong class="file-path">.sopify/plan/20260722_audit_lifecycle_remediation_pages/plan.md</strong>
+            <span class="file-meta">
+              <span class="add">+36</span>
+              <span class="del">−26</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-004" data-node-type="file" data-edge-id="edge-009">
+          <div>
+            <strong class="file-path">.sopify/plan/20260722_audit_lifecycle_remediation_pages/tasks.md</strong>
+            <span class="file-meta">
+              <span class="add">+43</span>
+              <span class="del">−45</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-005" data-node-type="file" data-edge-id="edge-010">
+          <div>
+            <strong class="file-path">.sopify/project.md</strong>
+            <span class="file-meta">
+              <span class="add">+11</span>
+              <span class="del">−9</span>
+              · 二进制
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-006" data-node-type="file" data-edge-id="edge-011">
+          <div>
+            <strong class="file-path">docs/ai-host-integration.md</strong>
+            <span class="file-meta">
+              <span class="add">+112</span>
+              <span class="del">−168</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-007" data-node-type="file" data-edge-id="edge-012">
+          <div>
+            <strong class="file-path">docs/data-model.md</strong>
+            <span class="file-meta">
+              <span class="add">+164</span>
+              <span class="del">−325</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-008" data-node-type="file" data-edge-id="edge-013">
+          <div>
+            <strong class="file-path">docs/v0-scope.md</strong>
+            <span class="file-meta">
+              <span class="add">+77</span>
+              <span class="del">−172</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-009" data-node-type="file" data-edge-id="edge-014">
+          <div>
+            <strong class="file-path">evidentloop/api.py</strong>
+            <span class="file-meta">
+              <span class="add">+10</span>
+              <span class="del">−0</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-010" data-node-type="file" data-edge-id="edge-015">
+          <div>
+            <strong class="file-path">evidentloop/audit/__init__.py</strong>
+            <span class="file-meta">
+              <span class="add">+9</span>
+              <span class="del">−2</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-011" data-node-type="file" data-edge-id="edge-016">
+          <div>
+            <strong class="file-path">evidentloop/audit/adapter.py</strong>
+            <span class="file-meta">
+              <span class="add">+133</span>
+              <span class="del">−35</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-012" data-node-type="file" data-edge-id="edge-017">
+          <div>
+            <strong class="file-path">evidentloop/audit/finalize.py</strong>
+            <span class="file-meta">
+              <span class="add">+119</span>
+              <span class="del">−25</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-013" data-node-type="file" data-edge-id="edge-018">
+          <div>
+            <strong class="file-path">evidentloop/audit/fix_verification.py</strong>
+            <span class="file-meta">
+              <span class="add">+238</span>
+              <span class="del">−0</span>
+              · 新增
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-014" data-node-type="file" data-edge-id="edge-019">
+          <div>
+            <strong class="file-path">evidentloop/audit/revision.py</strong>
+            <span class="file-meta">
+              <span class="add">+20</span>
+              <span class="del">−25</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-015" data-node-type="file" data-edge-id="edge-020">
+          <div>
+            <strong class="file-path">evidentloop/audit/summary.py</strong>
+            <span class="file-meta">
+              <span class="add">+33</span>
+              <span class="del">−28</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-016" data-node-type="file" data-edge-id="edge-021">
+          <div>
+            <strong class="file-path">evidentloop/cli.py</strong>
+            <span class="file-meta">
+              <span class="add">+26</span>
+              <span class="del">−2</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-017" data-node-type="file" data-edge-id="edge-022">
+          <div>
+            <strong class="file-path">evidentloop/renderers/html.py</strong>
+            <span class="file-meta">
+              <span class="add">+331</span>
+              <span class="del">−259</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-018" data-node-type="file" data-edge-id="edge-023">
+          <div>
+            <strong class="file-path">evidentloop/renderers/static/audit.css</strong>
+            <span class="file-meta">
+              <span class="add">+583</span>
+              <span class="del">−242</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-019" data-node-type="file" data-edge-id="edge-024">
+          <div>
+            <strong class="file-path">evidentloop/renderers/static/audit.js</strong>
+            <span class="file-meta">
+              <span class="add">+11</span>
+              <span class="del">−1</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-020" data-node-type="file" data-edge-id="edge-025">
+          <div>
+            <strong class="file-path">evidentloop/renderers/templates/audit.html.j2</strong>
+            <span class="file-meta">
+              <span class="add">+334</span>
+              <span class="del">−305</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-021" data-node-type="file" data-edge-id="edge-026">
+          <div>
+            <strong class="file-path">evidentloop/review/change_summary.py</strong>
+            <span class="file-meta">
+              <span class="add">+59</span>
+              <span class="del">−0</span>
+              · 新增
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-022" data-node-type="file" data-edge-id="edge-027">
+          <div>
+            <strong class="file-path">evidentloop/review/claims.py</strong>
+            <span class="file-meta">
+              <span class="add">+116</span>
+              <span class="del">−0</span>
+              · 新增
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-023" data-node-type="file" data-edge-id="edge-028">
+          <div>
+            <strong class="file-path">evidentloop/review/core/prompt.py</strong>
+            <span class="file-meta">
+              <span class="add">+36</span>
+              <span class="del">−7</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-024" data-node-type="file" data-edge-id="edge-029">
+          <div>
+            <strong class="file-path">evidentloop/review/core/reviewer-prompt.md</strong>
+            <span class="file-meta">
+              <span class="add">+38</span>
+              <span class="del">−4</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-025" data-node-type="file" data-edge-id="edge-030">
+          <div>
+            <strong class="file-path">evidentloop/review/schema.py</strong>
+            <span class="file-meta">
+              <span class="add">+79</span>
+              <span class="del">−40</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-026" data-node-type="file" data-edge-id="edge-031">
+          <div>
+            <strong class="file-path">evidentloop/schemas/audit-v0.5.schema.json</strong>
+            <span class="file-meta">
+              <span class="add">+30</span>
+              <span class="del">−32</span>
+              · 重命名
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-027" data-node-type="file" data-edge-id="edge-032">
+          <div>
+            <strong class="file-path">evidentloop/validation.py</strong>
+            <span class="file-meta">
+              <span class="add">+290</span>
+              <span class="del">−49</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-028" data-node-type="file" data-edge-id="edge-033">
+          <div>
+            <strong class="file-path">pyproject.toml</strong>
+            <span class="file-meta">
+              <span class="add">+1</span>
+              <span class="del">−1</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-029" data-node-type="file" data-edge-id="edge-034">
+          <div>
+            <strong class="file-path">skills/evidentloop/SKILL.md</strong>
+            <span class="file-meta">
+              <span class="add">+35</span>
+              <span class="del">−7</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-030" data-node-type="file" data-edge-id="edge-035">
+          <div>
+            <strong class="file-path">tests/audit_helpers.py</strong>
+            <span class="file-meta">
+              <span class="add">+6</span>
+              <span class="del">−8</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-031" data-node-type="file" data-edge-id="edge-036">
+          <div>
+            <strong class="file-path">tests/fixtures/audit-v0.5.json</strong>
+            <span class="file-meta">
+              <span class="add">+6</span>
+              <span class="del">−6</span>
+              · 重命名
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-032" data-node-type="file" data-edge-id="edge-037">
+          <div>
+            <strong class="file-path">tests/review/test_prompt_lab_run.py</strong>
+            <span class="file-meta">
+              <span class="add">+9</span>
+              <span class="del">−3</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-033" data-node-type="file" data-edge-id="edge-038">
+          <div>
+            <strong class="file-path">tests/test_adapter.py</strong>
+            <span class="file-meta">
+              <span class="add">+85</span>
+              <span class="del">−15</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-034" data-node-type="file" data-edge-id="edge-039">
+          <div>
+            <strong class="file-path">tests/test_agent_skill.py</strong>
+            <span class="file-meta">
+              <span class="add">+5</span>
+              <span class="del">−5</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-035" data-node-type="file" data-edge-id="edge-040">
+          <div>
+            <strong class="file-path">tests/test_audit_schema.py</strong>
+            <span class="file-meta">
+              <span class="add">+22</span>
+              <span class="del">−7</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-036" data-node-type="file" data-edge-id="edge-041">
+          <div>
+            <strong class="file-path">tests/test_change_summary.py</strong>
+            <span class="file-meta">
+              <span class="add">+53</span>
+              <span class="del">−0</span>
+              · 新增
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-037" data-node-type="file" data-edge-id="edge-042">
+          <div>
+            <strong class="file-path">tests/test_feedback_revision.py</strong>
+            <span class="file-meta">
+              <span class="add">+29</span>
+              <span class="del">−26</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-038" data-node-type="file" data-edge-id="edge-043">
+          <div>
+            <strong class="file-path">tests/test_finalize.py</strong>
+            <span class="file-meta">
+              <span class="add">+67</span>
+              <span class="del">−25</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-039" data-node-type="file" data-edge-id="edge-044">
+          <div>
+            <strong class="file-path">tests/test_fix_verification.py</strong>
+            <span class="file-meta">
+              <span class="add">+268</span>
+              <span class="del">−0</span>
+              · 新增
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-040" data-node-type="file" data-edge-id="edge-045">
+          <div>
+            <strong class="file-path">tests/test_fix_verification_flow.py</strong>
+            <span class="file-meta">
+              <span class="add">+716</span>
+              <span class="del">−0</span>
+              · 新增
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-041" data-node-type="file" data-edge-id="edge-046">
+          <div>
+            <strong class="file-path">tests/test_package_resources.py</strong>
+            <span class="file-meta">
+              <span class="add">+7</span>
+              <span class="del">−7</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-042" data-node-type="file" data-edge-id="edge-047">
+          <div>
+            <strong class="file-path">tests/test_prepare.py</strong>
+            <span class="file-meta">
+              <span class="add">+8</span>
+              <span class="del">−3</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+        <div class="file-row" data-node-id="file-043" data-node-type="file" data-edge-id="edge-048">
+          <div>
+            <strong class="file-path">tests/test_renderer.py</strong>
+            <span class="file-meta">
+              <span class="add">+181</span>
+              <span class="del">−38</span>
+              · 修改
+            </span>
+          </div>
+          <span class="no-issue">未关联问题</span>
+        </div>
+      </div>
+</details>    </section>
+
+
+
+
+
+    <details class="panel report-identity">
+      <summary>报告身份与校验信息</summary>
+      <dl>
+        <div><dt>报告版本</dt><dd>sha256:38e425a6bd2f860f0b3f737ca030b2e05b5c00b03a4a4ab428c6fbfe0bfd18cf</dd></div>
+        <div><dt>Diff 版本</dt><dd>sha256:055235edb0ef8f0c3f89a5e4c88aca5fd06e6e842483d48583b5f21508080f2d</dd></div>
+        <div><dt>来源</dt><dd>555f8491..1af67963</dd></div>
+        <div><dt>Schema</dt><dd>0.5</dd></div>
+        <div><dt>Graph</dt><dd>audit:run-ab40720178764edabef3a7553cc6b571</dd></div>
+      </dl>
+    </details>
+  </main>
+  <script>(function attachEvidentLoopFeedback(root, factory) {
+  "use strict";
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  }
+  if (root) {
+    root.EvidentLoopFeedback = api;
+    if (root.document) {
+      api.init(root.document, root);
+    }
+  }
+})(typeof window !== "undefined" ? window : null, function createEvidentLoopFeedback() {
+  "use strict";
+
+  const PREFIX = "evidentloop.feedback.v2";
+  const SEVERITIES = new Set(["high", "medium", "low", "note"]);
+  const MACHINE_BLOCK_BEGIN = "<<<EVIDENTLOOP_FEEDBACK_JSONL>>>";
+  const MACHINE_BLOCK_END = "<<<END_EVIDENTLOOP_FEEDBACK_JSONL>>>";
+  const COPY_INSTRUCTION = "请使用 EvidentLoop 按以下裁定更新当前报告；不要修改业务代码，也不要重新审查代码。";
+
+  function storageKey(identity) {
+    return [PREFIX, identity.graph_id, identity.run_id, identity.fingerprint]
+      .map((value) => encodeURIComponent(String(value)))
+      .join(":");
+  }
+
+  function defaultState(identity) {
+    return {
+      graph_id: identity.graph_id,
+      run_id: identity.run_id,
+      target_type: "finding",
+      target_id: identity.target_id,
+      fingerprint: identity.fingerprint,
+      disposition: null,
+      comment: null,
+      comment_changed: false,
+      severity_override: null,
+      severity_changed: false,
+      timestamps: {},
+      updated_at: null,
+    };
+  }
+
+  function matchesIdentity(state, identity) {
+    return state
+      && state.graph_id === identity.graph_id
+      && state.run_id === identity.run_id
+      && state.target_id === identity.target_id
+      && state.fingerprint === identity.fingerprint;
+  }
+
+  function validState(state, identity) {
+    if (!matchesIdentity(state, identity) || state.target_type !== "finding") return false;
+    if (![null, "accept", "false_positive"].includes(state.disposition)) return false;
+    if (state.comment !== null && typeof state.comment !== "string") return false;
+    if (typeof state.comment_changed !== "boolean") return false;
+    if (state.severity_override !== null && !SEVERITIES.has(state.severity_override)) return false;
+    if (typeof state.severity_changed !== "boolean") return false;
+    if (!state.timestamps || typeof state.timestamps !== "object") return false;
+    if (state.disposition && typeof state.timestamps.disposition !== "string") return false;
+    if (state.comment_changed && typeof state.timestamps.comment !== "string") return false;
+    if (state.severity_changed && typeof state.timestamps.severity_override !== "string") return false;
+    return true;
+  }
+
+  function loadState(storage, identity) {
+    try {
+      const raw = storage.getItem(storageKey(identity));
+      if (!raw) return defaultState(identity);
+      const state = JSON.parse(raw);
+      return validState(state, identity) ? state : defaultState(identity);
+    } catch (_error) {
+      return defaultState(identity);
+    }
+  }
+
+  function saveState(storage, state) {
+    storage.setItem(storageKey(state), JSON.stringify(state));
+    return state;
+  }
+
+  function applyAction(state, action, value, now) {
+    const next = JSON.parse(JSON.stringify(state));
+    const timestamp = now || new Date().toISOString();
+    if (action === "accept" || action === "false_positive") {
+      next.disposition = action;
+      next.timestamps.disposition = timestamp;
+    } else if (action === "comment") {
+      next.comment = String(value || "").trim() || null;
+      next.comment_changed = true;
+      next.timestamps.comment = timestamp;
+    } else if (action === "severity_override") {
+      const severity = String(value || "");
+      if (severity && !SEVERITIES.has(severity)) {
+        throw new Error("invalid severity override");
+      }
+      next.severity_override = severity || null;
+      next.severity_changed = true;
+      next.timestamps.severity_override = timestamp;
+    } else {
+      throw new Error("unknown feedback action");
+    }
+    next.updated_at = timestamp;
+    return next;
+  }
+
+  function clearPending(state, field) {
+    const next = JSON.parse(JSON.stringify(state));
+    if (field === "disposition") {
+      next.disposition = null;
+      delete next.timestamps.disposition;
+    } else if (field === "comment") {
+      next.comment = null;
+      next.comment_changed = false;
+      delete next.timestamps.comment;
+    } else if (field === "severity_override") {
+      next.severity_override = null;
+      next.severity_changed = false;
+      delete next.timestamps.severity_override;
+    } else {
+      throw new Error("unknown pending field");
+    }
+    next.updated_at = new Date().toISOString();
+    return next;
+  }
+
+  function applyPendingChange(state, action, value, appliedValue, now) {
+    if ((action === "accept" || action === "false_positive") && action === appliedValue) {
+      return clearPending(state, "disposition");
+    }
+    if (action === "comment" && String(value || "").trim() === (appliedValue || "")) {
+      return clearPending(state, "comment");
+    }
+    if (action === "severity_override" && String(value || "") === (appliedValue || "")) {
+      return clearPending(state, "severity_override");
+    }
+    return applyAction(state, action, value, now);
+  }
+
+  function baseEvent(state, action, createdAt, sourceAuditSha256) {
+    return {
+      target_type: "finding",
+      target_id: state.target_id,
+      action,
+      fingerprint: state.fingerprint,
+      graph_id: state.graph_id,
+      run_id: state.run_id,
+      created_at: createdAt,
+      source_audit_sha256: sourceAuditSha256,
+    };
+  }
+
+  function stateToEvents(state, sourceAuditSha256) {
+    const events = [];
+    if (state.disposition) {
+      events.push(baseEvent(state, state.disposition, state.timestamps.disposition, sourceAuditSha256));
+    }
+    if (state.comment_changed) {
+      events.push({
+        ...baseEvent(state, "comment", state.timestamps.comment, sourceAuditSha256),
+        comment: state.comment,
+      });
+    }
+    if (state.severity_changed) {
+      events.push({
+        ...baseEvent(state, "severity_override", state.timestamps.severity_override, sourceAuditSha256),
+        severity: state.severity_override,
+      });
+    }
+    return events;
+  }
+
+  function exportJsonl(states, sourceAuditSha256) {
+    const lines = states
+      .flatMap((state) => stateToEvents(state, sourceAuditSha256))
+      .map((event) => JSON.stringify(event));
+    return lines.length ? `${lines.join("\n")}\n` : "";
+  }
+
+  function buildCopyText(states, sourceAuditSha256) {
+    const jsonl = exportJsonl(states, sourceAuditSha256);
+    if (!jsonl) return "";
+    return `${COPY_INSTRUCTION}\n\n${MACHINE_BLOCK_BEGIN}\n${jsonl}${MACHINE_BLOCK_END}`;
+  }
+
+  function feedbackCounts(states, sourceAuditSha256) {
+    const events = states.flatMap((state) => stateToEvents(state, sourceAuditSha256));
+    return {
+      decisions: events.filter((event) => event.action !== "comment").length,
+      comments: events.filter((event) => event.action === "comment").length,
+      total: events.length,
+    };
+  }
+
+  function memoryStorage() {
+    const values = new Map();
+    return {
+      getItem(key) { return values.has(key) ? values.get(key) : null; },
+      setItem(key, value) { values.set(key, String(value)); },
+      removeItem(key) { values.delete(key); },
+    };
+  }
+
+  function appliedState(panel) {
+    return {
+      disposition: panel.dataset.appliedDisposition || null,
+      comment: panel.dataset.appliedComment || null,
+      severity_override: panel.dataset.appliedSeverity || null,
+    };
+  }
+
+  function renderState(panel, state, applied, syncInputs) {
+    const disposition = state.disposition || applied.disposition;
+    panel.querySelectorAll("[data-feedback-action='accept'], [data-feedback-action='false_positive']")
+      .forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.feedbackAction === disposition));
+      });
+    const badge = panel.querySelector("[data-feedback-state]");
+    const hasPending = state.disposition || state.comment_changed || state.severity_changed;
+    const hasApplied = applied.disposition || applied.comment || applied.severity_override;
+    badge.textContent = hasPending ? "有待更新裁定" : hasApplied ? "已应用" : "待决策";
+    const pendingSummary = panel.ownerDocument.querySelector(
+      `[data-feedback-pending-for="${panel.dataset.feedbackFor}"]`,
+    );
+    if (pendingSummary) {
+      const labels = [];
+      if (state.disposition) labels.push(state.disposition === "accept" ? "确认有效" : "标记误报");
+      if (state.comment_changed) labels.push(state.comment ? "更新评论" : "删除评论");
+      if (state.severity_changed) labels.push(state.severity_override ? "调整严重度" : "恢复模型严重度");
+      pendingSummary.textContent = labels.length ? labels.join(" · ") : "无";
+    }
+    if (syncInputs) {
+      panel.querySelector("[data-feedback-comment]").value = state.comment_changed
+        ? state.comment || ""
+        : applied.comment || "";
+      panel.querySelector("[data-feedback-severity]").value = state.severity_changed
+        ? state.severity_override || ""
+        : applied.severity_override || "";
+    }
+  }
+
+  async function copyText(documentObject, rootObject, value) {
+    if (
+      rootObject.navigator
+      && rootObject.navigator.clipboard
+      && typeof rootObject.navigator.clipboard.writeText === "function"
+    ) {
+      await rootObject.navigator.clipboard.writeText(value);
+      return;
+    }
+    const textarea = documentObject.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    documentObject.body.appendChild(textarea);
+    textarea.select();
+    const copied = documentObject.execCommand && documentObject.execCommand("copy");
+    textarea.remove();
+    if (!copied) throw new Error("clipboard unavailable");
+  }
+
+  function init(documentObject, rootObject) {
+    const shell = documentObject.querySelector("[data-graph-id][data-run-id]");
+    if (!shell) return;
+    let storage;
+    let persistentStorage = true;
+    try {
+      storage = rootObject.localStorage;
+      const probe = `${PREFIX}:probe`;
+      storage.setItem(probe, "1");
+      storage.removeItem(probe);
+    } catch (_error) {
+      storage = memoryStorage();
+      persistentStorage = false;
+    }
+
+    const sourceAuditSha256 = shell.dataset.auditSha256;
+    const storageStatus = documentObject.querySelector("[data-feedback-storage-status]");
+    if (storageStatus && !persistentStorage) {
+      storageStatus.textContent = "仅临时保存，刷新会丢失";
+    }
+
+    const panels = Array.from(documentObject.querySelectorAll("[data-feedback-for][data-fingerprint]"));
+    const entries = panels.map((panel) => {
+      const identity = {
+        graph_id: shell.dataset.graphId,
+        run_id: shell.dataset.runId,
+        target_id: panel.dataset.feedbackFor,
+        fingerprint: panel.dataset.fingerprint,
+      };
+      let state = loadState(storage, identity);
+      const applied = appliedState(panel);
+      renderState(panel, state, applied, true);
+      const message = panel.querySelector("[data-feedback-message]");
+
+      panel.querySelectorAll("[data-feedback-action]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.feedbackAction;
+          const value = action === "comment"
+            ? panel.querySelector("[data-feedback-comment]").value
+            : null;
+          const appliedValue = action === "comment"
+            ? applied.comment
+            : applied.disposition;
+          state = applyPendingChange(state, action, value, appliedValue);
+          try { saveState(storage, state); } catch (_error) { /* in-memory state remains usable */ }
+          renderState(panel, state, applied, false);
+          message.textContent = action === "comment" && state.comment_changed && !state.comment
+            ? "待移除当前评论"
+            : "待更新裁定已保存在当前浏览器";
+          updateToolbar();
+        });
+      });
+      panel.querySelector("[data-feedback-severity]").addEventListener("change", (event) => {
+        state = applyPendingChange(
+          state,
+          "severity_override",
+          event.target.value,
+          applied.severity_override,
+        );
+        try { saveState(storage, state); } catch (_error) { /* in-memory state remains usable */ }
+        renderState(panel, state, applied, false);
+        message.textContent = state.severity_changed ? "严重度变化待更新" : "已恢复当前报告值";
+        updateToolbar();
+      });
+      return { getState: () => state };
+    });
+
+    const exportButton = documentObject.querySelector("[data-feedback-export]");
+    const copyButton = documentObject.querySelector("[data-feedback-copy]");
+    const exportStatus = documentObject.querySelector("[data-feedback-export-status]");
+    const summary = documentObject.querySelector("[data-feedback-summary]");
+    function currentStates() {
+      return entries.map((entry) => entry.getState());
+    }
+    function updateToolbar() {
+      if (!summary) return;
+      const counts = feedbackCounts(currentStates(), sourceAuditSha256);
+      summary.textContent = `${counts.decisions} 项决策 · ${counts.comments} 条评论 · 不自动上传`;
+    }
+    if (copyButton && exportStatus) {
+      copyButton.addEventListener("click", async () => {
+        const text = buildCopyText(currentStates(), sourceAuditSha256);
+        if (!text) {
+          exportStatus.textContent = "暂无待更新裁定";
+          return;
+        }
+        try {
+          await copyText(documentObject, rootObject, text);
+          exportStatus.textContent = "已复制，请粘贴给 AI 更新报告";
+        } catch (_error) {
+          exportStatus.textContent = "复制失败，数据仍在本地，请改用下载 JSONL";
+        }
+      });
+    }
+    if (exportButton && exportStatus) {
+      exportButton.addEventListener("click", () => {
+        const jsonl = exportJsonl(currentStates(), sourceAuditSha256);
+        if (!jsonl) {
+          exportStatus.textContent = "暂无可导出的决策";
+          return;
+        }
+        const blob = new rootObject.Blob([jsonl], { type: "application/x-ndjson;charset=utf-8" });
+        const url = rootObject.URL.createObjectURL(blob);
+        const link = documentObject.createElement("a");
+        link.href = url;
+        link.download = "audit-feedback.jsonl";
+        documentObject.body.appendChild(link);
+        link.click();
+        link.remove();
+        rootObject.URL.revokeObjectURL(url);
+        exportStatus.textContent = `已下载 ${jsonl.trimEnd().split("\n").length} 条反馈`;
+      });
+    }
+    updateToolbar();
+    documentObject.documentElement.dataset.evidentloopReady = "true";
+  }
+
+  return {
+    PREFIX,
+    MACHINE_BLOCK_BEGIN,
+    MACHINE_BLOCK_END,
+    applyAction,
+    applyPendingChange,
+    buildCopyText,
+    clearPending,
+    defaultState,
+    exportJsonl,
+    feedbackCounts,
+    init,
+    loadState,
+    memoryStorage,
+    saveState,
+    stateToEvents,
+    storageKey,
+    validState,
+  };
+});
+</script>
+</body>
+</html>

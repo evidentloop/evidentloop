@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EvidentLoop — 把本地 Git diff 变成可核验的审计链路</title>
+  <meta name="description" content="把本地 Git diff 变成经过校验的审计报告，让人工裁定和后续修复验证都有明确证据。">
+  <meta name="theme-color" content="#f3f6f9">
+  <link rel="canonical" href="https://evidentloop.github.io/evidentloop/zh-CN.html">
+  <link rel="alternate" hreflang="en" href="https://evidentloop.github.io/evidentloop/">
+  <link rel="alternate" hreflang="zh-CN" href="https://evidentloop.github.io/evidentloop/zh-CN.html">
+  <link rel="alternate" hreflang="x-default" href="https://evidentloop.github.io/evidentloop/">
+  <link rel="stylesheet" href="./assets/site.css">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="EvidentLoop — 把本地 Git diff 变成可核验的审计链路">
+  <meta property="og:description" content="完整审查 diff、校验报告，并让后续裁定始终可以追溯到证据。">
+  <meta property="og:url" content="https://evidentloop.github.io/evidentloop/zh-CN.html">
+  <meta property="og:image" content="https://evidentloop.github.io/evidentloop/assets/evidentloop-report-loop.png">
+  <meta property="og:locale" content="zh_CN">
+  <meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+  <a class="skip-link" href="#content">跳到正文</a>
+
+  <header class="site-header">
+    <nav class="site-nav" aria-label="主导航">
+      <a class="brand" href="./zh-CN.html">EvidentLoop</a>
+      <div class="nav-links">
+        <a href="#proof">真实报告</a>
+        <a href="#how">工作方式</a>
+        <a href="#start">安装</a>
+        <a href="./" lang="en">English</a>
+      </div>
+    </nav>
+
+    <div class="hero">
+      <p class="eyebrow">开源 · 本地 Git diff 审计</p>
+      <h1>把本地 Git diff 变成可以核验的审计链路</h1>
+      <p class="lead">编程助手负责完整审查 diff。EvidentLoop 对照该 diff 校验结果，生成一份自包含报告，并让人工裁定始终可以追溯到证据。</p>
+
+      <figure class="hero-visual">
+        <img src="./assets/evidentloop-hero-sketch.jpg" width="1915" height="821" alt="手绘的本地 Git diff 经过核验生成审计报告，并由人工记录裁定">
+      </figure>
+
+      <div class="actions">
+        <a class="button" href="./examples/evidentloop-dogfood-v05/audit.html">打开真实审计报告</a>
+        <a class="button button-secondary" href="#start">安装 Skill</a>
+      </div>
+      <p class="version-note">Alpha · Python 3.10+ · audit schema 0.5</p>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="page-section" id="proof" aria-labelledby="proof-title">
+      <p class="eyebrow">交互演示与真实证据</p>
+      <h2 id="proof-title">先看报告怎么用，再核验真实结果</h2>
+      <p class="section-intro">短动画展示如何从问题进入完整 diff，并在浏览器里记录裁定和评论。</p>
+      <figure class="media-frame">
+        <picture>
+          <source media="(prefers-reduced-motion: reduce)" srcset="./assets/evidentloop-report-loop.png">
+          <img src="./assets/evidentloop-report-loop.gif" width="1280" height="720" loading="lazy" alt="代表性的 EvidentLoop 报告，展示问题、完整 diff、浏览器本地误报裁定和评论">
+        </picture>
+        <figcaption>代表性 schema 0.5 报告 · 问题 → diff → 本地裁定与评论。</figcaption>
+      </figure>
+      <div class="evidence-note">
+        <p><strong>真实审计证据：</strong>查看<a href="./examples/evidentloop-dogfood-v05/audit.html">覆盖 43/43 个文件的自审报告</a>及其<a href="./examples/evidentloop-dogfood-v05/audit.json">校验 JSON</a>。结果为 <code>complete / pass_candidate</code>、0 findings。</p>
+      </div>
+    </section>
+
+    <section class="page-section" id="how" aria-labelledby="how-title">
+      <p class="eyebrow">一条可追溯链路</p>
+      <h2 id="how-title">让每次裁定都能回到证据</h2>
+      <p class="section-intro">首次审查、人工裁定和后续修复验证含义不同。EvidentLoop 会把这些边界清楚保留下来。</p>
+      <figure class="media-frame lifecycle-frame">
+        <img src="./assets/evidentloop-lifecycle-zh-CN.svg" width="1440" height="860" loading="lazy" alt="EvidentLoop 的报告生成、报告阅读顺序、同 diff 裁定循环和显式跨 diff 修复验证">
+        <figcaption>报告结构、同 diff 裁定与显式后续 diff 验证。小屏可左右滑动，或<a href="./assets/evidentloop-lifecycle-zh-CN.svg">打开完整尺寸图</a>。</figcaption>
+      </figure>
+      <ol class="steps">
+        <li>
+          <span class="step-number" aria-hidden="true">01</span>
+          <h3>完整审查一份 diff</h3>
+          <p>编程助手负责判断；EvidentLoop 校验文件身份、修改行锚点和输出完整性，并生成 HTML 报告及对应 JSON 记录。</p>
+        </li>
+        <li>
+          <span class="step-number" aria-hidden="true">02</span>
+          <h3>修订报告，不改代码</h3>
+          <p>人工裁定只更新报告链路，不再次调用模型，也不修改业务文件。</p>
+        </li>
+        <li>
+          <span class="step-number" aria-hidden="true">03</span>
+          <h3>显式验证后续 diff</h3>
+          <p>由来源报告、明确选择的问题和修复声明发起新一轮完整 diff 审查；系统不会猜测关联。</p>
+        </li>
+      </ol>
+      <p class="lifecycle-note">旧报告保持不变；代码行或 finding 消失，不能自动当作已经修复的证据。</p>
+    </section>
+
+    <section class="page-section" id="start" aria-labelledby="start-title">
+      <p class="eyebrow">从本地开始</p>
+      <h2 id="start-title">在需要审计的仓库里直接运行</h2>
+      <p class="section-intro">EvidentLoop 使用编程助手已经提供的模型；它不会执行 diff 或模型输出中的命令。</p>
+      <div class="start-grid">
+        <div>
+          <div class="command-card">
+            <h3>安装 CLI 与 Skill</h3>
+            <pre><code># 先体验内置离线 demo
+uvx evidentloop demo
+
+# 安装并执行真实审计
+uv tool install evidentloop
+npx skills@latest add evidentloop/evidentloop --skill evidentloop -g
+evidentloop doctor</code></pre>
+          </div>
+          <p class="prompt">然后对编程助手说：<q>用 EvidentLoop 审计我的 staged changes，并生成 HTML 报告。</q></p>
+        </div>
+        <aside class="boundary-card" aria-labelledby="boundaries-title">
+          <h3 id="boundaries-title">始终保持显式的边界</h3>
+          <ul>
+            <li><code>complete</code> 只表示宿主返回了有效、完整的审查，不代表代码已经被形式化证明安全。</li>
+            <li>待提交反馈只保存在浏览器中，复制或下载后才会离开本页。</li>
+            <li>不自动修复、不执行命令、不猜测 finding 关联，也不静默合并过期反馈。</li>
+          </ul>
+          <p>可以继续阅读 <a href="https://github.com/evidentloop/evidentloop/blob/main/docs/ai-host-integration.md">AI host 集成</a>或<a href="https://github.com/evidentloop/evidentloop/blob/main/docs/data-model.md">数据模型</a>。</p>
+        </aside>
+      </div>
+
+      <div class="quick-answers" aria-labelledby="answers-title">
+        <h3 id="answers-title">两个常见问题</h3>
+        <details>
+          <summary>审计报告可以分享吗？</summary>
+          <p>可以。HTML 是自包含文件，适合静态托管；分享前请先脱敏，浏览器里的本地裁定不会自动上传。</p>
+        </details>
+        <details>
+          <summary>提交反馈会重新审查或修改代码吗？</summary>
+          <p>不会自动触发。提交同一份 diff 的反馈只会修订报告；只有你明确要求修改代码或验证后续 diff 时，编程助手才会另行执行。</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>EvidentLoop 采用 MIT License 开源。</p>
+    <nav class="footer-links" aria-label="项目链接">
+      <a href="https://github.com/evidentloop/evidentloop">GitHub</a>
+      <a href="https://pypi.org/project/evidentloop/">PyPI</a>
+      <a href="https://github.com/evidentloop/evidentloop/blob/main/docs/v0-scope.md">Alpha 范围</a>
+      <a href="https://github.com/evidentloop/evidentloop/issues">反馈</a>
+    </nav>
+  </footer>
+</body>
+</html>
